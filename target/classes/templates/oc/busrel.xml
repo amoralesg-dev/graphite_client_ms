@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<BBusinessRelation xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<tContextInfo>
+		<tcCompanyCode/>
+		<tcAction/>
+		<tiPriority/>
+		<ttRequestStartDate xsi:nil="true"/>
+		<tiRequestStartTime/>
+		<tcComment/>
+		<tcCBFVersion/>
+		<tcComponentVersion/>
+		<tcActivityCode/>
+		<tlPartialUpdate/>
+		<tcPartialUpdateExceptionList/>
+	</tContextInfo>
+	<tBusinessRelation>
+		<BusinessRelationCode/>
+		<BusinessRelationName1/>
+		<BusinessRelationName2/>
+		<BusinessRelationName3/>
+		<BusinessRelationSearchName/>
+		<BusinessRelationICCode/>
+		<BusinessRelationIsActive/>
+		<BusinessRelationIsInterco/>
+		<BusinessRelationIsInComp/>
+		<BusinessRelationIsCompens/>
+		<BusinessRelationIsTaxRep/>
+		<BusinessRelationIsLastFill/>
+		<BusinessRelationIsDomRestr/>
+		<BusinessRelationAVRCode/>
+		<BusinessRelationEANCode/>
+		<BusinessRelationNameCtrl/>
+		<BusinessRelationOrgType/>
+		<BusinessRelationComRegisterNbr/>
+		<BusinessRelationInstNbr/>
+		<BusinessRelationInstCode/>
+		<tcCorporateGroupCode/>
+		<tcLngCode/>
+		<tcSalesPriceListCode/>
+		<tcPurchasePriceListCode/>
+		<tcCostPriceListCode/>
+		<CustomShort0/>
+		<CustomShort1/>
+		<CustomShort2/>
+		<CustomShort3/>
+		<CustomShort4/>
+		<CustomShort5/>
+		<CustomShort6/>
+		<CustomShort7/>
+		<CustomShort8/>
+		<CustomShort9/>
+		<CustomCombo0/>
+		<CustomCombo1/>
+		<CustomCombo2/>
+		<CustomCombo3/>
+		<CustomCombo4/>
+		<CustomCombo5/>
+		<CustomCombo6/>
+		<CustomCombo7/>
+		<CustomCombo8/>
+		<CustomCombo9/>
+		<CustomLong0/>
+		<CustomLong1/>
+		<CustomNote/>
+		<CustomDate0 xsi:nil="true"/>
+		<CustomDate1 xsi:nil="true"/>
+		<CustomDate2 xsi:nil="true"/>
+		<CustomDate3 xsi:nil="true"/>
+		<CustomDate4 xsi:nil="true"/>
+		<CustomInteger0/>
+		<CustomInteger1/>
+		<CustomInteger2/>
+		<CustomInteger3/>
+		<CustomInteger4/>
+		<CustomDecimal0/>
+		<CustomDecimal1/>
+		<CustomDecimal2/>
+		<CustomDecimal3/>
+		<CustomDecimal4/>
+		<CustomShort10/>
+		<CustomShort11/>
+		<CustomShort12/>
+		<CustomShort13/>
+		<CustomShort14/>
+		<CustomCombo10/>
+		<CustomCombo11/>
+		<CustomCombo12/>
+		<CustomCombo13/>
+		<CustomCombo14/>
+		<CustomDate5 xsi:nil="true"/>
+		<CustomDate6 xsi:nil="true"/>
+		<CustomDate7 xsi:nil="true"/>
+		<CustomDate8 xsi:nil="true"/>
+		<CustomDate9 xsi:nil="true"/>
+		<LastModifiedDate/>
+		<LastModifiedTime/>
+		<LastModifiedUser/>
+		<QADC01/>
+		<QADC02/>
+		<QADT01 xsi:nil="true"/>
+		<QADD01/>
+		<tc_Rowid/>
+		<tc_ParentRowid/>
+		<tAddress>
+			<AddressStreet1/>
+			<AddressStreet2/>
+			<AddressStreet3/>
+			<AddressZip/>
+			<AddressCity/>
+			<AddressCityCode/>
+			<AddressName/>
+			<AddressSearchName/>
+			<AddressTelephone/>
+			<AddressEMail/>
+			<AddressWebSite/>
+			<AddressFax/>
+			<AddressFormat/>
+			<AddressIsTemporary/>
+			<TxzTaxZone/>
+			<TxclTaxCls/>
+			<TxuTaxUsage/>
+			<AddressPostalAddress1/>
+			<AddressPostalAddress2/>
+			<AddressIsSendToPostal/>
+			<AddressState/>
+			<AddressPostalZip/>
+			<AddressPostalCity/>
+			<AddressCounty/>
+			<AddressIsTaxable/>
+			<AddressIsTaxInCity/>
+			<AddressIsTaxIncluded/>
+			<AddressTaxIDFederal/>
+			<AddressTaxIDState/>
+			<AddressTaxIDMisc1/>
+			<AddressTaxIDMisc2/>
+			<AddressTaxIDMisc3/>
+			<AddressTaxDeclaration/>
+			<AddressLogicKeyString/>
+			<AddressExternalValidationCode/>
+			<tcCountyCode/>
+			<tcStateCode/>
+			<tcCountryCode/>
+			<tcAddressTypeCode/>
+			<tcLngCode/>
+			<tcStateDescription/>
+			<tcCountyDescription/>
+			<tcCountryDescription/>
+			<tiCountryFormat/>
+			<tcLngDescription/>
+			<tcCoCNumber/>
+			<CustomShort0/>
+			<CustomShort1/>
+			<CustomShort2/>
+			<CustomShort3/>
+			<CustomShort4/>
+			<CustomShort5/>
+			<CustomShort6/>
+			<CustomShort7/>
+			<CustomShort8/>
+			<CustomShort9/>
+			<CustomCombo0/>
+			<CustomCombo1/>
+			<CustomCombo2/>
+			<CustomCombo3/>
+			<CustomCombo4/>
+			<CustomCombo5/>
+			<CustomCombo6/>
+			<CustomCombo7/>
+			<CustomCombo8/>
+			<CustomCombo9/>
+			<CustomLong0/>
+			<CustomLong1/>
+			<CustomNote/>
+			<CustomDate0 xsi:nil="true"/>
+			<CustomDate1 xsi:nil="true"/>
+			<CustomDate2 xsi:nil="true"/>
+			<CustomDate3 xsi:nil="true"/>
+			<CustomDate4 xsi:nil="true"/>
+			<CustomInteger0/>
+			<CustomInteger1/>
+			<CustomInteger2/>
+			<CustomInteger3/>
+			<CustomInteger4/>
+			<CustomDecimal0/>
+			<CustomDecimal1/>
+			<CustomDecimal2/>
+			<CustomDecimal3/>
+			<CustomDecimal4/>
+			<CustomShort10/>
+			<CustomShort11/>
+			<CustomShort12/>
+			<CustomShort13/>
+			<CustomShort14/>
+			<CustomShort15/>
+			<CustomShort16/>
+			<CustomShort17/>
+			<CustomShort18/>
+			<CustomShort19/>
+			<CustomCombo10/>
+			<CustomCombo11/>
+			<CustomCombo12/>
+			<CustomCombo13/>
+			<CustomCombo14/>
+			<LastModifiedDate/>
+			<LastModifiedTime/>
+			<LastModifiedUser/>
+			<QADC01/>
+			<QADC02/>
+			<QADT01 xsi:nil="true"/>
+			<QADD01/>
+			<tc_Rowid/>
+			<tc_ParentRowid/>
+			<tContact>
+				<ContactFunction/>
+				<ContactName/>
+				<ContactInitials/>
+				<ContactGender/>
+				<ContactTitle/>
+				<ContactTelephone/>
+				<ContactMobilePhone/>
+				<ContactEmail/>
+				<ContactFax/>
+				<ContactIsPrimary/>
+				<ContactIsSecondary/>
+				<tcLngCode/>
+				<CustomShort0/>
+				<CustomShort1/>
+				<CustomShort2/>
+				<CustomShort3/>
+				<CustomShort4/>
+				<CustomShort5/>
+				<CustomShort6/>
+				<CustomShort7/>
+				<CustomShort8/>
+				<CustomShort9/>
+				<CustomCombo0/>
+				<CustomCombo1/>
+				<CustomCombo2/>
+				<CustomCombo3/>
+				<CustomCombo4/>
+				<CustomCombo5/>
+				<CustomCombo6/>
+				<CustomCombo7/>
+				<CustomCombo8/>
+				<CustomCombo9/>
+				<CustomLong0/>
+				<CustomLong1/>
+				<CustomNote/>
+				<CustomDate0 xsi:nil="true"/>
+				<CustomDate1 xsi:nil="true"/>
+				<CustomDate2 xsi:nil="true"/>
+				<CustomDate3 xsi:nil="true"/>
+				<CustomDate4 xsi:nil="true"/>
+				<CustomInteger0/>
+				<CustomInteger1/>
+				<CustomInteger2/>
+				<CustomInteger3/>
+				<CustomInteger4/>
+				<CustomDecimal0/>
+				<CustomDecimal1/>
+				<CustomDecimal2/>
+				<CustomDecimal3/>
+				<CustomDecimal4/>
+				<LastModifiedDate/>
+				<LastModifiedTime/>
+				<LastModifiedUser/>
+				<QADC01/>
+				<QADC02/>
+				<QADT01 xsi:nil="true"/>
+				<QADD01/>
+				<tc_Rowid/>
+				<tc_ParentRowid/>
+			</tContact>
+		</tAddress>
+	</tBusinessRelation>
+</BBusinessRelation>

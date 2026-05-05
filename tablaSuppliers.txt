@@ -1,0 +1,43 @@
+-- 1. Crear la tabla primero
+CREATE TABLE IF NOT EXISTS pagos_db.suppliers (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    CreditorCode VARCHAR(10),
+    BusinessRelationName1 VARCHAR(140),
+    BusinessRelationSearchName VARCHAR(20),
+    CreditorTaxIDFederal VARCHAR(50),
+    AddressStreet1 VARCHAR(70),
+    StreetNumber VARCHAR(16),
+    AddressZip VARCHAR(16),
+    CityCode VARCHAR(35),
+    StateCode VARCHAR(35),
+    CountryCode VARCHAR(2),
+    ContactEmail VARCHAR(50),
+    CptyAccountCode VARCHAR(10),
+    Currency VARCHAR(3),
+    BeneficiaryName VARCHAR(100),
+    AccountNumber VARCHAR(35),
+    BeneficiaryBankName VARCHAR(140),
+    BankCountry VARCHAR(2),
+    RoutingCodeABA VARCHAR(11),
+    RoutingCodeBIC VARCHAR(9),
+    IntermediaryAccount VARCHAR(140),
+    IntermediaryRoutingCodeABA VARCHAR(11),
+    IntermediaryRoutingCodeBIC VARCHAR(9),
+    IntermediaryAccountCountry VARCHAR(2)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 2. Insertar los registros
+INSERT INTO pagos_db.suppliers (
+    CreditorCode, BusinessRelationName1, BusinessRelationSearchName, CreditorTaxIDFederal, 
+    AddressStreet1, StreetNumber, AddressZip, CityCode, StateCode, CountryCode, 
+    ContactEmail, CptyAccountCode, Currency, BeneficiaryName, AccountNumber, 
+    BeneficiaryBankName, BankCountry, RoutingCodeABA, RoutingCodeBIC, 
+    IntermediaryAccount, IntermediaryRoutingCodeABA, IntermediaryRoutingCodeBIC, IntermediaryAccountCountry
+) VALUES 
+('60000247', 'BETTERFLY MEXICO S DE RL DE CV', 'BETTERFLY MX', NULL, 'LAGO ALBERTO', '275', NULL, NULL, NULL, NULL, NULL, NULL, 'MX', 'SANTANDER', '11320', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('COCHGMER', 'CHG MERIDIAN MEXICO SAPI DE CV', 'CHG-MERIDIAN', NULL, 'JUAN SALVADOR AGRAZ', '40', '5348', 'CIUDAD DE MEXICO', 'CDMX', 'MX', NULL, 'COCHGMER', 'USD', 'CHG MERIDIAN MEXICO SAPI DE CV', '12180004515572400', 'BBVA', 'MX', NULL, NULL, NULL, NULL, NULL, NULL),
+('COCHGMER', 'CHG MERIDIAN MEXICO SAPI DE CV', 'CHG-MERIDIAN', NULL, 'JUAN SALVADOR AGRAZ', '40', '5348', 'CIUDAD DE MEXICO', 'CDMX', 'MX', NULL, 'COCHGMER', 'MXN', 'CHG MERIDIAN MEXICO SAPI DE CV', '12180004515572542', 'BBVA', 'MX', NULL, NULL, NULL, NULL, NULL, NULL),
+('COAMERIE', 'AMERICAN EXPRESS COMPANY MEXICO SA D', 'AMER EXPRESS', 'AEC810901298', 'AVENIDA PATRIOTISMO', '635', '3710', 'MEXICO', 'DF', 'MX', NULL, NULL, 'MXN', 'AMERICAN EXPRESS COMPANY', '103180000006722000', 'AMERIEXP', 'MX', NULL, NULL, NULL, NULL, NULL, NULL),
+(NULL, 'ARCELOR MITTAL MONTREAL', 'ARCELOR MITTAL', 'XEXX010101000', '2050 ROUTE DES ACIERIES', NULL, NULL, 'CONTRECOEUR', NULL, 'CA', NULL, NULL, 'USD', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('60000247', 'BETTERFLY MEXICO S DE RL DE CV', 'BETTERFLY MX 2', 'BME2112082P3', 'Lago Alberto ', '275', '11320', 'MIGUEL HIDALGO', 'CDMX', 'MX', NULL, '60000247', 'MXN', 'BETTERFLY MEXICO S DE RL DE CV', '14180655091689400', 'SANTANDER', 'MX', NULL, NULL, NULL, NULL, NULL, NULL),
+(NULL, 'RADIOMOVIL DIPSA, S.A. DE C.', 'RADIOMOVIL DIPSA', 'RDI841003QJ4', 'AV.EJERCITO NACIONAL', '488', '11590', NULL, NULL, 'MX', NULL, NULL, 'MXN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
