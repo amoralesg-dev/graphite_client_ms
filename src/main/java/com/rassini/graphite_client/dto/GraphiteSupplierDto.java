@@ -14,6 +14,9 @@ public class GraphiteSupplierDto {
     // =========================
     // Datos generales
     // =========================
+    @JsonProperty("ERP_ID")
+    private String erpIDQAD;
+
 
     @JsonProperty("Entity_Public_Id")
     private String entityPublicId;
@@ -133,6 +136,12 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("ERP_Bank_List")
         private List<Bank> erpBankList;
+
+        @JsonProperty("Bank_Wire_ABA_Routing")
+        private BankWireAbaRouting bankWireAbaRouting;
+
+    
+
     }
 
     // =========================
@@ -166,6 +175,17 @@ public class GraphiteSupplierDto {
         // Objeto: Bank_SWIFT { routing, valid }
         @JsonProperty("Bank_SWIFT")
         private BankSwift bankSwift;
+
+        
+        @JsonProperty("Bank_Account_Currency_Correspondent")
+        private String bankAccountCurrencyCorrespondent;
+
+        @JsonProperty("Bank_Account_Currency_Correspondent_Bank_Country")
+        private String bankAccountCurrencyCorrespondentBankCountry;
+
+        @JsonProperty("Bank_Account_Currency_Correspondent_Bank")
+        private CorrespondentBank bankAccountCurrencyCorrespondentBank;
+
     }
 
     // =========================
