@@ -11,6 +11,7 @@ import com.rassini.graphite_client.entity.SupplierEntity;
 import com.rassini.graphite_client.repository.SupplierRepository;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
 import com.rassini.graphite_client.service.xml.SupplierProcessingService;
+import com.rassini.graphite_client.service.xml.XmlBreakesService;
 import com.rassini.graphite_client.service.xml.XmlFrenosService;
 import com.rassini.graphite_client.service.xml.XmlOcService;
 import com.rassini.graphite_client.service.xml.XmlPnService;
@@ -33,6 +34,7 @@ public class SupplierProcessingServiceImpl
     private final XmlOcService xmlOcService;
     private final XmlPnService xmlPnService;
     private final XmlFrenosService xmlFrenosService;
+    private final XmlBreakesService xmlBreakesService;
 
     @Override
     public void processSupplier(String publicId) {
@@ -73,19 +75,23 @@ public class SupplierProcessingServiceImpl
             );
 
 
-            // 3️⃣ XML OC (0111)
+            // 3 XML OC (0111)
             updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
             xmlOcService.generate(dto);
 
-            // 4️⃣ XML PN (09)
+            // 4️ XML PN (09)
             updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
             xmlPnService.generate(dto);
 
-            // 5️⃣ XML Frenos (1000)
+            // 5️ XML Frenos (1000)
             updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
             xmlFrenosService.generate(dto);
 
-            // 6️⃣ Todos los XML listos
+            // 6 XML Breakes (1850)
+            updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
+            xmlBreakesService.generate(dto);
+
+            // 7 Todos los XML listos
             updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
 
            
