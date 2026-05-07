@@ -7,6 +7,7 @@ C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\service\xml\impl\CatalogServiceImpl.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\service\xml\impl\XmlOcServiceImpl.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\config\RestConfig.java
+C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\dto\CorrespondentBank.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\dto\GraphiteSupplierDto.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\service\sync\GraphiteSyncService.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\dto\AuthResponse.java
@@ -43,4 +44,5 @@ C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\dto\SalesContactCalc.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\service\xml\XmlPlantService.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\controller\AuthController.java
+C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\dto\BankWireAbaRouting.java
 C:\Users\nitsu\OneDrive\Documents\rasinniWorkspace\graphite-client\src\main\java\com\rassini\graphite_client\service\xml\impl\XmlPnServiceImpl.java

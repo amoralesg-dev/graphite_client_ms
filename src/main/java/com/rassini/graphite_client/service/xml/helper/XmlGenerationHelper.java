@@ -36,20 +36,22 @@ public class XmlGenerationHelper {
             repository.save(supplier);
 
             log.info(
-                "XML generado correctamente. Supplier={}, ERP={}",
+                "XML generado correctamente. Supplier={}, ERP={}, ERP QAD={}",
                 supplier.getCreditorCode(),
-                supplier.getBusinessUnitCode()
+                supplier.getBusinessUnitCode(),
+                supplier.getErpIDQAD()
             );
 
         } catch (Exception ex) {
 
             supplier.setXmlStatus(XmlStatus.ERROR);
             repository.save(supplier);
-
+            
             log.error(
-                "Error generando XML. Supplier={}, ERP={}",
+                "Error generando XML. Supplier={}, ERP={}, ERP QAD={}",
                 supplier.getCreditorCode(),
                 supplier.getBusinessUnitCode(),
+                supplier.getErpIDQAD(),
                 ex
             );
 
@@ -75,10 +77,11 @@ public class XmlGenerationHelper {
 
             if (Files.exists(filePath)) {
                 log.info(
-                    "XML ya existe. Se omite. file={} Supplier={}, ERP={}",
+                    "XML ya existe. Se omite. file={} Supplier={}, ERP={}, ERP QAD={}",
                     filePath.toAbsolutePath(),
                     supplier.getCreditorCode(),
-                    supplier.getBusinessUnitCode()
+                    supplier.getBusinessUnitCode(),
+                    supplier.getErpIDQAD()
                 );
                 return;
             }
@@ -89,10 +92,11 @@ public class XmlGenerationHelper {
             repository.save(supplier);
 
             log.info(
-                "XML generado correctamente. file={} Supplier={}, ERP={}",
+                "XML generado correctamente. file={} Supplier={}, ERP={}, ERP QAD={}",
                 filePath.toAbsolutePath(),
                 supplier.getCreditorCode(),
-                supplier.getBusinessUnitCode()
+                supplier.getBusinessUnitCode(),
+                supplier.getErpIDQAD()
             );
 
         } catch (Exception ex) {
@@ -101,9 +105,10 @@ public class XmlGenerationHelper {
             repository.save(supplier);
 
             log.error(
-                "Error generando XML. Supplier={}, ERP={}",
+                "Error generando XML. Supplier={}, ERP={}, ERP QAD={}",
                 supplier.getCreditorCode(),
                 supplier.getBusinessUnitCode(),
+                supplier.getErpIDQAD(),
                 ex
             );
 

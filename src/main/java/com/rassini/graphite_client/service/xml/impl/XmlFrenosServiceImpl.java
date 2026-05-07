@@ -80,8 +80,8 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                         && taxZoneList.get(0) != null && !taxZoneList.get(0).isBlank()) {
                     txzTaxZone = taxZoneList.get(0);
                 } else {
-                    log.warn("[FRENOS][BUSREL] TxzTaxZone NO informado en Graphite para supplier={}, erpId={}",
-                            supplier.getCreditorCode(), erpId);
+                    log.warn("[FRENOS][BUSREL] TxzTaxZone NO informado en Graphite para supplier={}, erpId={}, ERP QAD={}",
+                            supplier.getCreditorCode(), erpId,supplier.getErpIDQAD());
                 }
 
                 String taxClassFromErp = erp.getRassiniErpTaxClass();
@@ -90,15 +90,15 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                         : catalogService.resolveTaxClass(erpId, taxClassFromErp); // con tu CatalogService corregido, esto tenderá a null si no hay valor
 
                 if (txclTaxCls == null || txclTaxCls.isBlank()) {
-                    log.warn("[FRENOS][BUSREL] TxclTaxCls NO resuelto (Graphite vacío y sin catálogo) para supplier={}, erpId={}",
-                            supplier.getCreditorCode(), erpId);
+                    log.warn("[FRENOS][BUSREL] TxclTaxCls NO resuelto (Graphite vacío y sin catálogo) para supplier={}, erpId={}, ERP QAD={}",
+                            supplier.getCreditorCode(), erpId, supplier.getErpIDQAD());
                 }
 
                 XmlContext busrelCtx = XmlContext.builder()
 
                         // Output
                         .outputFileName(
-                                "busrel_" + supplier.getCreditorCode() + "_" + erpId + ".xml"
+                                "busrel_" + supplier.getErpIDQAD() + "_" + erpId + ".xml"
                         )
 
                         // ContextInfo
@@ -108,7 +108,7 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                         .lastModifiedUser("mfg")
 
                         // BusinessRelation
-                        .businessRelationCode(supplier.getCreditorCode())
+                        .businessRelationCode(supplier.getErpIDQAD())
                         .entityName20(entityName20)
                         .tcCorporateGroupCode("PROVEEDOR")
 
@@ -169,15 +169,15 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                         : "30";
 
                 if (paymentTermsFromErp == null || paymentTermsFromErp.isBlank()) {
-                    log.warn("[FRENOS][CREDITOR] PaymentTerms NO informado en Graphite, usando fallback='30' para supplier={}, erpId={}",
-                            supplier.getCreditorCode(), erpId);
+                    log.warn("[FRENOS][CREDITOR] PaymentTerms NO informado en Graphite, usando fallback='30' para supplier={}, erpId={}, ERP QAD={}",
+                            supplier.getCreditorCode(), erpId, supplier.getErpIDQAD());
                 }
 
                 CreditorXmlContext creditorCtx =
                         CreditorXmlContext.builder()
 
                                 .outputFileName(
-                                        "creditor_" + supplier.getCreditorCode() + "_" + erpId + ".xml"
+                                        "creditor_" + supplier.getErpIDQAD() + "_" + erpId + ".xml"
                                 )
 
                                 // ContextInfo
@@ -187,7 +187,7 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                                 .lastModifiedUser("mfg")
 
                                 // Creditor
-                                .creditorCode(supplier.getCreditorCode())
+                                .creditorCode(supplier.getErpIDQAD())
                                 .tcCurrencyCode(supplier.getCurrency())
                                 .tcNormalPaymentConditionCode(paymentTerm)
 

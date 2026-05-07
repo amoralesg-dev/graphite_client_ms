@@ -71,7 +71,7 @@ public class XmlPnServiceImpl implements XmlPnService {
 
                 // PN usa prefijo PR
                 String businessRelationCode =
-                        "PR" + supplier.getCreditorCode();
+                        "PR" + supplier.getErpIDQAD();
 
                 // --- TAX PN ---
                 // TxzTaxZone: fijo MX
@@ -88,7 +88,7 @@ public class XmlPnServiceImpl implements XmlPnService {
 
                         // Output
                         .outputFileName(
-                                "RPIEDRAS_busrel_" + supplier.getCreditorCode() + ".xml"
+                                "RPIEDRAS_busrel_" + supplier.getErpIDQAD() + ".xml"
                         )
 
                         // ContextInfo
@@ -155,7 +155,7 @@ public class XmlPnServiceImpl implements XmlPnService {
                         CreditorXmlContext.builder()
 
                                 .outputFileName(
-                                        "RPIEDRAS_creditor_" + supplier.getCreditorCode() + ".xml"
+                                        "RPIEDRAS_creditor_" + supplier.getErpIDQAD() + ".xml"
                                 )
 
                                 // ContextInfo
@@ -165,7 +165,7 @@ public class XmlPnServiceImpl implements XmlPnService {
                                 .lastModifiedUser("mfg")
 
                                 // Creditor (PN usa PR)
-                                .creditorCode(businessRelationCode)
+                                .creditorCode(supplier.getErpIDQAD())
                                 .tcCurrencyCode(supplier.getCurrency())
                                 .tcNormalPaymentConditionCode(paymentTerm)
 

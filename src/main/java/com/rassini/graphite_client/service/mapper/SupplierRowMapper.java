@@ -1,6 +1,5 @@
 package com.rassini.graphite_client.service.mapper;
 
-import java.nio.charset.StandardCharsets;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
@@ -41,9 +40,10 @@ public class SupplierRowMapper {
         row.setCreditorCode(dto.getEntityPublicId());
         row.setCptyAccountCode(dto.getEntityPublicId());
         row.setBusinessUnitCode(erp.getRassiniErpEntityId());
+        row.setErpIDQAD(dto.getErpIDQAD());
 
-        row.setBusinessRelationName1(normalizeUtf8(dto.getEntityName()));
-        row.setBusinessRelationSearchName(left(normalizeUtf8(dto.getEntityName()), 20));
+        row.setBusinessRelationName1(dto.getEntityName());
+        row.setBusinessRelationSearchName(left(dto.getEntityName(), 20));
         row.setCreditorTaxIDFederal(dto.getIntegrationTaxId());
 
         // -------------------------------
@@ -95,12 +95,12 @@ public class SupplierRowMapper {
             GraphiteSupplierDto.AddressData data = address.getData();
             GraphiteSupplierDto.Components comp = data.getComponents();
 
-            row.setAddressStreet1(normalizeUtf8(data.getAddress1()));
-            row.setAddressStreet2(normalizeUtf8(data.getAddress2()));
-            row.setAddressStreet3(normalizeUtf8(data.getAddress3()));
+            row.setAddressStreet1(data.getAddress1());
+            row.setAddressStreet2(data.getAddress2());
+            row.setAddressStreet3(data.getAddress3());
             row.setStreetNumber(comp != null ? comp.getPremise() : null);
             row.setAddressZip(comp != null ? comp.getPostalCode() : null);
-            row.setCityCode(normalizeUtf8(address.getAddressCity()));
+            row.setCityCode(address.getAddressCity());
 
             row.setStateCode(
                     catalogService.mapState(
@@ -122,48 +122,90 @@ public class SupplierRowMapper {
         // -------------------------------
         if (erp.getErpBankList() != null && !erp.getErpBankList().isEmpty()) {
 
-            GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
+                GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
 
-            String currency =
-                    (bank.getBankCurrencyList() != null && !bank.getBankCurrencyList().isEmpty())
-                            ? bank.getBankCurrencyList().get(0)
-                            : null;
+                String currency =
+                        (bank.getBankCurrencyList() != null && !bank.getBankCurrencyList().isEmpty())
+                                ? bank.getBankCurrencyList().get(0)
+                                : null;
 
-            row.setCurrency(
-                    catalogService.mapCurrency(
-                            currency,
-                            erp.getRassiniErpEntityId()
-                    )
-            );
+                row.setCurrency(
+                        catalogService.mapCurrency(
+                                currency,
+                                erp.getRassiniErpEntityId()
+                        )
+                );
 
-            row.setBeneficiaryName(bank.getBankAccountHolderName());
-            row.setAccountNumber(bank.getBankAccountNumber());
+                row.setBeneficiaryName(bank.getBankAccountHolderName());
 
-            String bankName =
-                    bank.getBankNumber() != null
-                            ? bank.getBankNumber().getBankName()
-                            : bank.getBankName();
+                // AccountNumber (directo)
+                row.setAccountNumber(bank.getBankAccountNumber());
 
-            row.setBeneficiaryBankName(bankName);
-            row.setBankCountry(bank.getBankCountry());
+                // --------------------------------------------------
+                // BeneficiaryBankName
+                // 1) ERP_Bank_List[0].Bank_Number.bank_name
+                // 2) Bank_Wire_ABA_Routing.bank_name
+                // --------------------------------------------------
+                String beneficiaryBankName = null;
 
-            String bic = null;
-            if (bank.getBankSwift() != null && bank.getBankSwift().getRouting() != null) {
-                bic = bank.getBankSwift().getRouting();
-            } else if (bank.getBankNumber() != null && bank.getBankNumber().getSwift() != null) {
-                bic = bank.getBankNumber().getSwift();
-            }
-            row.setRoutingCodeBIC(bic);
+                if (bank.getBankNumber() != null
+                        && bank.getBankNumber().getBankName() != null
+                        && !bank.getBankNumber().getBankName().isBlank()) {
+
+                        beneficiaryBankName = bank.getBankNumber().getBankName();
+                }
+
+                if ((beneficiaryBankName == null || beneficiaryBankName.isBlank())
+                        && erp.getBankWireAbaRouting() != null) {
+
+                        beneficiaryBankName =
+                                erp.getBankWireAbaRouting().getBankName();
+                }
+
+                row.setBeneficiaryBankName(beneficiaryBankName);
+
+                row.setBankCountry(bank.getBankCountry());
+
+                // RoutingCodeBIC
+                if (bank.getBankSwift() != null) {
+                        row.setRoutingCodeBIC(bank.getBankSwift().getRouting());
+                } else {
+                        row.setRoutingCodeBIC(null);
+                }
+
+                // RoutingCodeABA (Bank_Wire_ABA_Routing.routing)
+                if (erp.getBankWireAbaRouting() != null) {
+                        row.setRoutingCodeABA(
+                                erp.getBankWireAbaRouting().getRouting()
+                        );
+                } else {
+                        row.setRoutingCodeABA(null);
+                }
+
+                // --------------------------------------------------
+                // Intermediary (SEGÚN REGLAS)
+                // --------------------------------------------------
+
+                // IntermediaryAccount
+                row.setIntermediaryAccount(null);
+
+                // IntermediaryRoutingCodeABA
+                row.setIntermediaryRoutingCodeABA(null);
+
+                // IntermediaryRoutingCodeBIC
+                if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
+                        row.setIntermediaryRoutingCodeBIC(
+                                bank.getBankAccountCurrencyCorrespondentBank().getRouting()
+                        );
+                } else {
+                        row.setIntermediaryRoutingCodeBIC(null);
+                }
+
+                // IntermediaryAccountCountry
+                row.setIntermediaryAccountCountry(
+                        bank.getBankAccountCurrencyCorrespondentBankCountry()
+                );
         }
-
-        // -------------------------------
-        // Campos no usados
-        // -------------------------------
-        row.setRoutingCodeABA(null);
-        row.setIntermediaryAccount(null);
-        row.setIntermediaryRoutingCodeABA(null);
-        row.setIntermediaryRoutingCodeBIC(null);
-        row.setIntermediaryAccountCountry(null);
     }
 
     // ======================================================
@@ -185,12 +227,6 @@ public class SupplierRowMapper {
     }
 
     
-    private static String normalizeUtf8(String value) {
-        if (value == null) {
-                return null;
-        }
-        return new String(value.getBytes(StandardCharsets.ISO_8859_1),
-                        StandardCharsets.UTF_8);
-    }
+   
 
 }

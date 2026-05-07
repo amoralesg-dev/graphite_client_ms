@@ -153,7 +153,7 @@ private void generateBusinessRelationInternal(
 
                 // ===== Output =====
                 .outputFileName(
-                        "busrel_" + supplier.getCreditorCode() + "_" + erpId + ".xml"
+                        "busrel_" + supplier.getErpIDQAD() + "_" + erpId + ".xml"
                 )
 
                 // ===== ContextInfo =====
@@ -163,7 +163,7 @@ private void generateBusinessRelationInternal(
                 .lastModifiedUser("mfg")
 
                 // ===== BusinessRelation =====
-                .businessRelationCode(supplier.getCreditorCode())
+                .businessRelationCode(supplier.getErpIDQAD())
                 .entityName20(entityName20)
                 .tcCorporateGroupCode("PROVEEDOR")
 
@@ -238,7 +238,7 @@ private void generateBusinessRelationInternal(
 
                         // ===== Output =====
                         .outputFileName(
-                                "creditor_" + supplier.getCreditorCode() + "_" + erpId + ".xml"
+                                "creditor_" + supplier.getErpIDQAD() + "_" + erpId + ".xml"
                         )
 
                         // ===== ContextInfo =====
@@ -248,7 +248,7 @@ private void generateBusinessRelationInternal(
                         .lastModifiedUser("mfg")
 
                         // ===== Creditor =====
-                        .creditorCode(supplier.getCreditorCode())
+                        .creditorCode(supplier.getErpIDQAD())
                         .tcCurrencyCode(currency)
                         .tcNormalPaymentConditionCode(paymentTerm)
 

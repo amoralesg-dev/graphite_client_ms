@@ -28,6 +28,9 @@ public class SuppliersRowEntity {
     @Column(name = "creditor_code")
     private String creditorCode;
 
+    @Column(name = "erp_id_qad")
+    private String erpIDQAD;
+
     @Column(name = "cpty_account_code")
     private String cptyAccountCode;
 
