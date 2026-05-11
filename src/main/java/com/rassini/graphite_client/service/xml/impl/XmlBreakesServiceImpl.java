@@ -8,11 +8,16 @@ import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.xml.CatalogService;
-import com.rassini.graphite_client.service.xml.CreditorXmlContext;
 import com.rassini.graphite_client.service.xml.XmlBreakesService;
 import com.rassini.graphite_client.service.xml.XmlConstants;
-import com.rassini.graphite_client.service.xml.XmlContext;
 import com.rassini.graphite_client.service.xml.XmlTemplateEngine;
+import com.rassini.graphite_client.service.xml.context.XmlContext;
+import com.rassini.graphite_client.service.xml.context.AddressXml;
+import com.rassini.graphite_client.service.xml.context.BusinessRelationXml;
+import com.rassini.graphite_client.service.xml.context.ContactXml;
+import com.rassini.graphite_client.service.xml.context.ContextInfoXml;
+import com.rassini.graphite_client.service.xml.context.CreditorNodoXML;
+import com.rassini.graphite_client.service.xml.context.CreditorXmlContext;
 import com.rassini.graphite_client.service.xml.helper.XmlGenerationHelper;
 
 import lombok.RequiredArgsConstructor;
@@ -35,23 +40,26 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
             return;
         }
 
-        // BREAKES = ERP 1850 (MISMO QUE FRENOS HOY)
+        // BREAKES = 1850
         dto.getErpRecords().stream()
             .filter(erp -> "1850".equals(erp.getRassiniErpEntityId()))
             .forEach(erp -> {
 
-                String erpId = "1850";
+                final String erpId = "1850";
+
+                // ✅ MISMO lookup que Frenos (sin cambios)
+                final String creditorKey = dto.getEntityPublicId();
 
                 SuppliersRowEntity supplier =
                         suppliersRowRepository
                                 .findByCreditorCodeAndBusinessUnitCode(
-                                        dto.getEntityPublicId(),   //
+                                        creditorKey,
                                         erpId
                                 )
                                 .orElseThrow(() ->
                                         new IllegalStateException(
                                                 "No existe supplier en BD para BREAKES "
-                                                + dto.getEntityPublicId() + " / " + erpId
+                                                + creditorKey + " / " + erpId
                                         )
                                 );
 
@@ -69,16 +77,15 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
                                         )
                                 );
 
-                // TAX (idéntico a Frenos POR AHORA)
+                // ----- TAX BREAKES (1850) = IGUAL A FRENOS POR AHORA -----
                 String txzTaxZone = null;
                 List<String> taxZoneList = erp.getRassiniErpTaxZone();
-
                 if (taxZoneList != null && !taxZoneList.isEmpty()
                         && taxZoneList.get(0) != null && !taxZoneList.get(0).isBlank()) {
                     txzTaxZone = taxZoneList.get(0);
                 } else {
-                    log.warn("[BREAKES][BUSREL] TxzTaxZone vacío supplier={}, ERP={}",
-                            supplier.getErpIDQAD(), erpId);
+                    log.warn("[BREAKES][BUSREL] TxzTaxZone NO informado supplier={}, erpId={}, ERP QAD={}",
+                            supplier.getCreditorCode(), erpId, supplier.getErpIDQAD());
                 }
 
                 String taxClassFromErp = erp.getRassiniErpTaxClass();
@@ -87,43 +94,101 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
                                 ? taxClassFromErp
                                 : catalogService.resolveTaxClass(erpId, taxClassFromErp);
 
-                XmlContext busrelCtx = XmlContext.builder()
+                if (txclTaxCls == null || txclTaxCls.isBlank()) {
+                    log.warn("[BREAKES][BUSREL] TxclTaxCls NO resuelto supplier={}, erpId={}, ERP QAD={}",
+                            supplier.getCreditorCode(), erpId, supplier.getErpIDQAD());
+                }
 
-                        .outputFileName(
-                                "busrel_" + supplier.getErpIDQAD() + "_" + erpId + ".xml"
-                        )
-
+                ContextInfoXml contextInfo = ContextInfoXml.builder()
                         .tcCompanyCode(erpId)
-                        .lastModifiedDate("2026-4-13")
+                        .tiPriority("0")
+                        .ttRequestStartDate("NULL")
+                        .tiRequestStartTime("0")
+                        .tcCBFVersion("9,2")
+                        .tcActivityCode("Create")
+                        .tlPartialUpdate("false")
+                        .build();
+
+                BusinessRelationXml businessRelation = BusinessRelationXml.builder()
+                        .businessRelationCode(supplier.getErpIDQAD())
+                        .businessRelationName1(supplier.getBusinessRelationName1())
+                        .businessRelationName2(supplier.getBusinessRelationName1())
+                        .businessRelationName3(supplier.getBusinessRelationName1())
+                        .businessRelationSearchName(entityName20)
+                        .businessRelationIsActive("true")
+                        .businessRelationIsInterco("false")
+                        .businessRelationIsInComp("false")
+                        .businessRelationIsCompens("true")
+                        .businessRelationIsTaxRep("false")
+                        .businessRelationIsLastFill("false")
+                        .businessRelationIsDomRestr("false")
+                        .tcCorporateGroupCode("PROVEEDOR")
+                        .tcLngCode("ls")
+                        .lastModifiedDate("")
                         .lastModifiedTime("46780")
                         .lastModifiedUser("mfg")
+                        .tc_Rowid("0x000000000005dfc3")
+                        .build();
 
-                        .businessRelationCode(supplier.getErpIDQAD())
-                        .entityName20(entityName20)
-                        .tcCorporateGroupCode("PROVEEDOR")
-
+                AddressXml address = AddressXml.builder()
                         .addressStreet1(supplier.getAddressStreet1())
                         .addressStreet2(supplier.getAddressStreet2())
                         .addressStreet3(supplier.getAddressStreet3())
                         .addressZip(supplier.getAddressZip())
                         .addressCity(supplier.getCityCode())
+                        .addressCityCode(supplier.getCityCode())
                         .addressName(supplier.getAddressStreet1())
                         .addressSearchName(entityName20)
-                        .addressEmail(supplier.getContactEmail())
-
+                        .addressTelephone("")
+                        .addressEMail("")
+                        .addressFormat("0")
+                        .addressIsTemporary("false")
                         .txzTaxZone(txzTaxZone)
                         .txclTaxCls(txclTaxCls)
-                        .rfc(supplier.getCreditorTaxIDFederal())
-                        .rfcState(supplier.getCreditorTaxIDFederal())
-
+                        .addressIsSendToPostal("false")
+                        .addressIsTaxable("false")
+                        .addressIsTaxInCity("false")
+                        .addressIsTaxIncluded("false")
+                        .addressTaxIDFederal(supplier.getCreditorTaxIDFederal())
+                        .addressTaxIDState(supplier.getCreditorTaxIDFederal())
+                        .addressTaxDeclaration("0")
+                        .addressLogicKeyString("413826")
                         .tcStateCode(supplier.getStateCode())
                         .tcCountryCode(supplier.getCountryCode())
+                        .tcAddressTypeCode("HEADOFFICE")
+                        .tcLngCode("ls")
                         .tcStateDescription("")
-                        .tcCountryDescription("MEXICO")
+                        .tcCountryDescription(supplier.getCountryCode())
+                        .tiCountryFormat("0")
+                        .tcLngDescription("latin spanish")
+                        .lastModifiedDate("")
+                        .lastModifiedTime("46780")
+                        .lastModifiedUser("mfg")
+                        .tc_Rowid("0x000000000005d382")
+                        .tc_ParentRowid("0x000000000005dfc3")
+                        .build();
 
+                ContactXml contact = ContactXml.builder()
+                        .contactFunction("")
                         .contactName(supplier.getContactName())
+                        .contactGender("MALE")
                         .contactEmail(supplier.getContactEmail())
+                        .contactIsPrimary("true")
+                        .contactIsSecondary("false")
+                        .tcLngCode("ls")
+                        .lastModifiedDate("")
+                        .lastModifiedTime("46780")
+                        .lastModifiedUser("mfg")
+                        .tc_Rowid("0x000000000005e6c1")
+                        .tc_ParentRowid("0x000000000005d382")
+                        .build();
 
+                XmlContext busrelCtx = XmlContext.builder()
+                        .outputFileName("busrel_" + supplier.getErpIDQAD() + "_" + erpId + ".xml")
+                        .contextInfo(contextInfo)
+                        .businessRelation(businessRelation)
+                        .address(address)
+                        .contact(contact)
                         .build();
 
                 xmlGenerationHelper.generateIfFileNotExists(
@@ -152,28 +217,53 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
                                 ? paymentTermsFromErp
                                 : "30";
 
-                CreditorXmlContext creditorCtx =
-                        CreditorXmlContext.builder()
+                CreditorNodoXML creditor = CreditorNodoXML.builder()
+                        .creditorIsActive("false")
+                        .creditorCode(supplier.getErpIDQAD())
+                        .vatDeliveryType("PRODUCT")
+                        .vatPercentageLevel("NONE")
+                        .creditorIsSendRemittance("false")
+                        .creditorIsIndividualPaymnt("false")
+                        .creditorIsTaxable("false")
+                        .creditorIsTaxInCity("false")
+                        .creditorIsTaxIncluded("false")
+                        .creditorTaxIDFederal(supplier.getCreditorTaxIDFederal())
+                        .creditorTaxIDState(supplier.getCreditorTaxIDFederal())
+                        .creditorTaxDeclaration("0")
+                        .creditorIsTaxReport("false")
+                        .creditorIsTaxConfirmed("false")
+                        .creditorIsWHT("false")
+                        .creditorIsBearBankCharge("false")
+                        .creditorBirthDate("NULL")
+                        .txzTaxZone(txzTaxZone)
+                        .txclTaxCls(txclTaxCls)
+                        .tcNormalPaymentConditionCode(paymentTerm)
+                        .tcInvControlGLProfileCode(invProfile)
+                        .tcCnControlGLProfileCode(cnProfile)
+                        .tcPrepayControlGLProfileCode(prepayProfile)
+                        .tcDivisionProfileCode(divisionProfile)
+                        .tcReasonCode("INV TO APPROVE")
+                        .tlBusinessRelationIsInterco("false")
+                        .tcBusinessRelationCode(supplier.getErpIDQAD())
+                        .tcCurrencyCode(supplier.getCurrency())
+                        .tcCreditorTypeCode("NC")
+                        .tcNormalPaymentConditionType("NORMAL")
+                        .tcPurchaseGLProfileCode("P_Compras")
+                        .tcBusinessRelationName1(supplier.getBusinessRelationName1())
+                        .tcPurchaseTypeCode("OTRO")
+                        .lastModifiedDate("2026-4-13")
+                        .lastModifiedTime("46783")
+                        .lastModifiedUser("mfg")
+                        .qADT01("NULL")
+                        .qADD01("0")
+                        .tc_Rowid("0x0000000000064615")
+                        .build();
 
-                                .outputFileName(
-                                        "creditor_" + supplier.getErpIDQAD() + "_" + erpId + ".xml"
-                                )
-
-                                .tcCompanyCode(erpId)
-                                .lastModifiedDate("2026-4-13")
-                                .lastModifiedTime("46783")
-                                .lastModifiedUser("mfg")
-
-                                .creditorCode(supplier.getErpIDQAD())
-                                .tcCurrencyCode(supplier.getCurrency())
-                                .tcNormalPaymentConditionCode(paymentTerm)
-
-                                .tcInvControlGLProfileCode(invProfile)
-                                .tcCnControlGLProfileCode(cnProfile)
-                                .tcPrepayControlGLProfileCode(prepayProfile)
-                                .tcDivisionProfileCode(divisionProfile)
-
-                                .build();
+                CreditorXmlContext creditorCtx = CreditorXmlContext.builder()
+                        .outputFileName("creditor_" + supplier.getCreditorCode() + "_" + erpId + ".xml")
+                        .contextInfo(contextInfo)
+                        .creditor(creditor)
+                        .build();
 
                 xmlGenerationHelper.generateIfFileNotExists(
                         supplier,

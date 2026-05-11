@@ -60,7 +60,7 @@ public class XmlGenerationHelper {
     }
 
     /**
-     * ✅ Idempotente por existencia de archivo:
+     *  Idempotente por existencia de archivo:
      * - Si el archivo ya existe, NO se vuelve a generar.
      * - Si no existe, se genera y se marca GENERATED.
      */
@@ -83,6 +83,8 @@ public class XmlGenerationHelper {
                     supplier.getBusinessUnitCode(),
                     supplier.getErpIDQAD()
                 );
+                supplier.setXmlStatus(XmlStatus.GENERATED_PREV);
+                repository.save(supplier);
                 return;
             }
 

@@ -1,8 +1,8 @@
 graphite:
-  # Esta es la que te pedía el error anterior
+  # url graphite
   api-base-url: https://poc.projectgraphite.com/api/public/api/v1
   
-  # Tus datos de autenticación
+  #  datos de autenticación
   auth-url: https://poc.projectgraphite.com/api/oauth/token
   client-id: MX5402.1d2b900374b1
   client-secret: 3d1dbcfce1dee4fc1a846a7eb953d7fb
@@ -24,14 +24,14 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://10.10.31.232:3306/pagos_db?allowPublicKeyRetrieval=true&useSSL=false
+    url: jdbc:mysql://10.10.31.200:3306/pagos_db?allowPublicKeyRetrieval=true&useSSL=false
     username: ${DB_USER:user}
     password: ${DB_PASSWORD:user123}
     driver-class-name: com.mysql.cj.jdbc.Driver
   
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: true
     properties:
       hibernate:

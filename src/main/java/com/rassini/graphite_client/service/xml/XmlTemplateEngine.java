@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
+import com.rassini.graphite_client.service.xml.context.*;
+
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
@@ -12,6 +14,8 @@ import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
 
 import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -22,130 +26,128 @@ public class XmlTemplateEngine {
 
     private final XPath xpath = XPathFactory.newInstance().newXPath();
 
-    public void generateBusinessRelationXml(String templatePath, String outputDir, XmlContext ctx) {
+    // ======================================================
+    // BUSREL
+    // ======================================================
+    public void generateBusinessRelationXml(
+            String templatePath,
+            String outputDir,
+            XmlContext ctx
+    ) {
 
         log.info(
-                "[XML-ENGINE] Entrando engine | template={} | dir={} | file={}",
+                "[XML-ENGINE] BUSREL | template={} | dir={} | file={}",
                 templatePath,
                 outputDir,
                 ctx.getOutputFileName()
         );
 
-        try {
-            InputStream is = getClass().getClassLoader().getResourceAsStream(templatePath);
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(templatePath)) {
             if (is == null) {
                 throw new IllegalStateException("Template no encontrado: " + templatePath);
             }
 
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            Document doc = dbf.newDocumentBuilder().parse(is);
+            Document doc = newDocument(is);
 
-            // --- ContextInfo
-            set(doc, "/BBusinessRelation/tContextInfo/tcCompanyCode", ctx.getTcCompanyCode());
-            set(doc, "/BBusinessRelation/tContextInfo/tcActivityCode", "Create");
+            // 1) ContextInfo
+            applySection(doc, "/BBusinessRelation/tContextInfo", ctx.getContextInfo());
 
-            // --- BusinessRelation
-            set(doc, "/BBusinessRelation/tBusinessRelation/BusinessRelationCode", ctx.getBusinessRelationCode());
-            set(doc, "/BBusinessRelation/tBusinessRelation/BusinessRelationName1", ctx.getEntityName20());
-            set(doc, "/BBusinessRelation/tBusinessRelation/BusinessRelationName2", ctx.getEntityName20());
-            set(doc, "/BBusinessRelation/tBusinessRelation/BusinessRelationName3", ctx.getEntityName20());
-            set(doc, "/BBusinessRelation/tBusinessRelation/BusinessRelationSearchName", ctx.getEntityName20());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tcCorporateGroupCode", ctx.getTcCorporateGroupCode());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tcLngCode", "ls");
+            // 2) BusinessRelation
+            applySection(doc, "/BBusinessRelation/tBusinessRelation", ctx.getBusinessRelation());
 
-            // --- Auditoría
-            set(doc, "/BBusinessRelation/tBusinessRelation/LastModifiedDate", ctx.getLastModifiedDate());
-            set(doc, "/BBusinessRelation/tBusinessRelation/LastModifiedTime", ctx.getLastModifiedTime());
-            set(doc, "/BBusinessRelation/tBusinessRelation/LastModifiedUser", ctx.getLastModifiedUser());
+            // 3) Address
+            applySection(doc, "/BBusinessRelation/tBusinessRelation/tAddress", ctx.getAddress());
 
-            // --- Address
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressStreet1", ctx.getAddressStreet1());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressStreet2", ctx.getAddressStreet2());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressStreet3", ctx.getAddressStreet3());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressZip", ctx.getAddressZip());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressCity", ctx.getAddressCity());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressName", ctx.getAddressName());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressSearchName", ctx.getAddressSearchName());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressEMail", ctx.getAddressEmail());
-
-            // --- Tax
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/TxzTaxZone", ctx.getTxzTaxZone());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/TxclTaxCls", ctx.getTxclTaxCls());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressTaxIDFederal", ctx.getRfc());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/AddressTaxIDState", ctx.getRfcState());
-
-            // --- Country/State
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/tcStateCode", ctx.getTcStateCode());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/tcCountryCode", ctx.getTcCountryCode());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/tcStateDescription", ctx.getTcStateDescription());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/tcCountryDescription", ctx.getTcCountryDescription());
-
-            // --- Contact
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/tContact/ContactName", ctx.getContactName());
-            set(doc, "/BBusinessRelation/tBusinessRelation/tAddress/tContact/ContactEmail", ctx.getContactEmail());
+            // 4) Contact
+            applySection(doc, "/BBusinessRelation/tBusinessRelation/tAddress/tContact", ctx.getContact());
 
             write(doc, outputDir, ctx.getOutputFileName());
 
         } catch (Exception e) {
-            log.error("[XML] Error generando BUSREL XML desde templatePath={} outputDir={}", templatePath, outputDir, e);
+            log.error("[XML] Error generando BUSREL XML", e);
             throw new IllegalStateException("Error generando BUSREL XML", e);
         }
     }
 
-    /**
-     * ✅ NUEVO: Generar CREDITOR XML
-     */
-    public void generateCreditorXml(String templatePath, String outputDir, CreditorXmlContext ctx) {
+    // ======================================================
+    // CREDITOR
+    // ======================================================
+    public void generateCreditorXml(
+            String templatePath,
+            String outputDir,
+            CreditorXmlContext ctx
+    ) {
 
         log.info(
-                "[XML-ENGINE] Entrando engine | template={} | dir={} | file={}",
+                "[XML-ENGINE] CREDITOR | template={} | dir={} | file={}",
                 templatePath,
                 outputDir,
                 ctx.getOutputFileName()
         );
 
-        try {
-            InputStream is = getClass().getClassLoader().getResourceAsStream(templatePath);
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(templatePath)) {
             if (is == null) {
                 throw new IllegalStateException("Template no encontrado: " + templatePath);
             }
 
-            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-            dbf.setNamespaceAware(true);
-            Document doc = dbf.newDocumentBuilder().parse(is);
+            Document doc = newDocument(is);
 
-            // --- ContextInfo
-            set(doc, "/BCreditor/tContextInfo/tcCompanyCode", ctx.getTcCompanyCode());
-            set(doc, "/BCreditor/tContextInfo/tcActivityCode", "Create");
+            // 1) ContextInfo (segmentado)
+            applySection(doc, "/BCreditor/tContextInfo", ctx.getContextInfo());
 
-            // --- Creditor core
-            set(doc, "/BCreditor/tCreditor/CreditorCode", ctx.getCreditorCode());
-            set(doc, "/BCreditor/tCreditor/tcCurrencyCode", ctx.getTcCurrencyCode());
-            set(doc, "/BCreditor/tCreditor/tcNormalPaymentConditionCode", ctx.getTcNormalPaymentConditionCode());
-
-            // --- GL Profiles
-            set(doc, "/BCreditor/tCreditor/tcInvControlGLProfileCode", ctx.getTcInvControlGLProfileCode());
-            set(doc, "/BCreditor/tCreditor/tcCnControlGLProfileCode", ctx.getTcCnControlGLProfileCode());
-            set(doc, "/BCreditor/tCreditor/tcPrepayControlGLProfileCode", ctx.getTcPrepayControlGLProfileCode());
-            set(doc, "/BCreditor/tCreditor/tcDivisionProfileCode", ctx.getTcDivisionProfileCode());
-
-            // --- Auditoría (en CREDITOR va dentro de tCreditor en tus XML reales)
-            set(doc, "/BCreditor/tCreditor/LastModifiedDate", ctx.getLastModifiedDate());
-            set(doc, "/BCreditor/tCreditor/LastModifiedTime", ctx.getLastModifiedTime());
-            set(doc, "/BCreditor/tCreditor/LastModifiedUser", ctx.getLastModifiedUser());
+            // 2) Creditor (✅ AQUÍ está la corrección)
+            // Los campos fijos viven en ctx.getCreditor() (CreditorNodoXML)
+            applySection(doc, "/BCreditor/tCreditor", ctx.getCreditor());
 
             write(doc, outputDir, ctx.getOutputFileName());
 
         } catch (Exception e) {
-            log.error("[XML] Error generando CREDITOR XML desde templatePath={} outputDir={}", templatePath, outputDir, e);
+            log.error("[XML] Error generando CREDITOR XML", e);
             throw new IllegalStateException("Error generando CREDITOR XML", e);
         }
     }
 
     // ======================================================
-    // Helpers
+    // Aplicación genérica de secciones (seteando TODO field)
     // ======================================================
+    private void applySection(
+            Document doc,
+            String baseXPath,
+            Object sectionObj
+    ) throws Exception {
+
+        if (sectionObj == null) {
+            return;
+        }
+
+        for (Field f : sectionObj.getClass().getDeclaredFields()) {
+
+            if (f.isSynthetic() || Modifier.isStatic(f.getModifiers())) {
+                continue;
+            }
+
+            // Evita intentar pintar nombres internos de contexto
+            if ("outputFileName".equals(f.getName())) {
+                continue;
+            }
+
+            f.setAccessible(true);
+            Object raw = f.get(sectionObj);
+            String value = raw == null ? "" : String.valueOf(raw);
+
+            String tag = toXmlTag(f.getName());
+            set(doc, baseXPath + "/" + tag, value);
+        }
+    }
+
+    // ======================================================
+    // XML helpers
+    // ======================================================
+    private Document newDocument(InputStream is) throws Exception {
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        dbf.setNamespaceAware(true);
+        return dbf.newDocumentBuilder().parse(is);
+    }
 
     private void write(Document doc, String outputDir, String fileName) throws Exception {
         Path dir = Paths.get(outputDir);
@@ -158,8 +160,6 @@ public class XmlTemplateEngine {
         transformer.transform(new DOMSource(doc), new StreamResult(out.toFile()));
 
         log.info("[XML] Generado: {}", out.toAbsolutePath());
-        log.info("[XML] File exists = {}", Files.exists(out));
-        log.info("[XML] File size = {}", Files.exists(out) ? Files.size(out) : -1);
     }
 
     private void set(Document doc, String simplePath, String value) throws XPathExpressionException {
@@ -177,5 +177,63 @@ public class XmlTemplateEngine {
             sb.append("/*[local-name()='").append(p).append("']");
         }
         return sb.toString();
+    }
+
+    // ======================================================
+    // Field → Tag (corregido)
+    // ======================================================
+    private String toXmlTag(String fieldName) {
+
+        if (fieldName.contains("_")) {
+            return fieldName; // tc_Rowid, tc_ParentRowid, etc.
+        }
+
+        if (fieldName.startsWith("businessRelation")) {
+            return "BusinessRelation" + fieldName.substring("businessRelation".length());
+        }
+
+        if (fieldName.startsWith("address")) {
+            return "Address" + fieldName.substring("address".length());
+        }
+
+        if (fieldName.startsWith("contact")) {
+            return "Contact" + fieldName.substring("contact".length());
+        }
+
+        if (fieldName.startsWith("creditor")) {
+            return "Creditor" + fieldName.substring("creditor".length());
+        }
+
+        if (fieldName.startsWith("lastModified")) {
+            return "LastModified" + fieldName.substring("lastModified".length());
+        }
+
+        // ✅ tc/ti/tt/tl se mantienen tal cual (minúscula)
+        if (fieldName.startsWith("tc")
+                || fieldName.startsWith("ti")
+                || fieldName.startsWith("tt")
+                || fieldName.startsWith("tl")) {
+            return fieldName;
+        }
+
+        // ✅ tx* en template va con "T" mayúscula: TxzTaxZone, TxclTaxCls, TxuTaxUsage
+        if (fieldName.startsWith("tx")) {
+            return "T" + fieldName.substring(1);
+        }
+
+        if (fieldName.startsWith("custom")) {
+            return "Custom" + capitalize(fieldName.substring("custom".length()));
+        }
+
+        if (fieldName.startsWith("qAD") || fieldName.startsWith("qad")) {
+            return fieldName.toUpperCase();
+        }
+
+        return capitalize(fieldName);
+    }
+
+    private String capitalize(String s) {
+        if (s == null || s.isBlank()) return s;
+        return Character.toUpperCase(s.charAt(0)) + s.substring(1);
     }
 }

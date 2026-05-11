@@ -1,6 +1,5 @@
 package com.rassini.graphite_client.service.mapper;
 
-
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.xml.CatalogService;
@@ -52,10 +51,7 @@ public class SupplierRowMapper {
         row.setContactEmail(dto.getSupplierContactEmail());
 
         // -------------------------------
-        // Contact Name (LÓGICA CORRECTA)
-        // 1) Loc_Sales_Contact_Alternate_Contact_Calc[0].name
-        // 2) Payment_Contact_Name
-        // 3) prefix del Payment_Contact_Email
+        // Contact Name (lógica existente)
         // -------------------------------
         String contactName = null;
 
@@ -115,96 +111,123 @@ public class SupplierRowMapper {
                             erp.getRassiniErpEntityId()
                     )
             );
+
+            // ✅ NUEVO: state_description (locality)
+            if (comp != null) {
+                row.setStateDescription(comp.getLocality());
+            } else {
+                row.setStateDescription(null);
+            }
         }
+
+        // -------------------------------
+        // ERP-level fields (NUEVOS)
+        // -------------------------------
+
+        // ✅ purchase_type_code
+        row.setPurchaseTypeCode(
+                erp.getRassiniErpPaymentType()
+        );
+
+        // ✅ supplier_type_code
+        row.setSupplierType(
+                erp.getRassiniErpSupplierType()
+        );
 
         // -------------------------------
         // Banco
         // -------------------------------
         if (erp.getErpBankList() != null && !erp.getErpBankList().isEmpty()) {
 
-                GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
+            GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
 
-                String currency =
-                        (bank.getBankCurrencyList() != null && !bank.getBankCurrencyList().isEmpty())
-                                ? bank.getBankCurrencyList().get(0)
-                                : null;
+            // Currency del proveedor (existente)
+            String currency =
+                    (bank.getBankCurrencyList() != null && !bank.getBankCurrencyList().isEmpty())
+                            ? bank.getBankCurrencyList().get(0)
+                            : null;
 
-                row.setCurrency(
-                        catalogService.mapCurrency(
-                                currency,
-                                erp.getRassiniErpEntityId()
-                        )
+            row.setCurrency(
+                    catalogService.mapCurrency(
+                            currency,
+                            erp.getRassiniErpEntityId()
+                    )
+            );
+
+            row.setBeneficiaryName(bank.getBankAccountHolderName());
+            row.setAccountNumber(bank.getBankAccountNumber());
+            row.setBankCountry(bank.getBankCountry());
+
+            // ✅ NUEVO: bank_currency (raw de la cuenta)
+            row.setBankCurrency(
+                    bank.getBankAccountCurrency()
+            );
+
+            // --------------------------------------------------
+            // BeneficiaryBankName (existente)
+            // --------------------------------------------------
+            String beneficiaryBankName = null;
+
+            if (bank.getBankNumber() != null
+                    && bank.getBankNumber().getBankName() != null
+                    && !bank.getBankNumber().getBankName().isBlank()) {
+
+                beneficiaryBankName = bank.getBankNumber().getBankName();
+            }
+
+            if ((beneficiaryBankName == null || beneficiaryBankName.isBlank())
+                    && erp.getBankWireAbaRouting() != null) {
+
+                beneficiaryBankName =
+                        erp.getBankWireAbaRouting().getBankName();
+            }
+
+            row.setBeneficiaryBankName(beneficiaryBankName);
+
+            // RoutingCodeBIC
+            if (bank.getBankSwift() != null) {
+                row.setRoutingCodeBIC(bank.getBankSwift().getRouting());
+            } else {
+                row.setRoutingCodeBIC(null);
+            }
+
+            // RoutingCodeABA
+            if (erp.getBankWireAbaRouting() != null) {
+                row.setRoutingCodeABA(
+                        erp.getBankWireAbaRouting().getRouting()
+                );
+            } else {
+                row.setRoutingCodeABA(null);
+            }
+
+            // --------------------------------------------------
+            // Intermediary
+            // --------------------------------------------------
+
+            // Account (no info por ahora)
+            row.setIntermediaryAccount(null);
+
+            // ABA (no info por ahora)
+            row.setIntermediaryRoutingCodeABA(null);
+
+            // BIC
+            if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
+                row.setIntermediaryRoutingCodeBIC(
+                        bank.getBankAccountCurrencyCorrespondentBank().getSwift()
                 );
 
-                row.setBeneficiaryName(bank.getBankAccountHolderName());
-
-                // AccountNumber (directo)
-                row.setAccountNumber(bank.getBankAccountNumber());
-
-                // --------------------------------------------------
-                // BeneficiaryBankName
-                // 1) ERP_Bank_List[0].Bank_Number.bank_name
-                // 2) Bank_Wire_ABA_Routing.bank_name
-                // --------------------------------------------------
-                String beneficiaryBankName = null;
-
-                if (bank.getBankNumber() != null
-                        && bank.getBankNumber().getBankName() != null
-                        && !bank.getBankNumber().getBankName().isBlank()) {
-
-                        beneficiaryBankName = bank.getBankNumber().getBankName();
-                }
-
-                if ((beneficiaryBankName == null || beneficiaryBankName.isBlank())
-                        && erp.getBankWireAbaRouting() != null) {
-
-                        beneficiaryBankName =
-                                erp.getBankWireAbaRouting().getBankName();
-                }
-
-                row.setBeneficiaryBankName(beneficiaryBankName);
-
-                row.setBankCountry(bank.getBankCountry());
-
-                // RoutingCodeBIC
-                if (bank.getBankSwift() != null) {
-                        row.setRoutingCodeBIC(bank.getBankSwift().getRouting());
-                } else {
-                        row.setRoutingCodeBIC(null);
-                }
-
-                // RoutingCodeABA (Bank_Wire_ABA_Routing.routing)
-                if (erp.getBankWireAbaRouting() != null) {
-                        row.setRoutingCodeABA(
-                                erp.getBankWireAbaRouting().getRouting()
-                        );
-                } else {
-                        row.setRoutingCodeABA(null);
-                }
-
-                // --------------------------------------------------
-                // Intermediary (SEGÚN REGLAS)
-                // --------------------------------------------------
-
-                // IntermediaryAccount
-                row.setIntermediaryAccount(null);
-
-                // IntermediaryRoutingCodeABA
-                row.setIntermediaryRoutingCodeABA(null);
-
-                // IntermediaryRoutingCodeBIC
-                if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
-                        row.setIntermediaryRoutingCodeBIC(
-                                bank.getBankAccountCurrencyCorrespondentBank().getRouting()
-                        );
-                } else {
-                        row.setIntermediaryRoutingCodeBIC(null);
-                }
-
-                // IntermediaryAccountCountry
-                row.setIntermediaryAccountCountry(
-                        bank.getBankAccountCurrencyCorrespondentBankCountry()
+                //s NUEVO:
+                row.setIntermediaryBankName(
+                        bank.getBankAccountCurrencyCorrespondentBank().getBankName()
                 );
+            } else {
+                row.setIntermediaryRoutingCodeBIC(null);
+                row.setIntermediaryBankName(null);
+            }
+
+            row.setIntermediaryAccountCountry(
+                    bank.getBankAccountCurrencyCorrespondentBankCountry()
+            );
         }
     }
 
@@ -225,8 +248,4 @@ public class SupplierRowMapper {
         if (value == null) return null;
         return value.length() <= length ? value : value.substring(0, length);
     }
-
-    
-   
-
 }

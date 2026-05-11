@@ -22,45 +22,37 @@ public class SuppliersRowEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // -----------------------------
-    // Identidad
-    // -----------------------------
-    @Column(name = "creditor_code")
-    private String creditorCode;
-
     @Column(name = "erp_id_qad")
     private String erpIDQAD;
 
-    @Column(name = "cpty_account_code")
-    private String cptyAccountCode;
+    @Column(name = "business_unit_code", nullable = false)
+    private String businessUnitCode;
 
-    @Column(name = "business_relation_name_1")
+    @Column(name = "supplier_code")
+    private String creditorCode;
+
+    @Column(name = "supplier_name")
     private String businessRelationName1;
 
-    @Column(name = "business_relation_search_name")
+    @Column(name = "supplier_search_name")
     private String businessRelationSearchName;
 
-    @Column(name = "creditor_tax_id_federal")
+    @Column(name = "rfc")
     private String creditorTaxIDFederal;
 
-    // -----------------------------
-    // Dirección
-    // -----------------------------
-    @Column(name = "address_street_1")
+    @Column(name = "street_name")
     private String addressStreet1;
 
-    
-    @Column(name = "address_street_2")
+    @Column(name = "street_name2")
     private String addressStreet2;
 
-    @Column(name = "address_street_3")
+    @Column(name = "street_name3")
     private String addressStreet3;
-
 
     @Column(name = "street_number")
     private String streetNumber;
 
-    @Column(name = "address_zip")
+    @Column(name = "zip_code")
     private String addressZip;
 
     @Column(name = "city_code")
@@ -69,60 +61,68 @@ public class SuppliersRowEntity {
     @Column(name = "state_code")
     private String stateCode;
 
+    @Column(name = "state_description")
+    private String stateDescription;
+
     @Column(name = "country_code")
     private String countryCode;
 
-    // -----------------------------
-    // Contacto
-    // -----------------------------
+    @Column(name = "contact_name")
+    private String contactName;
+
     @Column(name = "contact_email")
     private String contactEmail;
 
-    // -----------------------------
-    // Banco
-    // -----------------------------
-    @Column(name = "currency")
+    @Column(name = "supplier_code_dis_integrity")
+    private String cptyAccountCode;
+
+    @Column(name = "supplier_currency")
     private String currency;
 
-    @Column(name = "beneficiary_name")
+    @Column(name = "purchase_type_code")
+    private String purchaseTypeCode;
+
+    @Column(name = "supplier_type_code")
+    private String supplierType;
+
+    @Column(name = "beneficiary_bank_name")
+    private String beneficiaryBankName;
+
+    @Column(name = "beneficiary_account_name")
     private String beneficiaryName;
 
     @Column(name = "account_number")
     private String accountNumber;
 
-    @Column(name = "beneficiary_bank_name")
-    private String beneficiaryBankName;
+     @Column(name = "bank_currency")
+    private String bankCurrency;
 
     @Column(name = "bank_country")
     private String bankCountry;
 
-    @Column(name = "routing_code_aba")
+     @Column(name = "routing_code_aba")
     private String routingCodeABA;
 
-    @Column(name = "routing_code_bic")
+    @Column(name = "routing_code_swift")
     private String routingCodeBIC;
 
+    @Column(name = "intermediary_bank_name")
+    private String intermediaryBankName;
+    
     @Column(name = "intermediary_account")
     private String intermediaryAccount;
-
-    @Column(name = "intermediary_routing_code_aba")
-    private String intermediaryRoutingCodeABA;
-
-    @Column(name = "intermediary_routing_code_bic")
-    private String intermediaryRoutingCodeBIC;
 
     @Column(name = "intermediary_account_country")
     private String intermediaryAccountCountry;
 
-    // -----------------------------
-    // Planta
-    // -----------------------------
-    @Column(name = "business_unit_code", nullable = false)
-    private String businessUnitCode;
+    @Column(name = "intermediary_routing_code_aba")
+    private String intermediaryRoutingCodeABA;
 
-    
-    @Column(name = "contact_name")
-    private String contactName;
+    @Column(name = "intermediary_routing_code_swift")
+    private String intermediaryRoutingCodeBIC;
+
+    @Column(name = "status_integrity")
+    private String statusIntegrity;    
 
     @Enumerated(EnumType.STRING)
     @Column(name = "xml_status", nullable = false)

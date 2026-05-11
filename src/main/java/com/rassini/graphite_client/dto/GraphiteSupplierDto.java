@@ -96,6 +96,20 @@ public class GraphiteSupplierDto {
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class CorrespondentBank {
+
+        @JsonProperty("bank_name")
+        private String bankName;
+
+        @JsonProperty("swift")
+        private String swift;
+
+        @JsonProperty("country")
+        private String country;
+    }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Components {
 
         @JsonProperty("premise")
@@ -140,6 +154,9 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Wire_ABA_Routing")
         private BankWireAbaRouting bankWireAbaRouting;
 
+        @JsonProperty("RASSINI_ERP_Supplier_Type")
+        private String rassiniErpSupplierType;
+
     
 
     }
@@ -167,6 +184,11 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("Bank_Name")
         private String bankName;
+
+        
+        @JsonProperty("Bank_Account_Currency")
+        private String bankAccountCurrency;
+
 
         // Objeto: Bank_Number { bank_name, swift, routing, ... }
         @JsonProperty("Bank_Number")
@@ -235,5 +257,6 @@ public class GraphiteSupplierDto {
     
     @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
     List<SalesContactCalc> locSalesContactAlternateContactCalc;
+
 
 }

@@ -37,7 +37,17 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                     .findByCreditorCodeAndBusinessUnitCode(creditor, bu)
                     .orElseGet(SuppliersRowEntity::new);
 
+            
+            if (row.getId() == null) {
+                row.setStatusIntegrity("A"); // Alta
+            } else {
+                row.setStatusIntegrity("M"); // Modificación
+            }
+
+
             //  llenar el MISMO objeto (no crear otro)
+
+            row.getStatusIntegrity();
             SupplierRowMapper.fill(row, dto, hq, erp, catalogService);
 
             
