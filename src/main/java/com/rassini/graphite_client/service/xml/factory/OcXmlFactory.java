@@ -233,6 +233,7 @@ public class OcXmlFactory {
                 .creditorIsTaxConfirmed("false")
                 .creditorIsWHT("false")
                 .creditorIsBearBankCharge("false")
+                .tlBusinessRelationIsInterco("false")
                 .txzTaxZone(tax.txzTaxZone())
                 .txclTaxCls(tax.txclTaxCls())
 

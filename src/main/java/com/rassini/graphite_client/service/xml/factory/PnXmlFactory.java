@@ -237,7 +237,7 @@ public class PnXmlFactory {
 
                 .tcReasonCode("INV TO APPROVE")
                 .tlBusinessRelationIsInterco("false")
-                .tcBusinessRelationCode(supplier.getErpIDQAD())
+                .tcBusinessRelationCode("PR"+supplier.getErpIDQAD())
                 .tcBusinessRelationName1(supplier.getBusinessRelationName1())
                 .tcCurrencyCode(currency)
 

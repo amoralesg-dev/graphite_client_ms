@@ -66,6 +66,11 @@ public class XmlOcServiceImpl implements XmlOcService {
                 erp.getRassiniErpTaxClass(),
                 erp.getRassiniErpTaxZone()
                 );
+                log.debug(
+                "[TERMS-DEBUG] erpId={} ErpPaymentTerms='{}'",
+                erpId,
+                erp.getRassiniErpPaymentTerms()
+                );
                 // =====================================================
                 // BUSREL
                 // =====================================================
