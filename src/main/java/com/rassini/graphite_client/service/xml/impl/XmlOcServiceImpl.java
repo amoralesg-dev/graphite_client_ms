@@ -60,7 +60,12 @@ public class XmlOcServiceImpl implements XmlOcService {
                                                 + " / " + erpId
                                 )
                         );
-
+                log.debug(
+                "[TAX-DEBUG] erpId={} taxClass='{}' taxZone={}",
+                erpId,
+                erp.getRassiniErpTaxClass(),
+                erp.getRassiniErpTaxZone()
+                );
                 // =====================================================
                 // BUSREL
                 // =====================================================

@@ -41,7 +41,7 @@ public class OcXmlFactory {
     }
 
     // =====================================================
-    // ✅ CREDITOR CONTEXT (RESTAURADO)
+    //  CREDITOR CONTEXT
     // =====================================================
 
     public CreditorXmlContext buildCreditorContext(
@@ -192,7 +192,7 @@ public class OcXmlFactory {
     }
 
     // =====================================================
-    // ✅ CREDITOR (GLs RESTAURADOS)
+    //(GLs)
     // =====================================================
 
     private CreditorNodoXML buildCreditor(
@@ -229,8 +229,15 @@ public class OcXmlFactory {
                 .creditorTaxIDFederal(supplier.getCreditorTaxIDFederal())
                 .creditorTaxIDState(supplier.getCreditorTaxIDFederal())
                 .creditorTaxDeclaration(XMLConstants.CERO)
+                .creditorIsTaxReport("false")
+                .creditorIsTaxConfirmed("false")
+                .creditorIsWHT("false")
+                .creditorIsBearBankCharge("false")
+                .txzTaxZone(tax.txzTaxZone())
+                .txclTaxCls(tax.txclTaxCls())
 
-                // ✅ GLs
+
+                //  GLs
                 .tcInvControlGLProfileCode(gl.invControl())
                 .tcCnControlGLProfileCode(gl.cnControl())
                 .tcPrepayControlGLProfileCode(gl.prepayControl())
