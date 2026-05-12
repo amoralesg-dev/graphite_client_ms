@@ -6,6 +6,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
 import com.rassini.graphite_client.service.xml.context.*;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.*;
@@ -111,35 +112,83 @@ public class XmlTemplateEngine {
     // Aplicación genérica de secciones (seteando TODO field)
     // ======================================================
     private void applySection(
-            Document doc,
-            String baseXPath,
-            Object sectionObj
-    ) throws Exception {
+        Document doc,
+        String baseXPath,
+        Object sectionObj
+) throws Exception {
 
-        if (sectionObj == null) {
-            return;
-        }
-
-        for (Field f : sectionObj.getClass().getDeclaredFields()) {
-
-            if (f.isSynthetic() || Modifier.isStatic(f.getModifiers())) {
-                continue;
-            }
-
-            // Evita intentar pintar nombres internos de contexto
-            if ("outputFileName".equals(f.getName())) {
-                continue;
-            }
-
-            f.setAccessible(true);
-            Object raw = f.get(sectionObj);
-            String value = raw == null ? "" : String.valueOf(raw);
-
-            String tag = toXmlTag(f.getName());
-            set(doc, baseXPath + "/" + tag, value);
-        }
+    // ===============================
+    // 1) Si no hay objeto, no hay nada que aplicar
+    // ===============================
+    if (sectionObj == null) {
+        return;
     }
 
+    // ===============================
+    // 2) Recorremos SOLO los fields declarados del objeto
+    //    (ContextInfoXml, BusinessRelationXml, AddressXml, ContactXml, etc.)
+    // ===============================
+    for (Field f : sectionObj.getClass().getDeclaredFields()) {
+
+        // ===============================
+        // 3) Ignorar campos técnicos de Java
+        // ===============================
+        if (f.isSynthetic() || Modifier.isStatic(f.getModifiers())) {
+            continue;
+        }
+
+        // ===============================
+        // 4) Evitar campos internos que NO son XML
+        // ===============================
+        if ("outputFileName".equals(f.getName())) {
+            continue;
+        }
+
+        // ===============================
+        // 5) Acceso al valor del field
+        // ===============================
+        f.setAccessible(true);
+        Object raw = f.get(sectionObj);
+
+        // ===============================
+        // 6) NORMALIZACIÓN DE VALOR
+        //
+        // Reglas:
+        // - null          → NO se pinta
+        // - ""            → NO se pinta
+        // - "NULL"        → NO se pinta (para xsi:nil del template)
+        //
+        // Esto evita:
+        // - sobrescribir nodos del template
+        // - "ensuciar" nodos Custom*
+        // ===============================
+        if (raw == null) {
+            continue;
+        }
+
+        String value = String.valueOf(raw);
+        if (value.isBlank() || XMLConstants.NULL.equalsIgnoreCase(value)) {
+            continue;
+        }
+
+        // ===============================
+        // 7) Field Java → Tag XML
+        // ===============================
+        String tag = toXmlTag(f.getName());
+
+        // ===============================
+        // 8) SETEO SEGURO:
+        //    - Busca el nodo EXISTENTE en el template
+        //    - SI EXISTE → setTextContent
+        //    - SI NO EXISTE → NO hace nada
+        //
+        // 🔒 Esto garantiza que:
+        //    - el orden del template NO cambia
+        //    - no se crean nodos nuevos
+        // ===============================
+        setIfExists(doc, baseXPath + "/" + tag, value);
+    }
+}
     // ======================================================
     // XML helpers
     // ======================================================
@@ -156,7 +205,7 @@ public class XmlTemplateEngine {
         Path out = dir.resolve(fileName);
 
         Transformer transformer = TransformerFactory.newInstance().newTransformer();
-        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.INDENT, "no");
         transformer.transform(new DOMSource(doc), new StreamResult(out.toFile()));
 
         log.info("[XML] Generado: {}", out.toAbsolutePath());
@@ -235,5 +284,22 @@ public class XmlTemplateEngine {
     private String capitalize(String s) {
         if (s == null || s.isBlank()) return s;
         return Character.toUpperCase(s.charAt(0)) + s.substring(1);
+    }
+
+    private void setIfExists(
+        Document doc,
+        String simplePath,
+        String value
+    ) throws XPathExpressionException {
+
+        Node node = (Node) xpath.evaluate(
+                toLocalNameXPath(simplePath),
+                doc,
+                XPathConstants.NODE
+        );
+
+        if (node != null) {
+            node.setTextContent(value);
+        }
     }
 }

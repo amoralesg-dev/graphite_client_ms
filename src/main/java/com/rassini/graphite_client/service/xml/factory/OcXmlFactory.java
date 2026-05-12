@@ -7,15 +7,8 @@ import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.context.*;
 import com.rassini.graphite_client.service.xml.impl.util.CesarQadRules;
 import com.rassini.graphite_client.service.xml.impl.util.CesarQadRules.Domain;
-import com.rassini.graphite_client.service.xml.impl.util.DateUtil;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
-/**
- * Factory OC (0111 / 0301)
- * ✅ Un build por nodo
- * ✅ Sin otros factories
- * ✅ Toda la lógica encapsulada aquí
- */
 public class OcXmlFactory {
 
     private final CatalogService catalogService;
@@ -25,7 +18,7 @@ public class OcXmlFactory {
     }
 
     // =====================================================
-    // ============ PUBLIC CONTEXT BUILDERS =================
+    // BUSREL CONTEXT
     // =====================================================
 
     public XmlContext buildBusrelContext(
@@ -47,13 +40,16 @@ public class OcXmlFactory {
                 .build();
     }
 
+    // =====================================================
+    // ✅ CREDITOR CONTEXT (RESTAURADO)
+    // =====================================================
+
     public CreditorXmlContext buildCreditorContext(
             SuppliersRowEntity supplier,
             String erpId,
             String taxClassFromErp,
             List<String> taxZoneFromErp
     ) {
-
         TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
@@ -64,18 +60,22 @@ public class OcXmlFactory {
     }
 
     // =====================================================
-    // ============ CONTEXT INFO ============================
+    // CONTEXT INFO
     // =====================================================
 
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
+                .tcAction("")
                 .tiPriority(XMLConstants.CERO)
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
+                .tcComment("")
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
+                .tcComponentVersion("")
                 .tcActivityCode("Create")
                 .tlPartialUpdate("false")
+                .tcPartialUpdateExceptionList("")
                 .build();
     }
 
@@ -92,7 +92,7 @@ public class OcXmlFactory {
     }
 
     // =====================================================
-    // ============ NODES ===================================
+    // BUSINESS RELATION
     // =====================================================
 
     private BusinessRelationXml buildBusinessRelation(
@@ -114,12 +114,17 @@ public class OcXmlFactory {
                 .businessRelationIsDomRestr("false")
                 .tcCorporateGroupCode(XMLConstants.PROVEEDOR)
                 .tcLngCode(XMLConstants.LANG_CODE)
-                .lastModifiedDate(DateUtil.todayYyyyMD())
-                .lastModifiedTime(DateUtil.nowHhMmSs())
+                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
+                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.PARENT_ROW_ID)
+                .tc_ParentRowid("")
                 .build();
     }
+
+    // =====================================================
+    // ADDRESS
+    // =====================================================
 
     private AddressXml buildAddress(
             SuppliersRowEntity supplier,
@@ -132,7 +137,7 @@ public class OcXmlFactory {
                 .addressStreet3(supplier.getAddressStreet3())
                 .addressZip(supplier.getAddressZip())
                 .addressCity(supplier.getCityCode())
-                .addressCityCode(supplier.getCityCode())
+                .addressCityCode("") // OC va vacío
                 .addressName(supplier.getAddressStreet1())
                 .addressSearchName(name20)
                 .addressTelephone("")
@@ -153,17 +158,21 @@ public class OcXmlFactory {
                 .tcCountryCode(supplier.getCountryCode())
                 .tcAddressTypeCode("HEADOFFICE")
                 .tcLngCode(XMLConstants.LANG_CODE)
-                .tcStateDescription("")
-                .tcCountryDescription(supplier.getCountryCode())
+                .tcStateDescription(supplier.getStateDescription())
+                .tcCountryDescription("MEXICO")
                 .tiCountryFormat(XMLConstants.CERO)
                 .tcLngDescription("latin spanish")
-                .lastModifiedDate(DateUtil.todayYyyyMD())
-                .lastModifiedTime(DateUtil.nowHhMmSs())
+                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
+                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.ROW_ID)
                 .tc_ParentRowid(XMLConstants.PARENT_ROW_ID)
                 .build();
     }
+
+    // =====================================================
+    // CONTACT
+    // =====================================================
 
     private ContactXml buildContact(SuppliersRowEntity supplier) {
         return ContactXml.builder()
@@ -174,19 +183,22 @@ public class OcXmlFactory {
                 .contactIsPrimary("true")
                 .contactIsSecondary("false")
                 .tcLngCode(XMLConstants.LANG_CODE)
-                .lastModifiedDate(DateUtil.todayYyyyMD())
-                .lastModifiedTime(DateUtil.nowHhMmSs())
+                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
+                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.CONTACT_ROW_ID)
                 .tc_ParentRowid(XMLConstants.ROW_ID)
                 .build();
     }
 
+    // =====================================================
+    // ✅ CREDITOR (GLs RESTAURADOS)
+    // =====================================================
+
     private CreditorNodoXML buildCreditor(
             SuppliersRowEntity supplier,
             TaxInfo tax
     ) {
-
         boolean isForeign =
                 supplier.getCountryCode() != null &&
                 !"MX".equalsIgnoreCase(supplier.getCountryCode());
@@ -205,92 +217,42 @@ public class OcXmlFactory {
                 CesarQadRules.resolvePaymentTerms(Domain.RFCORPO, null);
 
         return CreditorNodoXML.builder()
-
                 .creditorIsActive("false")
                 .creditorCode(supplier.getErpIDQAD())
-
                 .vatDeliveryType("PRODUCT")
                 .vatPercentageLevel("NONE")
-
                 .creditorIsSendRemittance("false")
                 .creditorIsIndividualPaymnt("false")
                 .creditorIsTaxable("false")
                 .creditorIsTaxInCity("false")
                 .creditorIsTaxIncluded("false")
-
                 .creditorTaxIDFederal(supplier.getCreditorTaxIDFederal())
                 .creditorTaxIDState(supplier.getCreditorTaxIDFederal())
                 .creditorTaxDeclaration(XMLConstants.CERO)
 
-                .creditorIsTaxReport("false")
-                .creditorIsTaxConfirmed("false")
-                .creditorIsWHT("false")
-                .creditorIsBearBankCharge("false")
-
-                .creditorBirthDate(XMLConstants.NULL)
-
-                .txzTaxZone(tax.txzTaxZone())
-                .txclTaxCls(tax.txclTaxCls())
-
-                .tcNormalPaymentConditionCode(paymentTerm)
-                .tcNormalPaymentConditionType("NORMAL")
-
+                // ✅ GLs
                 .tcInvControlGLProfileCode(gl.invControl())
                 .tcCnControlGLProfileCode(gl.cnControl())
                 .tcPrepayControlGLProfileCode(gl.prepayControl())
                 .tcDivisionProfileCode(gl.divProfile())
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
+                .tcNormalPaymentConditionCode(paymentTerm)
+                .tcNormalPaymentConditionType("NORMAL")
                 .tcReasonCode("INV TO APPROVE")
-                .tlBusinessRelationIsInterco("false")
                 .tcBusinessRelationCode(supplier.getErpIDQAD())
                 .tcBusinessRelationName1(supplier.getBusinessRelationName1())
                 .tcCurrencyCode(currency)
 
-                .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
-                .tcCreditorTypeCode(supplier.getSupplierType())
-
-                .customDate0(XMLConstants.NULL)
-                .customDate1(XMLConstants.NULL)
-                .customDate2(XMLConstants.NULL)
-                .customDate3(XMLConstants.NULL)
-                .customDate4(XMLConstants.NULL)
-                .customDate5(XMLConstants.NULL)
-                .customDate6(XMLConstants.NULL)
-                .customDate7(XMLConstants.NULL)
-                .customDate8(XMLConstants.NULL)
-                .customDate9(XMLConstants.NULL)
-
-                .customInteger0(XMLConstants.CERO)
-                .customInteger1(XMLConstants.CERO)
-                .customInteger2(XMLConstants.CERO)
-                .customInteger3(XMLConstants.CERO)
-                .customInteger4(XMLConstants.CERO)
-
-                .customDecimal0(XMLConstants.CERO)
-                .customDecimal1(XMLConstants.CERO)
-                .customDecimal2(XMLConstants.CERO)
-                .customDecimal3(XMLConstants.CERO)
-                .customDecimal4(XMLConstants.CERO)
-                .customDecimal5(XMLConstants.CERO)
-                .customDecimal6(XMLConstants.CERO)
-                .customDecimal7(XMLConstants.CERO)
-                .customDecimal8(XMLConstants.CERO)
-                .customDecimal9(XMLConstants.CERO)
-
-                .lastModifiedDate(DateUtil.todayYyyyMD())
-                .lastModifiedTime(DateUtil.nowHhMmSs())
+                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
+                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
-
-                .qADT01(XMLConstants.NULL)
-                .qADD01(XMLConstants.CERO)
                 .tc_Rowid(XMLConstants.ROW_ID)
-
                 .build();
     }
 
     // =====================================================
-    // ============ TAX RESOLUTION ==========================
+    // TAX
     // =====================================================
 
     private TaxInfo resolveTaxInfo(
@@ -313,9 +275,6 @@ public class OcXmlFactory {
         return new TaxInfo(txz, txcl);
     }
 
-    // =====================================================
-    // Helpers
-    // =====================================================
     private String left(String s, int len) {
         if (s == null) return "";
         return s.length() <= len ? s : s.substring(0, len);
