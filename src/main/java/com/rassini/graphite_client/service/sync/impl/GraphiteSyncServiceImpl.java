@@ -145,12 +145,12 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
             apiClient.acknowledgeChange(ackRequest);
 
             SupplierEntity entity = repository.findById(publicId).orElseThrow();
-            entity.setStatus(ProviderState.CONFIMADOACK);
+            entity.setStatus(ProviderState.CONFIRMADOACK);
             entity.setLastSync(LocalDateTime.now());
 
             repository.save(entity);
 
-            log.info("[SERVICE] ACK enviado y status CONFIMADOACK para {}", publicId);
+            log.info("[SERVICE] ACK enviado y status CONFIRMADOACK para {}", publicId);
 
         } catch (Exception e) {
             log.error("[SERVICE] Error enviando ACK para {}: {}", publicId, e.getMessage(), e);
