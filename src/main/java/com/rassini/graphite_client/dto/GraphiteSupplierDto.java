@@ -17,7 +17,6 @@ public class GraphiteSupplierDto {
     @JsonProperty("ERP_ID")
     private String erpIDQAD;
 
-
     @JsonProperty("Entity_Public_Id")
     private String entityPublicId;
 
@@ -31,17 +30,21 @@ public class GraphiteSupplierDto {
     @JsonProperty("Payment_Contact_Email")
     private String supplierContactEmail;
 
+    @JsonProperty("Payment_Contact_Name")
+    private String paymentContactName;
+
+    @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
+    private List<SalesContactCalc> locSalesContactAlternateContactCalc;
+
     // =========================
     // Locations
     // =========================
-
     @JsonProperty("Locations_List")
     private List<Location> locations;
 
     // =========================
     // ERP Record
     // =========================
-
     @JsonProperty("ERP_Record")
     private List<ErpRecord> erpRecords;
 
@@ -73,6 +76,22 @@ public class GraphiteSupplierDto {
         @JsonProperty("Address_Country")
         private String addressCountry;
 
+        // ✅ faltaban estos
+        @JsonProperty("Address_1")
+        private String address1;
+
+        @JsonProperty("Address_2")
+        private String address2;
+
+        @JsonProperty("Address_3")
+        private String address3;
+
+        @JsonProperty("Address_Neighborhood")
+        private String addressNeighborhood;
+
+        @JsonProperty("Address_Postal_Code")
+        private String addressPostalCode;
+
         @JsonProperty("data")
         private AddressData data;
     }
@@ -89,6 +108,13 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("address3")
         private String address3;
+
+        // ✅ faltaban para US-like
+        @JsonProperty("deliveryLine1")
+        private String deliveryLine1;
+
+        @JsonProperty("lastLine")
+        private String lastLine;
 
         @JsonProperty("components")
         private Components components;
@@ -112,6 +138,7 @@ public class GraphiteSupplierDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Components {
 
+        // ===== actuales =====
         @JsonProperty("premise")
         private String premise;
 
@@ -123,12 +150,76 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("locality")
         private String locality;
+
+        // ===== faltantes MX/INTL =====
+        @JsonProperty("premiseNumber")
+        private String premiseNumber;
+
+        @JsonProperty("subBuilding")
+        private String subBuilding;
+
+        @JsonProperty("postalCodeShort")
+        private String postalCodeShort;
+
+        @JsonProperty("administrativeArea")
+        private String administrativeArea;
+
+        @JsonProperty("administrativeAreaIso2")
+        private String administrativeAreaIso2;
+
+        @JsonProperty("thoroughfare")
+        private String thoroughfare;
+
+        @JsonProperty("thoroughfareName")
+        private String thoroughfareName;
+
+        @JsonProperty("thoroughfareType")
+        private String thoroughfareType;
+
+        @JsonProperty("dependentLocality")
+        private String dependentLocality;
+
+        @JsonProperty("building")
+        private String building;
+
+        // ===== faltantes US =====
+        @JsonProperty("primaryNumber")
+        private String primaryNumber;
+
+        @JsonProperty("streetName")
+        private String streetName;
+
+        @JsonProperty("streetPredirection")
+        private String streetPredirection;
+
+        @JsonProperty("streetSuffix")
+        private String streetSuffix;
+
+        @JsonProperty("secondaryNumber")
+        private String secondaryNumber;
+
+        @JsonProperty("secondaryDesignator")
+        private String secondaryDesignator;
+
+        @JsonProperty("cityName")
+        private String cityName;
+
+        @JsonProperty("defaultCityName")
+        private String defaultCityName;
+
+        @JsonProperty("state")
+        private String state;
+
+        @JsonProperty("zipCode")
+        private String zipCode;
+
+        @JsonProperty("plus4Code")
+        private String plus4Code;
     }
 
     // =========================
     // ERP RECORD
     // =========================
-
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ErpRecord {
@@ -157,14 +248,25 @@ public class GraphiteSupplierDto {
         @JsonProperty("RASSINI_ERP_Supplier_Type")
         private String rassiniErpSupplierType;
 
-    
+        // ✅ ESTE ES EL CLAVE QUE TE FALTABA
+        @JsonProperty("RASSINI_ERP_Address")
+        private ErpAddressContainer rassiniErpAddress;
+    }
 
+    // =========================
+    // ERP ADDRESS CONTAINER
+    // =========================
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ErpAddressContainer {
+
+        @JsonProperty("Address")
+        private Address address;
     }
 
     // =========================
     // BANK (EXTENDIDA)
     // =========================
-
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Bank {
@@ -185,10 +287,8 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Name")
         private String bankName;
 
-        
         @JsonProperty("Bank_Account_Currency")
         private String bankAccountCurrency;
-
 
         // Objeto: Bank_Number { bank_name, swift, routing, ... }
         @JsonProperty("Bank_Number")
@@ -198,7 +298,6 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_SWIFT")
         private BankSwift bankSwift;
 
-        
         @JsonProperty("Bank_Account_Currency_Correspondent")
         private String bankAccountCurrencyCorrespondent;
 
@@ -207,13 +306,11 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("Bank_Account_Currency_Correspondent_Bank")
         private CorrespondentBank bankAccountCurrencyCorrespondentBank;
-
     }
 
     // =========================
     // BANK_NUMBER (Bank_Number en JSON)
     // =========================
-
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BankNumber {
@@ -237,7 +334,6 @@ public class GraphiteSupplierDto {
     // =========================
     // BANK_SWIFT (Bank_SWIFT en JSON)
     // =========================
-
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class BankSwift {
@@ -249,14 +345,34 @@ public class GraphiteSupplierDto {
         private Boolean valid;
     }
 
-    
-    @JsonProperty("Payment_Contact_Name")
-    private String paymentContactName;
+    // =========================
+    // BANK WIRE ABA ROUTING
+    // =========================
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class BankWireAbaRouting {
 
+        @JsonProperty("bank_name")
+        private String bankName;
 
-    
-    @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
-    List<SalesContactCalc> locSalesContactAlternateContactCalc;
+        @JsonProperty("routing")
+        private String routing;
 
+        @JsonProperty("swift")
+        private String swift;
+    }
 
+    // =========================
+    // SALES CONTACT CALC
+    // =========================
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class SalesContactCalc {
+
+        @JsonProperty("name")
+        private String name;
+
+        @JsonProperty("email")
+        private String email;
+    }
 }

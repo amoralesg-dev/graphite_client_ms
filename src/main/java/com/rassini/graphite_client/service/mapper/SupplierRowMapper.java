@@ -2,8 +2,13 @@ package com.rassini.graphite_client.service.mapper;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
+import com.rassini.graphite_client.service.address.ResolvedAddress;
+import com.rassini.graphite_client.service.address.SupplierAddressResolver;
 import com.rassini.graphite_client.service.xml.CatalogService;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class SupplierRowMapper {
 
     private SupplierRowMapper() {
@@ -34,6 +39,15 @@ public class SupplierRowMapper {
     ) {
 
         // -------------------------------
+        // Validaciones mínimas
+        // -------------------------------
+        if (row == null || dto == null || erp == null || catalogService == null) {
+            log.warn("[MAPPER] fill cancelado por argumentos nulos. row={} dto={} erp={} catalogService={}",
+                    row, dto, erp, catalogService);
+            return;
+        }
+
+        // -------------------------------
         // Identidad
         // -------------------------------
         row.setCreditorCode(dto.getEntityPublicId());
@@ -51,7 +65,7 @@ public class SupplierRowMapper {
         row.setContactEmail(dto.getSupplierContactEmail());
 
         // -------------------------------
-        // Contact Name (lógica existente)
+        // Contact Name
         // -------------------------------
         String contactName = null;
 
@@ -59,8 +73,7 @@ public class SupplierRowMapper {
                 && !dto.getLocSalesContactAlternateContactCalc().isEmpty()
                 && dto.getLocSalesContactAlternateContactCalc().get(0) != null) {
 
-            contactName = dto
-                    .getLocSalesContactAlternateContactCalc()
+            contactName = dto.getLocSalesContactAlternateContactCalc()
                     .get(0)
                     .getName();
         }
@@ -70,10 +83,10 @@ public class SupplierRowMapper {
         }
 
         if ((contactName == null || contactName.isBlank())
-                && dto.getSupplierContactEmail() != null) {
+                && dto.getSupplierContactEmail() != null
+                && !dto.getSupplierContactEmail().isBlank()) {
 
-            contactName = dto
-                    .getSupplierContactEmail()
+            contactName = dto.getSupplierContactEmail()
                     .split("@")[0]
                     .toUpperCase();
         }
@@ -81,55 +94,69 @@ public class SupplierRowMapper {
         row.setContactName(contactName);
 
         // -------------------------------
-        // Dirección (Headquarters)
+        // Dirección (resolver por estructura real)
         // -------------------------------
-        if (headquarters != null
-                && headquarters.getAddress() != null
-                && headquarters.getAddress().getData() != null) {
+        ResolvedAddress resolvedAddress = SupplierAddressResolver.resolve(dto, headquarters, erp);
 
-            GraphiteSupplierDto.Address address = headquarters.getAddress();
-            GraphiteSupplierDto.AddressData data = address.getData();
-            GraphiteSupplierDto.Components comp = data.getComponents();
+        if (resolvedAddress != null) {
+            row.setAddressStreet1(resolvedAddress.getStreetName());
+            row.setAddressStreet2(resolvedAddress.getStreetName2());
+            row.setAddressStreet3(resolvedAddress.getStreetName3());
+            row.setStreetNumber(resolvedAddress.getStreetNumber());
 
-            row.setAddressStreet1(data.getAddress1());
-            row.setAddressStreet2(data.getAddress2());
-            row.setAddressStreet3(data.getAddress3());
-            row.setStreetNumber(comp != null ? comp.getPremise() : null);
-            row.setAddressZip(comp != null ? comp.getPostalCode() : null);
-            row.setCityCode(address.getAddressCity());
+            row.setAddressZip(resolvedAddress.getPostalCode());
+            row.setCityCode(resolvedAddress.getCity());
 
             row.setStateCode(
                     catalogService.mapState(
-                            address.getAddressRegionState(),
+                            resolvedAddress.getRegion(),
                             erp.getRassiniErpEntityId()
                     )
             );
 
             row.setCountryCode(
                     catalogService.mapCountry(
-                            address.getAddressCountry(),
+                            resolvedAddress.getCountry(),
                             erp.getRassiniErpEntityId()
                     )
             );
 
-            // ✅ NUEVO: state_description (locality)
-            if (comp != null) {
-                row.setStateDescription(comp.getLocality());
-            } else {
-                row.setStateDescription(null);
-            }
+            // dejamos state_description con la ciudad/localidad resuelta
+            row.setStateDescription(resolvedAddress.getCity());
+
+            log.info(
+                    "[ADDR-MAPPER] provider={} street1={} street2={} street3={} streetNumber={} city={} region={} zip={} country={}",
+                    dto.getEntityPublicId(),
+                    resolvedAddress.getStreetName(),
+                    resolvedAddress.getStreetName2(),
+                    resolvedAddress.getStreetName3(),
+                    resolvedAddress.getStreetNumber(),
+                    resolvedAddress.getCity(),
+                    resolvedAddress.getRegion(),
+                    resolvedAddress.getPostalCode(),
+                    resolvedAddress.getCountry()
+            );
+        } else {
+            row.setAddressStreet1(null);
+            row.setAddressStreet2(null);
+            row.setAddressStreet3(null);
+            row.setStreetNumber(null);
+            row.setAddressZip(null);
+            row.setCityCode(null);
+            row.setStateCode(null);
+            row.setCountryCode(null);
+            row.setStateDescription(null);
+
+            log.warn("[ADDR-MAPPER] provider={} no resolved address found", dto.getEntityPublicId());
         }
 
         // -------------------------------
-        // ERP-level fields (NUEVOS)
+        // ERP-level fields
         // -------------------------------
-
-        // ✅ purchase_type_code
         row.setPurchaseTypeCode(
                 erp.getRassiniErpPaymentType()
         );
 
-        // ✅ supplier_type_code
         row.setSupplierType(
                 erp.getRassiniErpSupplierType()
         );
@@ -141,7 +168,6 @@ public class SupplierRowMapper {
 
             GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
 
-            // Currency del proveedor (existente)
             String currency =
                     (bank.getBankCurrencyList() != null && !bank.getBankCurrencyList().isEmpty())
                             ? bank.getBankCurrencyList().get(0)
@@ -158,13 +184,12 @@ public class SupplierRowMapper {
             row.setAccountNumber(bank.getBankAccountNumber());
             row.setBankCountry(bank.getBankCountry());
 
-            // ✅ NUEVO: bank_currency (raw de la cuenta)
             row.setBankCurrency(
                     bank.getBankAccountCurrency()
             );
 
             // --------------------------------------------------
-            // BeneficiaryBankName (existente)
+            // BeneficiaryBankName
             // --------------------------------------------------
             String beneficiaryBankName = null;
 
@@ -178,8 +203,7 @@ public class SupplierRowMapper {
             if ((beneficiaryBankName == null || beneficiaryBankName.isBlank())
                     && erp.getBankWireAbaRouting() != null) {
 
-                beneficiaryBankName =
-                        erp.getBankWireAbaRouting().getBankName();
+                beneficiaryBankName = erp.getBankWireAbaRouting().getBankName();
             }
 
             row.setBeneficiaryBankName(beneficiaryBankName);
@@ -203,20 +227,14 @@ public class SupplierRowMapper {
             // --------------------------------------------------
             // Intermediary
             // --------------------------------------------------
-
-            // Account (no info por ahora)
             row.setIntermediaryAccount(null);
-
-            // ABA (no info por ahora)
             row.setIntermediaryRoutingCodeABA(null);
 
-            // BIC
             if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
                 row.setIntermediaryRoutingCodeBIC(
                         bank.getBankAccountCurrencyCorrespondentBank().getSwift()
                 );
 
-                //s NUEVO:
                 row.setIntermediaryBankName(
                         bank.getBankAccountCurrencyCorrespondentBank().getBankName()
                 );
@@ -228,6 +246,20 @@ public class SupplierRowMapper {
             row.setIntermediaryAccountCountry(
                     bank.getBankAccountCurrencyCorrespondentBankCountry()
             );
+        } else {
+            row.setCurrency(null);
+            row.setBeneficiaryName(null);
+            row.setAccountNumber(null);
+            row.setBankCountry(null);
+            row.setBankCurrency(null);
+            row.setBeneficiaryBankName(null);
+            row.setRoutingCodeBIC(null);
+            row.setRoutingCodeABA(null);
+            row.setIntermediaryAccount(null);
+            row.setIntermediaryRoutingCodeABA(null);
+            row.setIntermediaryRoutingCodeBIC(null);
+            row.setIntermediaryBankName(null);
+            row.setIntermediaryAccountCountry(null);
         }
     }
 
@@ -236,16 +268,48 @@ public class SupplierRowMapper {
     // ======================================================
 
     public static GraphiteSupplierDto.Location findHeadquarters(GraphiteSupplierDto dto) {
-        if (dto.getLocations() == null) return null;
+        if (dto == null || dto.getLocations() == null || dto.getLocations().isEmpty()) {
+            return null;
+        }
 
-        return dto.getLocations().stream()
-                .filter(l -> "Headquarters".equalsIgnoreCase(l.getLocationName()))
+        log.info("[DEBUG] provider={} locations={}", dto.getEntityPublicId(), dto.getLocations());
+
+        GraphiteSupplierDto.Location headquarters = dto.getLocations().stream()
+                .filter(l -> l != null && "Headquarters".equalsIgnoreCase(l.getLocationName()))
+                .peek(l -> log.info("[DEBUG] provider={} found Headquarters={}", dto.getEntityPublicId(), l.getLocationName()))
                 .findFirst()
                 .orElse(null);
+
+        if (headquarters != null) {
+            return headquarters;
+        }
+
+        GraphiteSupplierDto.Location office = dto.getLocations().stream()
+                .filter(l -> l != null && "Office".equalsIgnoreCase(l.getLocationName()))
+                .peek(l -> log.info("[DEBUG] provider={} found Office={}", dto.getEntityPublicId(), l.getLocationName()))
+                .findFirst()
+                .orElse(null);
+
+        if (office != null) {
+            return office;
+        }
+
+        GraphiteSupplierDto.Location fallback = dto.getLocations().stream()
+                .filter(l -> l != null)
+                .findFirst()
+                .orElse(null);
+
+        if (fallback != null) {
+            log.info("[DEBUG] provider={} fallback location={}", dto.getEntityPublicId(), fallback.getLocationName());
+        }
+
+        return fallback;
     }
 
     private static String left(String value, int length) {
-        if (value == null) return null;
+        if (value == null) {
+            return null;
+        }
         return value.length() <= length ? value : value.substring(0, length);
     }
 }
