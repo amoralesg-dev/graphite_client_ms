@@ -44,7 +44,7 @@ public class XmlPnServiceImpl implements XmlPnService {
 
                 SuppliersRowEntity supplier =
                         suppliersRowRepository
-                                .findByCreditorCodeAndBusinessUnitCode(
+                                .findBySupplierCodeAndBusinessUnitCode(
                                         dto.getEntityPublicId(),
                                         erpId
                                 )

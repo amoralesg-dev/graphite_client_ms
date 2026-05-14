@@ -12,14 +12,14 @@ import com.rassini.graphite_client.entity.SuppliersRowEntity;
 public interface SuppliersRowRepository
         extends JpaRepository<SuppliersRowEntity, Long> {
 
-        
-        Optional<SuppliersRowEntity> findByCreditorCodeAndBusinessUnitCode(
-                String creditorCode,
+
+        Optional<SuppliersRowEntity> findBySupplierCodeAndBusinessUnitCode(
+                String supplierCode,
                 String businessUnitCode
         );
 
-        
-       int countBySupplierCode(String creditorCode);
+
+       int countBySupplierCode(String supplierCode);
 
 
 }

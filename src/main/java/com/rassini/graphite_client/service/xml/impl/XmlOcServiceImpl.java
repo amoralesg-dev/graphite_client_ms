@@ -49,7 +49,7 @@ public class XmlOcServiceImpl implements XmlOcService {
                 String erpId = erp.getRassiniErpEntityId();
 
                 SuppliersRowEntity supplier = suppliersRowRepository
-                        .findByCreditorCodeAndBusinessUnitCode(
+                        .findBySupplierCodeAndBusinessUnitCode(
                                 dto.getEntityPublicId(),
                                 erpId
                         )
