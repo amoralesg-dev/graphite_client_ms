@@ -17,7 +17,7 @@ public class RestConfig {
     public ObjectMapper graphiteObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
 
-        // ✅ CLAVE: permitir "" -> null
+        //  CLAVE: permitir "" -> null
         mapper.coercionConfigDefaults()
             .setCoercion(CoercionInputShape.EmptyString, CoercionAction.AsNull);
 
