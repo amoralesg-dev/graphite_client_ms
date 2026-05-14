@@ -102,7 +102,8 @@ public class XmlOcServiceImpl implements XmlOcService {
                                 supplier,
                                 erpId,
                                 erp.getRassiniErpTaxClass(),
-                                erp.getRassiniErpTaxZone()
+                                erp.getRassiniErpTaxZone(),
+                                erp.getRassiniErpPaymentTerms()
                         );
 
                 xmlGenerationHelper.generateIfFileNotExists(

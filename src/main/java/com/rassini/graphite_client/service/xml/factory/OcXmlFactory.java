@@ -2,6 +2,7 @@ package com.rassini.graphite_client.service.xml.factory;
 
 import java.util.List;
 
+import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.context.*;
@@ -48,14 +49,15 @@ public class OcXmlFactory {
             SuppliersRowEntity supplier,
             String erpId,
             String taxClassFromErp,
-            List<String> taxZoneFromErp
+            List<String> taxZoneFromErp,
+            String paymentTerms
     ) {
         TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
                 .outputFileName("creditor_" + supplier.getErpIDQAD() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId))
-                .creditor(buildCreditor(supplier, tax))
+                .creditor(buildCreditor(supplier, tax, paymentTerms))
                 .build();
     }
 
@@ -197,7 +199,8 @@ public class OcXmlFactory {
 
     private CreditorNodoXML buildCreditor(
             SuppliersRowEntity supplier,
-            TaxInfo tax
+            TaxInfo tax,
+            String  paymentTerms
     ) {
         boolean isForeign =
                 supplier.getCountryCode() != null &&
@@ -214,7 +217,7 @@ public class OcXmlFactory {
                 );
 
         String paymentTerm =
-                CesarQadRules.resolvePaymentTerms(Domain.RFCORPO, null);
+                CesarQadRules.resolvePaymentTerms(Domain.RFCORPO, paymentTerms);
 
         return CreditorNodoXML.builder()
                 .creditorIsActive("false")
