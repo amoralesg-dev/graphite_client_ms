@@ -35,10 +35,10 @@ public class FrenosXmlFactory {
     ) {
 
         TaxInfo tax = resolveTaxInfoFrenos(erpId, taxClassFromErp, taxZoneFromErp);
-        String name20 = left(supplier.getBusinessRelationName1(), 20);
+        String name20 = left(supplier.getSupplierName(), 20);
 
         return XmlContext.builder()
-                .outputFileName("busrel_" + supplier.getErpIDQAD() + "_" + erpId + ".xml")
+                .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier, name20))
                 .address(buildAddress(supplier, name20, tax))
@@ -60,7 +60,7 @@ public class FrenosXmlFactory {
         TaxInfo tax = resolveTaxInfoFrenos(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("creditor_" + supplier.getCreditorCode() + "_" + erpId + ".xml")
+                .outputFileName("creditor_" + supplier.getSupplierCode() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId))
                 .creditor(buildCreditor(supplier, tax, paymentTermsFromErp))
                 .build();
@@ -99,10 +99,10 @@ public class FrenosXmlFactory {
             String name20
     ) {
         return BusinessRelationXml.builder()
-                .businessRelationCode(supplier.getErpIDQAD())
-                .businessRelationName1(supplier.getBusinessRelationName1())
-                .businessRelationName2(supplier.getBusinessRelationName1())
-                .businessRelationName3(supplier.getBusinessRelationName1())
+                .businessRelationCode(supplier.getErpIdQad())
+                .businessRelationName1(supplier.getSupplierName())
+                .businessRelationName2(supplier.getSupplierName())
+                .businessRelationName3(supplier.getSupplierName())
                 .businessRelationSearchName(name20)
                 .businessRelationIsActive("true")
                 .businessRelationIsInterco("false")
@@ -125,13 +125,13 @@ public class FrenosXmlFactory {
             TaxInfo tax
     ) {
         return AddressXml.builder()
-                .addressStreet1(supplier.getAddressStreet1())
-                .addressStreet2(supplier.getAddressStreet2())
-                .addressStreet3(supplier.getAddressStreet3())
-                .addressZip(supplier.getAddressZip())
+                .addressStreet1(supplier.getStreetName())
+                .addressStreet2(supplier.getStreetName2())
+                .addressStreet3(supplier.getStreetName3())
+                .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
                 .addressCityCode(supplier.getCityCode())
-                .addressName(supplier.getAddressStreet1())
+                .addressName(supplier.getStreetName())
                 .addressSearchName(name20)
                 .addressTelephone("")
                 .addressEMail("")
@@ -143,8 +143,8 @@ public class FrenosXmlFactory {
                 .addressIsTaxable("false")
                 .addressIsTaxInCity("false")
                 .addressIsTaxIncluded("false")
-                .addressTaxIDFederal(supplier.getCreditorTaxIDFederal())
-                .addressTaxIDState(supplier.getCreditorTaxIDFederal())
+                .addressTaxIDFederal(supplier.getRfc())
+                .addressTaxIDState(supplier.getRfc())
                 .addressTaxDeclaration(XMLConstants.CERO)
                 .addressLogicKeyString(XMLConstants.ADDRESS_LOGIC_KEY)
                 .tcStateCode(supplier.getStateCode())
@@ -190,7 +190,7 @@ public class FrenosXmlFactory {
                 supplier.getCountryCode() != null &&
                 !"MX".equalsIgnoreCase(supplier.getCountryCode());
 
-        String currency = supplier.getCurrency();
+        String currency = supplier.getSupplierCurrency();
 
         CesarQadRules.GlProfiles gl =
                 CesarQadRules.resolveGlProfiles(
@@ -208,7 +208,7 @@ public class FrenosXmlFactory {
         return CreditorNodoXML.builder()
 
                 .creditorIsActive("false")
-                .creditorCode(supplier.getErpIDQAD())
+                .creditorCode(supplier.getErpIdQad())
 
                 .vatDeliveryType("PRODUCT")
                 .vatPercentageLevel("NONE")
@@ -219,8 +219,8 @@ public class FrenosXmlFactory {
                 .creditorIsTaxInCity("false")
                 .creditorIsTaxIncluded("false")
 
-                .creditorTaxIDFederal(supplier.getCreditorTaxIDFederal())
-                .creditorTaxIDState(supplier.getCreditorTaxIDFederal())
+                .creditorTaxIDFederal(supplier.getRfc())
+                .creditorTaxIDState(supplier.getRfc())
                 .creditorTaxDeclaration(XMLConstants.CERO)
 
                 .creditorIsTaxReport("false")
@@ -244,11 +244,11 @@ public class FrenosXmlFactory {
 
                 .tcReasonCode("INV TO APPROVE")
                 .tlBusinessRelationIsInterco("false")
-                .tcBusinessRelationCode(supplier.getErpIDQAD())
-                .tcBusinessRelationName1(supplier.getBusinessRelationName1())
+                .tcBusinessRelationCode(supplier.getErpIdQad())
+                .tcBusinessRelationName1(supplier.getSupplierName())
                 .tcCurrencyCode(currency)
 
-                .tcCreditorTypeCode(supplier.getSupplierType())
+                .tcCreditorTypeCode(supplier.getSupplierTypeCode())
                 .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
 
                 .lastModifiedDate(DateUtil.todayYyyyMD())

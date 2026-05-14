@@ -19,7 +19,7 @@ public interface SuppliersRowRepository
         );
 
         
-       int countByCreditorCode(String creditorCode);
+       int countBySupplierCode(String creditorCode);
 
 
 }

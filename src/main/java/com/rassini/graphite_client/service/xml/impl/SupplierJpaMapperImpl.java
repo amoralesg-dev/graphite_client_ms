@@ -39,24 +39,24 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
             
             if (row.getId() == null) {
-                row.setStatusIntegrity("A"); // Alta
+                row.setStatus("A"); // Alta
             } else {
-                row.setStatusIntegrity("M"); // Modificación
+                row.setStatus("M"); // Modificación
             }
 
 
             //  llenar el MISMO objeto (no crear otro)
 
-            row.getStatusIntegrity();
+            row.getStatus();
             SupplierRowMapper.fill(row, dto, hq, erp, catalogService);
 
             
             if (row.getId() == null) {
 
                 int existing =
-                        suppliersRowRepository.countByCreditorCode(creditor);
+                        suppliersRowRepository.countBySupplierCode(creditor);
 
-                row.setCptyAccountCode(
+                row.setSupplierCodeDisIntegrity(
                         creditor + (existing + 1)
                 );
             }

@@ -50,14 +50,14 @@ public class SupplierRowMapper {
         // -------------------------------
         // Identidad
         // -------------------------------
-        row.setCreditorCode(dto.getEntityPublicId());
-        row.setCptyAccountCode(dto.getEntityPublicId());
+        row.setSupplierCode(dto.getEntityPublicId());
+        row.setSupplierCodeDisIntegrity(dto.getEntityPublicId());
         row.setBusinessUnitCode(erp.getRassiniErpEntityId());
-        row.setErpIDQAD(dto.getErpIDQAD());
+        row.setErpIdQad(dto.getErpIdQad());
 
-        row.setBusinessRelationName1(dto.getEntityName());
-        row.setBusinessRelationSearchName(left(dto.getEntityName(), 20));
-        row.setCreditorTaxIDFederal(dto.getIntegrationTaxId());
+        row.setSupplierName(dto.getEntityName());
+        row.setSupplierSearchName(left(dto.getEntityName(), 20));
+        row.setRfc(dto.getIntegrationTaxId());
 
         // -------------------------------
         // Contact Email (siempre del DTO)
@@ -99,12 +99,12 @@ public class SupplierRowMapper {
         ResolvedAddress resolvedAddress = SupplierAddressResolver.resolve(dto, headquarters, erp);
 
         if (resolvedAddress != null) {
-            row.setAddressStreet1(resolvedAddress.getStreetName());
-            row.setAddressStreet2(resolvedAddress.getStreetName2());
-            row.setAddressStreet3(resolvedAddress.getStreetName3());
+            row.setStreetName(resolvedAddress.getStreetName());
+            row.setStreetName2(resolvedAddress.getStreetName2());
+            row.setStreetName3(resolvedAddress.getStreetName3());
             row.setStreetNumber(resolvedAddress.getStreetNumber());
 
-            row.setAddressZip(resolvedAddress.getPostalCode());
+            row.setZipCode(resolvedAddress.getPostalCode());
             row.setCityCode(resolvedAddress.getCity());
 
             row.setStateCode(
@@ -137,11 +137,11 @@ public class SupplierRowMapper {
                     resolvedAddress.getCountry()
             );
         } else {
-            row.setAddressStreet1(null);
-            row.setAddressStreet2(null);
-            row.setAddressStreet3(null);
+            row.setStreetName(null);
+            row.setStreetName2(null);
+            row.setStreetName3(null);
             row.setStreetNumber(null);
-            row.setAddressZip(null);
+            row.setZipCode(null);
             row.setCityCode(null);
             row.setStateCode(null);
             row.setCountryCode(null);
@@ -157,7 +157,7 @@ public class SupplierRowMapper {
                 erp.getRassiniErpPaymentType()
         );
 
-        row.setSupplierType(
+        row.setSupplierTypeCode(
                 erp.getRassiniErpSupplierType()
         );
 
@@ -173,14 +173,14 @@ public class SupplierRowMapper {
                             ? bank.getBankCurrencyList().get(0)
                             : null;
 
-            row.setCurrency(
+            row.setSupplierCurrency(
                     catalogService.mapCurrency(
                             currency,
                             erp.getRassiniErpEntityId()
                     )
             );
 
-            row.setBeneficiaryName(bank.getBankAccountHolderName());
+            row.setBeneficiaryAccountName(bank.getBankAccountHolderName());
             row.setAccountNumber(bank.getBankAccountNumber());
             row.setBankCountry(bank.getBankCountry());
 
@@ -210,28 +210,28 @@ public class SupplierRowMapper {
 
             // RoutingCodeBIC
             if (bank.getBankSwift() != null) {
-                row.setRoutingCodeBIC(bank.getBankSwift().getRouting());
+                row.setRoutingCodeSwift(bank.getBankSwift().getRouting());
             } else {
-                row.setRoutingCodeBIC(null);
+                row.setRoutingCodeSwift(null);
             }
 
             // RoutingCodeABA
             if (erp.getBankWireAbaRouting() != null) {
-                row.setRoutingCodeABA(
+                row.setRoutingCodeAba(
                         erp.getBankWireAbaRouting().getRouting()
                 );
             } else {
-                row.setRoutingCodeABA(null);
+                row.setRoutingCodeAba(null);
             }
 
             // --------------------------------------------------
             // Intermediary
             // --------------------------------------------------
             row.setIntermediaryAccount(null);
-            row.setIntermediaryRoutingCodeABA(null);
+            row.setIntermediaryRoutingCodeAba(null);
 
             if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
-                row.setIntermediaryRoutingCodeBIC(
+                row.setIntermediaryRoutingCodeSwift(
                         bank.getBankAccountCurrencyCorrespondentBank().getSwift()
                 );
 
@@ -239,7 +239,7 @@ public class SupplierRowMapper {
                         bank.getBankAccountCurrencyCorrespondentBank().getBankName()
                 );
             } else {
-                row.setIntermediaryRoutingCodeBIC(null);
+                row.setIntermediaryRoutingCodeSwift(null);
                 row.setIntermediaryBankName(null);
             }
 
@@ -247,17 +247,17 @@ public class SupplierRowMapper {
                     bank.getBankAccountCurrencyCorrespondentBankCountry()
             );
         } else {
-            row.setCurrency(null);
-            row.setBeneficiaryName(null);
+            row.setSupplierCurrency(null);
+            row.setBeneficiaryAccountName(null);
             row.setAccountNumber(null);
             row.setBankCountry(null);
             row.setBankCurrency(null);
             row.setBeneficiaryBankName(null);
-            row.setRoutingCodeBIC(null);
-            row.setRoutingCodeABA(null);
+            row.setRoutingCodeSwift(null);
+            row.setRoutingCodeAba(null);
             row.setIntermediaryAccount(null);
-            row.setIntermediaryRoutingCodeABA(null);
-            row.setIntermediaryRoutingCodeBIC(null);
+            row.setIntermediaryRoutingCodeAba(null);
+            row.setIntermediaryRoutingCodeSwift(null);
             row.setIntermediaryBankName(null);
             row.setIntermediaryAccountCountry(null);
         }

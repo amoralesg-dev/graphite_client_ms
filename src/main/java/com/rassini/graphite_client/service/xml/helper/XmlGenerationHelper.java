@@ -37,9 +37,9 @@ public class XmlGenerationHelper {
 
             log.info(
                 "XML generado correctamente. Supplier={}, ERP={}, ERP QAD={}",
-                supplier.getCreditorCode(),
+                supplier.getSupplierCode(),
                 supplier.getBusinessUnitCode(),
-                supplier.getErpIDQAD()
+                supplier.getErpIdQad()
             );
 
         } catch (Exception ex) {
@@ -49,9 +49,9 @@ public class XmlGenerationHelper {
             
             log.error(
                 "Error generando XML. Supplier={}, ERP={}, ERP QAD={}",
-                supplier.getCreditorCode(),
+                supplier.getSupplierCode(),
                 supplier.getBusinessUnitCode(),
-                supplier.getErpIDQAD(),
+                supplier.getErpIdQad(),
                 ex
             );
 
@@ -79,9 +79,9 @@ public class XmlGenerationHelper {
                 log.info(
                     "XML ya existe. Se omite. file={} Supplier={}, ERP={}, ERP QAD={}",
                     filePath.toAbsolutePath(),
-                    supplier.getCreditorCode(),
+                    supplier.getSupplierCode(),
                     supplier.getBusinessUnitCode(),
-                    supplier.getErpIDQAD()
+                    supplier.getErpIdQad()
                 );
                 supplier.setXmlStatus(XmlStatus.GENERATED_PREV);
                 repository.save(supplier);
@@ -96,9 +96,9 @@ public class XmlGenerationHelper {
             log.info(
                 "XML generado correctamente. file={} Supplier={}, ERP={}, ERP QAD={}",
                 filePath.toAbsolutePath(),
-                supplier.getCreditorCode(),
+                supplier.getSupplierCode(),
                 supplier.getBusinessUnitCode(),
-                supplier.getErpIDQAD()
+                supplier.getErpIdQad()
             );
 
         } catch (Exception ex) {
@@ -108,9 +108,9 @@ public class XmlGenerationHelper {
 
             log.error(
                 "Error generando XML. Supplier={}, ERP={}, ERP QAD={}",
-                supplier.getCreditorCode(),
+                supplier.getSupplierCode(),
                 supplier.getBusinessUnitCode(),
-                supplier.getErpIDQAD(),
+                supplier.getErpIdQad(),
                 ex
             );
 
