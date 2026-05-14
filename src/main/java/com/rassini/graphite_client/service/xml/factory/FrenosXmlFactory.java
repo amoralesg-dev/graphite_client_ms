@@ -60,7 +60,7 @@ public class FrenosXmlFactory {
         TaxInfo tax = resolveTaxInfoFrenos(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("creditor_" + supplier.getCreditorCode() + "_" + erpId + ".xml")
+                .outputFileName("creditor_" + supplier.getErpIDQAD() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId))
                 .creditor(buildCreditor(supplier, tax, paymentTermsFromErp))
                 .build();
