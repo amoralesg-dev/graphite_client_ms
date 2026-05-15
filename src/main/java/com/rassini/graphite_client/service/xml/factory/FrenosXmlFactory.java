@@ -242,7 +242,7 @@ public class FrenosXmlFactory {
                 .tcDivisionProfileCode(gl.divProfile())
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
-                .tcReasonCode("INV TO APPROVE")
+                .tcReasonCode("RECIBO-PENDIENTE")
                 .tlBusinessRelationIsInterco("false")
                 .tcBusinessRelationCode(supplier.getErpIDQAD())
                 .tcBusinessRelationName1(supplier.getBusinessRelationName1())
@@ -271,7 +271,7 @@ public class FrenosXmlFactory {
             List<String> taxZoneFromErp
     ) {
 
-        String txz = null;
+        String txz = "MEX";
 
         if (taxZoneFromErp != null && !taxZoneFromErp.isEmpty()
                 && taxZoneFromErp.get(0) != null && !taxZoneFromErp.get(0).isBlank()) {

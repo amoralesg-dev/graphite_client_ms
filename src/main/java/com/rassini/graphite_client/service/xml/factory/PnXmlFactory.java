@@ -235,7 +235,7 @@ public class PnXmlFactory {
                 .tcDivisionProfileCode(gl.divProfile())
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
-                .tcReasonCode("INV TO APPROVE")
+                .tcReasonCode("INICIAL")
                 .tlBusinessRelationIsInterco("false")
                 .tcBusinessRelationCode("PR"+supplier.getErpIDQAD())
                 .tcBusinessRelationName1(supplier.getBusinessRelationName1())
@@ -260,7 +260,7 @@ public class PnXmlFactory {
     // =====================================================
     private TaxInfo resolveTaxInfoPn(String erpId, String taxClassFromErp) {
 
-        String txz = "MX";
+        String txz = "MEX";
 
         String txcl =
                 (taxClassFromErp != null && !taxClassFromErp.isBlank())
