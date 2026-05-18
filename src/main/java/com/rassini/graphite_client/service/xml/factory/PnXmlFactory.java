@@ -33,12 +33,12 @@ public class PnXmlFactory {
     ) {
 
         String erpId = "09";
-        String name20 = left(supplier.getBusinessRelationName1(), 20);
+        String name20 = left(supplier.getSupplierName(), 20);
 
         TaxInfo tax = resolveTaxInfoPn(erpId, taxClassFromErp);
 
         return XmlContext.builder()
-                .outputFileName("RPIEDRAS_busrel_" + supplier.getErpIDQAD() + ".xml")
+                .outputFileName("RPIEDRAS_busrel_" + supplier.getErpIdQad() + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier))
                 .address(buildAddress(supplier, name20, tax))
@@ -58,7 +58,7 @@ public class PnXmlFactory {
         TaxInfo tax = resolveTaxInfoPn(erpId, taxClassFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("RPIEDRAS_creditor_" + supplier.getErpIDQAD() + ".xml")
+                .outputFileName("RPIEDRAS_creditor_" + supplier.getErpIdQad() + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId))
                 .creditor(buildCreditor(supplier, tax))
                 .build();
@@ -94,13 +94,13 @@ public class PnXmlFactory {
     // =====================================================
     private BusinessRelationXml buildBusinessRelation(SuppliersRowEntity supplier) {
 
-        String name20 = left(supplier.getBusinessRelationName1(), 20);
+        String name20 = left(supplier.getSupplierName(), 20);
 
         return BusinessRelationXml.builder()
-                .businessRelationCode("PR" + supplier.getErpIDQAD())
-                .businessRelationName1(supplier.getBusinessRelationName1())
-                .businessRelationName2(supplier.getBusinessRelationName1())
-                .businessRelationName3(supplier.getBusinessRelationName1())
+                .businessRelationCode("PR" + supplier.getErpIdQad())
+                .businessRelationName1(supplier.getSupplierName())
+                .businessRelationName2(supplier.getSupplierName())
+                .businessRelationName3(supplier.getSupplierName())
                 .businessRelationSearchName(name20)
                 .businessRelationIsActive("true")
                 .businessRelationIsInterco("false")
@@ -125,13 +125,13 @@ public class PnXmlFactory {
     ) {
 
         return AddressXml.builder()
-                .addressStreet1(supplier.getAddressStreet1())
-                .addressStreet2(supplier.getAddressStreet2())
-                .addressStreet3(supplier.getAddressStreet3())
-                .addressZip(supplier.getAddressZip())
+                .addressStreet1(supplier.getStreetName())
+                .addressStreet2(supplier.getStreetName2())
+                .addressStreet3(supplier.getStreetName3())
+                .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
                 .addressCityCode(supplier.getCityCode())
-                .addressName(supplier.getAddressStreet1())
+                .addressName(supplier.getStreetName())
                 .addressSearchName(name20)
                 .addressTelephone("")
                 .addressEMail("")
@@ -143,8 +143,8 @@ public class PnXmlFactory {
                 .addressIsTaxable("false")
                 .addressIsTaxInCity("false")
                 .addressIsTaxIncluded("false")
-                .addressTaxIDFederal(supplier.getCreditorTaxIDFederal())
-                .addressTaxIDState(supplier.getCreditorTaxIDFederal())
+                .addressTaxIDFederal(supplier.getRfc())
+                .addressTaxIDState(supplier.getRfc())
                 .addressTaxDeclaration(XMLConstants.CERO)
                 .addressLogicKeyString(XMLConstants.ADDRESS_LOGIC_KEY)
                 .tcStateCode(supplier.getStateCode())
@@ -185,7 +185,7 @@ public class PnXmlFactory {
             TaxInfo tax
     ) {
 
-        String currency = supplier.getCurrency();
+        String currency = supplier.getSupplierCurrency();
 
         CesarQadRules.GlProfiles gl =
                 CesarQadRules.resolveGlProfiles(
@@ -204,7 +204,7 @@ public class PnXmlFactory {
         return CreditorNodoXML.builder()
 
                 .creditorIsActive("false")
-                .creditorCode(supplier.getErpIDQAD())
+                .creditorCode(supplier.getErpIdQad())
                 .vatDeliveryType("PRODUCT")
                 .vatPercentageLevel("NONE")
                 .creditorIsSendRemittance("false")
@@ -213,8 +213,8 @@ public class PnXmlFactory {
                 .creditorIsTaxInCity("false")
                 .creditorIsTaxIncluded("false")
 
-                .creditorTaxIDFederal(supplier.getCreditorTaxIDFederal())
-                .creditorTaxIDState(supplier.getCreditorTaxIDFederal())
+                .creditorTaxIDFederal(supplier.getRfc())
+                .creditorTaxIDState(supplier.getRfc())
                 .creditorTaxDeclaration(XMLConstants.CERO)
 
                 .creditorIsTaxReport("false")
@@ -237,11 +237,11 @@ public class PnXmlFactory {
 
                 .tcReasonCode("INICIAL")
                 .tlBusinessRelationIsInterco("false")
-                .tcBusinessRelationCode("PR"+supplier.getErpIDQAD())
-                .tcBusinessRelationName1(supplier.getBusinessRelationName1())
+                .tcBusinessRelationCode("PR"+supplier.getErpIdQad())
+                .tcBusinessRelationName1(supplier.getSupplierName())
                 .tcCurrencyCode(currency)
 
-                .tcCreditorTypeCode(supplier.getSupplierType())
+                .tcCreditorTypeCode(supplier.getSupplierTypeCode())
                 .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
 
                 .lastModifiedDate(DateUtil.todayYyyyMD())

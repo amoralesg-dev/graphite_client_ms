@@ -34,7 +34,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
             //  UPSERT: si existe -> UPDATE; si no -> INSERT
             SuppliersRowEntity row = suppliersRowRepository
-                    .findByCreditorCodeAndBusinessUnitCode(creditor, bu)
+                    .findBySupplierCodeAndBusinessUnitCode(creditor, bu)
                     .orElseGet(SuppliersRowEntity::new);
 
             
@@ -47,16 +47,15 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
             //  llenar el MISMO objeto (no crear otro)
 
-            row.getStatusIntegrity();
             SupplierRowMapper.fill(row, dto, hq, erp, catalogService);
 
-            
+
             if (row.getId() == null) {
 
                 int existing =
-                        suppliersRowRepository.countByCreditorCode(creditor);
+                        suppliersRowRepository.countBySupplierCode(creditor);
 
-                row.setCptyAccountCode(
+                row.setSupplierCodeDisIntegrity(
                         creditor + (existing + 1)
                 );
             }

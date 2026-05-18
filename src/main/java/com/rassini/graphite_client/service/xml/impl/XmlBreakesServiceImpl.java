@@ -45,7 +45,7 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
 
                 SuppliersRowEntity supplier =
                         suppliersRowRepository
-                                .findByCreditorCodeAndBusinessUnitCode(
+                                .findBySupplierCodeAndBusinessUnitCode(
                                         dto.getEntityPublicId(),
                                         erpId
                                 )

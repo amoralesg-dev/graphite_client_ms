@@ -44,7 +44,7 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
 
                 SuppliersRowEntity supplier =
                         suppliersRowRepository
-                                .findByCreditorCodeAndBusinessUnitCode(
+                                .findBySupplierCodeAndBusinessUnitCode(
                                         dto.getEntityPublicId(),
                                         erpId
                                 )

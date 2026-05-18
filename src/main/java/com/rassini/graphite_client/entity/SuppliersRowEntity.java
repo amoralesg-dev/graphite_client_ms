@@ -10,7 +10,7 @@ import lombok.Data;
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uk_suppliers_creditor_erp",
-            columnNames = {"creditor_code", "business_unit_code"}
+            columnNames = {"supplier_code", "business_unit_code"}
         )
     }
 )
@@ -23,37 +23,37 @@ public class SuppliersRowEntity {
     private Long id;
 
     @Column(name = "erp_id_qad")
-    private String erpIDQAD;
+    private String erpIdQad;
 
     @Column(name = "business_unit_code", nullable = false)
     private String businessUnitCode;
 
     @Column(name = "supplier_code")
-    private String creditorCode;
+    private String supplierCode;
 
     @Column(name = "supplier_name")
-    private String businessRelationName1;
+    private String supplierName;
 
     @Column(name = "supplier_search_name")
-    private String businessRelationSearchName;
+    private String supplierSearchName;
 
     @Column(name = "rfc")
-    private String creditorTaxIDFederal;
+    private String rfc;
 
     @Column(name = "street_name")
-    private String addressStreet1;
+    private String streetName;
 
     @Column(name = "street_name2")
-    private String addressStreet2;
+    private String streetName2;
 
     @Column(name = "street_name3")
-    private String addressStreet3;
+    private String streetName3;
 
     @Column(name = "street_number")
     private String streetNumber;
 
     @Column(name = "zip_code")
-    private String addressZip;
+    private String zipCode;
 
     @Column(name = "city_code")
     private String cityCode;
@@ -74,22 +74,22 @@ public class SuppliersRowEntity {
     private String contactEmail;
 
     @Column(name = "supplier_code_dis_integrity")
-    private String cptyAccountCode;
+    private String supplierCodeDisIntegrity;
 
     @Column(name = "supplier_currency")
-    private String currency;
+    private String supplierCurrency;
 
     @Column(name = "purchase_type_code")
     private String purchaseTypeCode;
 
     @Column(name = "supplier_type_code")
-    private String supplierType;
+    private String supplierTypeCode;
 
     @Column(name = "beneficiary_bank_name")
     private String beneficiaryBankName;
 
     @Column(name = "beneficiary_account_name")
-    private String beneficiaryName;
+    private String beneficiaryAccountName;
 
     @Column(name = "account_number")
     private String accountNumber;
@@ -101,14 +101,14 @@ public class SuppliersRowEntity {
     private String bankCountry;
 
      @Column(name = "routing_code_aba")
-    private String routingCodeABA;
+    private String routingCodeAba;
 
     @Column(name = "routing_code_swift")
-    private String routingCodeBIC;
+    private String routingCodeSwift;
 
     @Column(name = "intermediary_bank_name")
     private String intermediaryBankName;
-    
+
     @Column(name = "intermediary_account")
     private String intermediaryAccount;
 
@@ -116,10 +116,10 @@ public class SuppliersRowEntity {
     private String intermediaryAccountCountry;
 
     @Column(name = "intermediary_routing_code_aba")
-    private String intermediaryRoutingCodeABA;
+    private String intermediaryRoutingCodeAba;
 
     @Column(name = "intermediary_routing_code_swift")
-    private String intermediaryRoutingCodeBIC;
+    private String intermediaryRoutingCodeSwift;
 
     @Column(name = "status_integrity")
     private String statusIntegrity;    
