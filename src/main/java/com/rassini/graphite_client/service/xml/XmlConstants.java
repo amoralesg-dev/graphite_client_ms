@@ -10,14 +10,17 @@ public final class XmlConstants {
 
     // Base paths
     
+    public static final String OUTPUT="C:\\temp";
+ 
+
+    public static final String OUTPUT_BASE_XML = OUTPUT+"\\xml";
+    public static final String OUTPUT_BASE_INTEGRITY = OUTPUT+"\\integrity";
 
 
-    public static final String OUTPUT_BASE="C:\\temp\\xml";
-
-    public static final String OUTPUT_PN_DIR          = OUTPUT_BASE+"\\PN";
-    public static final String OUTPUT_OC_DIR          = OUTPUT_BASE+"\\OCBYP";
-    public static final String OUTPUT_FRENOS_DIR      = OUTPUT_BASE+"\\FRENOS";
-    public static final String OUTPUT_BREAKES_DIR     = OUTPUT_BASE+"\\BREAKES";
+    public static final String OUTPUT_PN_DIR          = OUTPUT_BASE_XML+"\\PN";
+    public static final String OUTPUT_OC_DIR          = OUTPUT_BASE_XML+"\\OCBYP";
+    public static final String OUTPUT_FRENOS_DIR      = OUTPUT_BASE_XML+"\\FRENOS";
+    public static final String OUTPUT_BREAKES_DIR     = OUTPUT_BASE_XML+"\\BREAKES";
 
 
     // Templates FRENOS

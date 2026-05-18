@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,10 +19,10 @@ public class IntegrityController {
 
     private final IntegrityService integrityService;
 
-    @GetMapping("/suppliers")
-    public ResponseEntity<?> generateSuppliersFile() {
-        log.info("REST request to generate suppliers to integrity file");
-        integrityService.createFileSupplierSync();
-        return ResponseEntity.ok(Map.of("message", "File suppliersToIntegrity.txt generation executed"));
+    @GetMapping("/suppliers/{erpIdQad}")
+    public ResponseEntity<?> generateSuppliersFile( @PathVariable("erpIdQad") String erpIdQad) {
+        log.info("REST request to generate supplier with ERP ID QAD {} to integrity file",erpIdQad);
+        integrityService.createFileSupplierSync(erpIdQad);
+        return ResponseEntity.ok(Map.of("message", "File suppliersToIntegrity generation executed for ID "+erpIdQad));
     }
 }

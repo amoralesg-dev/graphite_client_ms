@@ -9,6 +9,7 @@ import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.ProviderState;
 import com.rassini.graphite_client.entity.SupplierEntity;
 import com.rassini.graphite_client.repository.SupplierRepository;
+import com.rassini.graphite_client.service.sync.IntegrityService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
 import com.rassini.graphite_client.service.xml.SupplierProcessingService;
 import com.rassini.graphite_client.service.xml.XmlBreakesService;
@@ -35,6 +36,7 @@ public class SupplierProcessingServiceImpl
     private final XmlPnService xmlPnService;
     private final XmlFrenosService xmlFrenosService;
     private final XmlBreakesService xmlBreakesService;
+    private final IntegrityService integrityService;
 
     @Override
     public void processSupplier(String publicId) {
@@ -93,6 +95,11 @@ public class SupplierProcessingServiceImpl
 
             // 7 Todos los XML listos
             updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
+
+
+            //genera archivo de integrity
+            integrityService.createFileSupplierSync(dto.getErpIdQad());
+
 
            
 
