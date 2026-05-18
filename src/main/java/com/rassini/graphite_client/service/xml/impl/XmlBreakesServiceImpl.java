@@ -34,7 +34,7 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
             return;
         }
 
-        // ✅ Breakes usa exactamente el MISMO factory que Frenos
+        //  Breakes usa exactamente el MISMO factory que Frenos
         FrenosXmlFactory factory = new FrenosXmlFactory(catalogService);
 
         dto.getErpRecords().stream()

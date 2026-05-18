@@ -96,7 +96,7 @@ public class XmlTemplateEngine {
             // 1) ContextInfo (segmentado)
             applySection(doc, "/BCreditor/tContextInfo", ctx.getContextInfo());
 
-            // 2) Creditor (✅ AQUÍ está la corrección)
+            // 2) Creditor ( AQUÍ está la corrección)
             // Los campos fijos viven en ctx.getCreditor() (CreditorNodoXML)
             applySection(doc, "/BCreditor/tCreditor", ctx.getCreditor());
 
@@ -257,7 +257,7 @@ public class XmlTemplateEngine {
             return "LastModified" + fieldName.substring("lastModified".length());
         }
 
-        // ✅ tc/ti/tt/tl se mantienen tal cual (minúscula)
+        //  tc/ti/tt/tl se mantienen tal cual (minúscula)
         if (fieldName.startsWith("tc")
                 || fieldName.startsWith("ti")
                 || fieldName.startsWith("tt")
@@ -265,7 +265,7 @@ public class XmlTemplateEngine {
             return fieldName;
         }
 
-        // ✅ tx* en template va con "T" mayúscula: TxzTaxZone, TxclTaxCls, TxuTaxUsage
+        //  tx* en template va con "T" mayúscula: TxzTaxZone, TxclTaxCls, TxuTaxUsage
         if (fieldName.startsWith("tx")) {
             return "T" + fieldName.substring(1);
         }

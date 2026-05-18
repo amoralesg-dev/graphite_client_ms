@@ -76,7 +76,6 @@ public class GraphiteSupplierDto {
         @JsonProperty("Address_Country")
         private String addressCountry;
 
-        // ✅ faltaban estos
         @JsonProperty("Address_1")
         private String address1;
 
@@ -109,8 +108,7 @@ public class GraphiteSupplierDto {
         @JsonProperty("address3")
         private String address3;
 
-        // ✅ faltaban para US-like
-        @JsonProperty("deliveryLine1")
+         @JsonProperty("deliveryLine1")
         private String deliveryLine1;
 
         @JsonProperty("lastLine")
@@ -248,7 +246,6 @@ public class GraphiteSupplierDto {
         @JsonProperty("RASSINI_ERP_Supplier_Type")
         private String rassiniErpSupplierType;
 
-        // ✅ ESTE ES EL CLAVE QUE TE FALTABA
         @JsonProperty("RASSINI_ERP_Address")
         private ErpAddressContainer rassiniErpAddress;
     }

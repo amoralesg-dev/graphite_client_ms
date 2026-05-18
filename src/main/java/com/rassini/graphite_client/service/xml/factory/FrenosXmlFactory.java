@@ -60,7 +60,7 @@ public class FrenosXmlFactory {
         TaxInfo tax = resolveTaxInfoFrenos(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("creditor_" + supplier.getSupplierCode() + "_" + erpId + ".xml")
+                .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId))
                 .creditor(buildCreditor(supplier, tax, paymentTermsFromErp))
                 .build();
@@ -242,7 +242,7 @@ public class FrenosXmlFactory {
                 .tcDivisionProfileCode(gl.divProfile())
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
-                .tcReasonCode("INV TO APPROVE")
+                .tcReasonCode("RECIBO-PENDIENTE")
                 .tlBusinessRelationIsInterco("false")
                 .tcBusinessRelationCode(supplier.getErpIdQad())
                 .tcBusinessRelationName1(supplier.getSupplierName())
@@ -271,7 +271,7 @@ public class FrenosXmlFactory {
             List<String> taxZoneFromErp
     ) {
 
-        String txz = null;
+        String txz = "MEX";
 
         if (taxZoneFromErp != null && !taxZoneFromErp.isEmpty()
                 && taxZoneFromErp.get(0) != null && !taxZoneFromErp.get(0).isBlank()) {
