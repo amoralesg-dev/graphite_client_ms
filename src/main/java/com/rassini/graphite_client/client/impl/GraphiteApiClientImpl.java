@@ -46,18 +46,18 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
         // Si se pasan IDs específicos, Graphite debería devolverlos aunque tengan ACK
         if (StringUtils.hasText(publicIds)) {
             builder.queryParam("publicIds", publicIds);
-            log.info("[DEBUG] Forzando búsqueda de IDs específicos: {}", publicIds);
+            log.debug("[DEBUG] Forzando búsqueda de IDs específicos: {}", publicIds);
         }
 
         String url = builder.build().toUriString();
         
-        log.info("[DEBUG] === INICIO SOLICITUD  CHANGES ===");
-        log.info("[DEBUG] URL: {}", url);
+        log.debug("[DEBUG] === INICIO SOLICITUD  CHANGES ===");
+        log.debug("[DEBUG] URL: {}", url);
         
         JsonNode response = executeRequest(url, HttpMethod.GET, null);
         
-        log.info("[DEBUG] RESPONSE BODY: {}", response != null ? response.toString() : "NULL");
-        log.info("[DEBUG] === FIN SOLICITUD CHANGES ===");
+        log.debug("[DEBUG] RESPONSE BODY: {}", response != null ? response.toString() : "NULL");
+        log.debug("[DEBUG] === FIN SOLICITUD CHANGES ===");
         
         return response;
     }
@@ -71,8 +71,8 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
                 .queryParam("interface", this.interfaceName)
                 .buildAndExpand(publicId).toUriString();
         
-        log.info("[DEBUG] Consultando perfil para ID: {}", publicId);
-        log.info("[DEBUG] URL Perfil: {}", url);
+        log.debug("[DEBUG] Consultando perfil para ID: {}", publicId);
+        log.debug("[DEBUG] URL Perfil: {}", url);
         
         return executeRequest(url, HttpMethod.GET, null);
     }
@@ -89,7 +89,7 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
         body.put("connectionRole", ackRequest.getConnectionRole()); // rol de conexión
         body.put("publicId", ackRequest.getPublicId()); // ID público para la ACK
 
-        log.info("[DEBUG] Enviando ACK para ID: {}", ackRequest.getPublicId());
+        log.debug("[DEBUG] Enviando ACK para ID: {}", ackRequest.getPublicId());
 
         // Envía la solicitud
         executeRequest(url, HttpMethod.POST, body);
@@ -107,7 +107,7 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
 
         // Log del token para verificar si coincide con el de Postman (primeros y últimos caracteres)
         if (token != null && token.length() > 20) {
-            log.info("[DEBUG] Token: {}...{}", token.substring(0, 10), token.substring(token.length() - 10));
+            log.debug("[DEBUG] Token: {}...{}", token.substring(0, 10), token.substring(token.length() - 10));
         }
 
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);

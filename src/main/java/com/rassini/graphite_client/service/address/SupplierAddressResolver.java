@@ -63,7 +63,7 @@ public class SupplierAddressResolver {
         Object v3 = invoke(erp, "getRASSINIERPAddress");
         Object v4 = invoke(erp, "getRassini_ERP_Address");
 
-        log.info(
+        log.debug(
                 "[ADDR-SOURCE] provider={} getRassiniErpAddress={} getRassiniERPAddress={} getRASSINIERPAddress={} getRassini_ERP_Address={}",
                 dto != null ? dto.getEntityPublicId() : null,
                 v1, v2, v3, v4
@@ -72,7 +72,7 @@ public class SupplierAddressResolver {
         Object erpAddressWrapper = firstNonNull(v1, v2, v3, v4);
         Object erpAddress = erpAddressWrapper != null ? invoke(erpAddressWrapper, "getAddress") : null;
 
-        log.info(
+        log.debug(
                 "[ADDR-SOURCE] provider={} erpAddressWrapper={} erpAddress={}",
                 dto != null ? dto.getEntityPublicId() : null,
                 erpAddressWrapper,
@@ -80,14 +80,14 @@ public class SupplierAddressResolver {
         );
 
         if (erpAddress != null) {
-            log.info("[ADDR-SOURCE] provider={} using ERP source",
+            log.debug("[ADDR-SOURCE] provider={} using ERP source",
                     dto != null ? dto.getEntityPublicId() : null);
             return AddressSource.of("ERP", erpAddress);
         }
 
         Location mainLocation = headquarters != null ? headquarters : selectMainLocation(dto);
         if (mainLocation != null && mainLocation.getAddress() != null) {
-            log.info("[ADDR-SOURCE] provider={} using LOCATION source",
+            log.debug("[ADDR-SOURCE] provider={} using LOCATION source",
                     dto != null ? dto.getEntityPublicId() : null);
             return AddressSource.of("LOCATION", mainLocation.getAddress());
         }
