@@ -6,7 +6,7 @@ graphite:
   interface-name: ${GRAPHITE_INTERFACE_NAME:QAD}
   limit: ${GRAPHITE_LIMIT:100}
   sync:
-    cron: ${GRAPHITE_SYNC_CRON:0 */30 * * * *}
+    cron: ${GRAPHITE_SYNC_CRON:0 */2 * * * *}
 
 server:
   port: ${SERVER_PORT:8080}
@@ -24,3 +24,24 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
+
+logging:
+  level:
+    root: INFO
+    java.com.rassini.graphite_client.service: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true

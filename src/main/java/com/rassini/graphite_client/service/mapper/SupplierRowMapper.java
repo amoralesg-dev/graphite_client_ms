@@ -272,11 +272,11 @@ public class SupplierRowMapper {
             return null;
         }
 
-        log.info("[DEBUG] provider={} locations={}", dto.getEntityPublicId(), dto.getLocations());
+        log.debug("[DEBUG] provider={} locations={}", dto.getEntityPublicId(), dto.getLocations());
 
         GraphiteSupplierDto.Location headquarters = dto.getLocations().stream()
                 .filter(l -> l != null && "Headquarters".equalsIgnoreCase(l.getLocationName()))
-                .peek(l -> log.info("[DEBUG] provider={} found Headquarters={}", dto.getEntityPublicId(), l.getLocationName()))
+                .peek(l -> log.debug("[DEBUG] provider={} found Headquarters={}", dto.getEntityPublicId(), l.getLocationName()))
                 .findFirst()
                 .orElse(null);
 
@@ -300,7 +300,7 @@ public class SupplierRowMapper {
                 .orElse(null);
 
         if (fallback != null) {
-            log.info("[DEBUG] provider={} fallback location={}", dto.getEntityPublicId(), fallback.getLocationName());
+            log.debug("[DEBUG] provider={} fallback location={}", dto.getEntityPublicId(), fallback.getLocationName());
         }
 
         return fallback;
