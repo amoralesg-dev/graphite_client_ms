@@ -1,16 +1,24 @@
 package com.rassini.graphite_client.service.xml.impl;
 
 
+import com.rassini.graphite_client.service.catalog.CatalogManagerCacheService;
 import com.rassini.graphite_client.service.xml.CatalogService;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class CatalogServiceImpl implements CatalogService {
 
-    @Override
-    public String mapState(String graphiteState, String plantId) {
-        return graphiteState;
-    }
+
+    private final CatalogManagerCacheService catalogManagerCacheService;
+
+
 
     @Override
     public String mapCountry(String graphiteCountry, String plantId) {
@@ -36,6 +44,19 @@ public class CatalogServiceImpl implements CatalogService {
                 "P_5001",
                 "P_Compras"
         );
+    }
+    @Override
+    public String getEquivalenciaState(String graphiteState, String plantId) {
+        String equivalencia =null;
+        equivalencia = catalogManagerCacheService.getEquivalencia(
+                XMLConstants.CATALOG_STATE, graphiteState,plantId);
+
+        if(equivalencia == null) {
+            log.info("No se encontró equivalencia para state='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteState, plantId);
+        }else {
+            log.info("Equivalencia encontrada para state='{}' y plantId='{}': '{}'", graphiteState, plantId, equivalencia);
+        }
+        return equivalencia;
     }
 
     @Override

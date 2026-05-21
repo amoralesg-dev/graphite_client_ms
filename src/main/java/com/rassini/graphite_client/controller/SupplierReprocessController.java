@@ -20,7 +20,7 @@ public class SupplierReprocessController {
 
     /**
      * Reprocesa UN proveedor si su status es DESCARGA
-     * NO consulta Graphite
+     * consulta Graphite
      * NO hace ACK
      */
     @PostMapping("/{publicId}")

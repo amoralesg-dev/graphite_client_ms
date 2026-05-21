@@ -18,6 +18,28 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
 
+
+    private String statusIntegrity(SuppliersRowEntity row, GraphiteSupplierDto dto) {
+
+        String statusFromRow = (row.getId() == null) ? "A" : "M";
+        String statusFromDto = null;
+
+        String statusErpGraphite = dto.getStatusERPGraphite();
+
+        if (statusErpGraphite != null) {
+            if ("CAMBIARDESPUESALTA".equalsIgnoreCase(statusErpGraphite)) {
+                statusFromDto = "A";
+            } else if ("CAMBIARDESPUESMOD".equalsIgnoreCase(statusErpGraphite)) {
+                statusFromDto = "M";
+            } else if ("CAMBIARDESPUESBAJA".equalsIgnoreCase(statusErpGraphite)) {
+                statusFromDto = "D";
+            }
+        }
+
+        return statusFromDto != null ? statusFromDto : statusFromRow;
+    }
+
+
     @Override
     public void upsertSuppliersRows(GraphiteSupplierDto dto) {
 
@@ -37,12 +59,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                     .findBySupplierCodeAndBusinessUnitCode(creditor, bu)
                     .orElseGet(SuppliersRowEntity::new);
 
-            
-            if (row.getId() == null) {
-                row.setStatusIntegrity("A"); // Alta
-            } else {
-                row.setStatusIntegrity("M"); // Modificación
-            }
+            row.setStatusIntegrity(statusIntegrity(row, dto));   
 
 
             //  llenar el MISMO objeto (no crear otro)

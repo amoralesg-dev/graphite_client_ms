@@ -106,13 +106,11 @@ public class SupplierRowMapper {
 
             row.setZipCode(resolvedAddress.getPostalCode());
             row.setCityCode(resolvedAddress.getCity());
-
-            row.setStateCode(
-                    catalogService.mapState(
-                            resolvedAddress.getRegion(),
-                            erp.getRassiniErpEntityId()
-                    )
-            );
+            
+            row.setStateCode( catalogService.getEquivalenciaState(
+                    resolvedAddress.getRegion(),
+                    erp.getRassiniErpEntityId()
+            ));
 
             row.setCountryCode(
                     catalogService.mapCountry(

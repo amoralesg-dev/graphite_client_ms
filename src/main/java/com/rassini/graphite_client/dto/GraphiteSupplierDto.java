@@ -36,6 +36,9 @@ public class GraphiteSupplierDto {
     @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
     private List<SalesContactCalc> locSalesContactAlternateContactCalc;
 
+    @JsonProperty("ESTATUSNOHAYMAPEO_AUN")
+    private String statusERPGraphite;
+
     // =========================
     // Locations
     // =========================

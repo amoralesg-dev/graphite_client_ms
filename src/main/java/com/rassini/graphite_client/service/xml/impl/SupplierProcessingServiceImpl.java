@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.ProviderState;
 import com.rassini.graphite_client.entity.SupplierEntity;
+import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.repository.SupplierRepository;
 import com.rassini.graphite_client.service.sync.GraphiteProfileRefreshService;
 import com.rassini.graphite_client.service.sync.IntegrityService;
@@ -41,6 +42,8 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
     private final GraphiteProfileRefreshService graphiteProfileRefreshService;
 
+
+    
     @Override
     public void processSupplier(String publicId) {
 
