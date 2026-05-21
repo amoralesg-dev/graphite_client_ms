@@ -14,7 +14,7 @@ public class GraphiteSupplierDto {
     // =========================
     // Datos generales
     // =========================
-    @JsonProperty("ERP_ID")
+    @JsonProperty("RASSINI_ERP_ID")
     private String erpIdQad;
 
     @JsonProperty("Entity_Public_Id")
