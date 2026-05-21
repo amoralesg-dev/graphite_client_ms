@@ -231,6 +231,8 @@ public class OcXmlFactory {
                 .creditorIsTaxIncluded("false")
                 .creditorTaxIDFederal(supplier.getRfc())
                 .creditorTaxIDState(supplier.getRfc())
+                .tcCreditorTypeCode(supplier.getSupplierTypeCode())
+                .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
                 .creditorTaxDeclaration(XMLConstants.CERO)
                 .creditorIsTaxReport("false")
                 .creditorIsTaxConfirmed("false")

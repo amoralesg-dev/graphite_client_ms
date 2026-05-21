@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,9 +40,8 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
                 .queryParam("interface", this.interfaceName)
                 .queryParam("connectionPhases", "connected")
                 .queryParam("connectionRole", "buyer")
-                .queryParam("limit", this.limit)
+                .queryParam("limit", this.limit);
                 //.queryParam("filterEntitiesWithConfirmationReviews", filterReady);
-                ;
 
         // Si se pasan IDs específicos, Graphite debería devolverlos aunque tengan ACK
         if (StringUtils.hasText(publicIds)) {
@@ -50,15 +50,15 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
         }
 
         String url = builder.build().toUriString();
-        
-        log.debug("[DEBUG] === INICIO SOLICITUD  CHANGES ===");
+
+        log.debug("[DEBUG] === INICIO SOLICITUD CHANGES ===");
         log.debug("[DEBUG] URL: {}", url);
-        
+
         JsonNode response = executeRequest(url, HttpMethod.GET, null);
-        
+
         log.debug("[DEBUG] RESPONSE BODY: {}", response != null ? response.toString() : "NULL");
         log.debug("[DEBUG] === FIN SOLICITUD CHANGES ===");
-        
+
         return response;
     }
 
@@ -66,14 +66,15 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
     public JsonNode getProfile(String publicId, boolean applyRules) {
         String url = UriComponentsBuilder.fromUriString(baseUrl)
                 .path("/profile/{publicId}")
-                .queryParam("connectionRole", "buyer")
-                .queryParam("applyVisibilityRules", true)
-                .queryParam("interface", this.interfaceName)
-                .buildAndExpand(publicId).toUriString();
-        
+                // .queryParam("connectionRole", "buyer")
+                // .queryParam("applyVisibilityRules", true)
+                // .queryParam("interface", this.interfaceName)
+                .buildAndExpand(publicId)
+                .toUriString();
+
         log.debug("[DEBUG] Consultando perfil para ID: {}", publicId);
         log.debug("[DEBUG] URL Perfil: {}", url);
-        
+
         return executeRequest(url, HttpMethod.GET, null);
     }
 
@@ -81,37 +82,33 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
     public void acknowledgeChange(AckRequest ackRequest) {
         String url = UriComponentsBuilder.fromUriString(baseUrl)
                 .path("/changes/acknowledge")
-                .build().toUriString();
+                .build()
+                .toUriString();
 
-        // Crear el cuerpo del mensaje
         Map<String, Object> body = new HashMap<>();
-        body.put("interface", ackRequest.getJavaInterface()); // interfaz
-        body.put("connectionRole", ackRequest.getConnectionRole()); // rol de conexión
-        body.put("publicId", ackRequest.getPublicId()); // ID público para la ACK
+        body.put("interface", ackRequest.getJavaInterface());
+        body.put("connectionRole", ackRequest.getConnectionRole());
+        body.put("publicId", ackRequest.getPublicId());
 
         log.debug("[DEBUG] Enviando ACK para ID: {}", ackRequest.getPublicId());
 
-        // Envía la solicitud
         executeRequest(url, HttpMethod.POST, body);
     }
-
-
 
     private JsonNode executeRequest(String url, HttpMethod method, Object body) {
         HttpHeaders headers = new HttpHeaders();
         String token = tokenManagerService.getValidToken();
-        
+
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("accept", "application/json");
 
-        // Log del token para verificar si coincide con el de Postman (primeros y últimos caracteres)
         if (token != null && token.length() > 20) {
-            log.debug("[DEBUG] Token: {}...{}", token.substring(0, 10), token.substring(token.length() - 10));
+            log.info("[DEBUG] Token: {}...{}", token.substring(0, 10), token.substring(token.length() - 10));
         }
 
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
-        
+
         try {
             ResponseEntity<JsonNode> response = restTemplate.exchange(url, method, entity, JsonNode.class);
             return response.getBody();

@@ -6,6 +6,7 @@ import com.rassini.graphite_client.dto.AckRequest;
 import com.rassini.graphite_client.entity.ProviderState;
 import com.rassini.graphite_client.entity.SupplierEntity;
 import com.rassini.graphite_client.repository.SupplierRepository;
+import com.rassini.graphite_client.service.sync.GraphiteProfileRefreshService;
 import com.rassini.graphite_client.service.sync.GraphiteSyncService;
 import com.rassini.graphite_client.service.xml.SupplierProcessingService;
 
@@ -30,6 +31,7 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
     private final GraphiteApiClient apiClient;
     private final SupplierRepository repository;
     private final SupplierProcessingService supplierProcessingService;
+    private final GraphiteProfileRefreshService graphiteProfileRefreshService;
 
     @Value("${graphite.interface-name}")
     private String interfaceName;
@@ -72,7 +74,7 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
 
                 try {
                     // 1) Descarga perfil y guarda con status DESCARGA
-                    boolean saved = processAndSaveInternal(publicId);
+                    boolean saved = graphiteProfileRefreshService.processAndSaveInternal(publicId);
 
                     if (!saved) {
                         log.warn("[SERVICE] Perfil {} no se pudo guardar", publicId);
@@ -101,34 +103,7 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
     // GUARDA JSON Y STATUS
     // =========================
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean processAndSaveInternal(String publicId) {
-
-        log.info("[SERVICE] Solicitando perfil a Graphite para {}", publicId);
-        JsonNode profile = apiClient.getProfile(publicId, true);
-
-        if (profile == null || profile.isNull() || profile.isMissingNode()) {
-            log.error("[SERVICE] Perfil vacío para {}", publicId);
-            return false;
-        }
-
-        SupplierEntity entity = repository.findById(publicId)
-                .orElseGet(() -> {
-                    SupplierEntity e = new SupplierEntity();
-                    e.setPublicId(publicId);
-                    return e;
-                });
-
-        entity.setStatus(ProviderState.DESCARGA);
-        entity.setFullJson(profile.toString());
-        entity.setLastSync(LocalDateTime.now());
-
-        repository.save(entity);
-
-        log.info("[SERVICE] Proveedor {} guardado con status DESCARGA", publicId);
-        return true;
-    }
-
+    
     // =========================
     // ACK A GRAPHITE
     // =========================
