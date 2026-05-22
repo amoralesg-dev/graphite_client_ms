@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
@@ -15,6 +16,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -35,13 +37,13 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
 
     @Override
     public JsonNode getChanges(String interfaceNameNo, boolean filterReady, String publicIds) {
-        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl)
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(Objects.requireNonNull(baseUrl, ConstantValues.GRAPHITE_API_BASE_URL_MUST_NOT_BE_NULL))
                 .path("/changes/connections")
                 .queryParam("interface", this.interfaceName)
                 .queryParam("connectionPhases", "connected")
                 .queryParam("connectionRole", "buyer")
                 .queryParam("limit", this.limit);
-                //.queryParam("filterEntitiesWithConfirmationReviews", filterReady);
+                
 
         // Si se pasan IDs específicos, Graphite debería devolverlos aunque tengan ACK
         if (StringUtils.hasText(publicIds)) {
@@ -64,7 +66,7 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
 
     @Override
     public JsonNode getProfile(String publicId, boolean applyRules) {
-        String url = UriComponentsBuilder.fromUriString(baseUrl)
+        String url = UriComponentsBuilder.fromUriString(Objects.requireNonNull(baseUrl, ConstantValues.GRAPHITE_API_BASE_URL_MUST_NOT_BE_NULL))
                 .path("/profile/{publicId}")
                 // .queryParam("connectionRole", "buyer")
                 // .queryParam("applyVisibilityRules", true)
@@ -78,6 +80,7 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
         return executeRequest(url, HttpMethod.GET, null);
     }
 
+    @SuppressWarnings("null")
     @Override
     public void acknowledgeChange(AckRequest ackRequest) {
         String url = UriComponentsBuilder.fromUriString(baseUrl)
@@ -95,11 +98,16 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
         executeRequest(url, HttpMethod.POST, body);
     }
 
-    private JsonNode executeRequest(String url, HttpMethod method, Object body) {
+    private JsonNode executeRequest(@NonNull String url, @NonNull HttpMethod method, Object body) {
         HttpHeaders headers = new HttpHeaders();
         String token = tokenManagerService.getValidToken();
 
-        headers.setBearerAuth(token);
+        if (token != null && !token.isEmpty()) {
+            headers.setBearerAuth(token);
+        } else {
+            log.warn("[DEBUG] No authentication token available");
+        }
+
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("accept", "application/json");
 

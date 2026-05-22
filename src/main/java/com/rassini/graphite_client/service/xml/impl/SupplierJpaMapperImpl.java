@@ -70,10 +70,10 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
             if (row.getId() == null) {
 
                 int existing =
-                        suppliersRowRepository.countBySupplierCode(creditor);
+                        suppliersRowRepository.countBySupplierCodeAndAccountNumber(creditor, row.getAccountNumber());
 
                 row.setSupplierCodeDisIntegrity(
-                        creditor + (existing + 1)
+                        row.getErpIdQad() + (existing + 1)
                 );
             }
 

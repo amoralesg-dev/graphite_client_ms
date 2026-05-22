@@ -30,6 +30,11 @@ public class GraphiteProfileRefreshServiceImpl implements GraphiteProfileRefresh
 
         log.info("[SERVICE] Solicitando perfil a Graphite para {}", publicId);
 
+        if (publicId == null) {
+            log.error("[SERVICE] publicId is null");
+            return false;
+        }
+
         // IMPORTANTE: false para no mandar reglas que te cambien el payload
         JsonNode profile = apiClient.getProfile(publicId, false);
 

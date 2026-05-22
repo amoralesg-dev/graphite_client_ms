@@ -7,6 +7,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
+import org.springframework.lang.NonNull;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.*;
@@ -67,7 +68,7 @@ public class RestConfig {
     }
 
     @Bean
-    public RestTemplate restTemplate(ObjectMapper graphiteObjectMapper) {
+    public RestTemplate restTemplate(@NonNull ObjectMapper graphiteObjectMapper) {
 
         MappingJackson2HttpMessageConverter jacksonConverter =
                 new MappingJackson2HttpMessageConverter();

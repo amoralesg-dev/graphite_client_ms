@@ -15,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -119,7 +117,8 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
 
             apiClient.acknowledgeChange(ackRequest);
 
-            SupplierEntity entity = repository.findById(publicId).orElseThrow();
+            SupplierEntity entity = repository.findById(publicId).orElseThrow(() -> 
+                    new IllegalArgumentException("SupplierEntity not found for publicId: " + publicId));
             entity.setStatus(ProviderState.CONFIRMADOACK);
             entity.setLastSync(LocalDateTime.now());
 

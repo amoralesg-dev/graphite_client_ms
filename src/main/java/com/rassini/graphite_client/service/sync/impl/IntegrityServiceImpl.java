@@ -69,7 +69,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         // AddModDelete - Max: 1
         line.append(cleanAndTruncate(supplier.getStatusIntegrity(), 1)).append("|");
         // Counterparty - Max: 10
-        line.append(cleanAndTruncate(supplier.getSupplierCode(), 10)).append("|");
+        line.append(cleanAndTruncate(supplier.getErpIdQad(), 10)).append("|");
         // Full Name - Max: 140
         line.append(cleanAndTruncate(supplier.getSupplierName(), 140)).append("|");
         // Short Name - Max: 20

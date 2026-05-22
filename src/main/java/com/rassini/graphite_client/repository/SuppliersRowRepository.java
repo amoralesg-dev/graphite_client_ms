@@ -46,7 +46,13 @@ public interface SuppliersRowRepository
         );
 
 
-       int countBySupplierCode(String supplierCode);
+
+        int countByErpIdQadAndAccountNumber(String erpIdQad, String accountNumber);
+
+        int countBySupplierCodeAndAccountNumber(String supplierCode, String accountNumber);
+
+
+       int countByErpIdQad(String erpIdQad);
 
 
 }
