@@ -1,7 +1,7 @@
 package com.rassini.graphite_client.service.xml;
 
 public interface CatalogService {
-  String mapState(String graphiteState, String plantId);
+  String getEquivalenciaState(String graphiteState, String plantId);
   String mapCountry(String graphiteCountry, String plantId);
   String mapCurrency(String graphiteCurrency, String plantId);
 

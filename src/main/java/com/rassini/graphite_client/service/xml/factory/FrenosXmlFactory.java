@@ -207,7 +207,7 @@ public class FrenosXmlFactory {
 
         return CreditorNodoXML.builder()
 
-                .creditorIsActive("false")
+                .creditorIsActive("true")
                 .creditorCode(supplier.getErpIdQad())
 
                 .vatDeliveryType("PRODUCT")

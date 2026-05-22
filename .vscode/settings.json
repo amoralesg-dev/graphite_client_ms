@@ -1,3 +1,16 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive"
+  "java.server.launchMode": "Standard",
+  "java.jdt.ls.java.home": "C:\\Program Files\\Amazon Corretto\\jdk21.0.10_7",
+  "java.configuration.runtimes": [
+    {
+      "name": "JavaSE-21",
+      "path": "C:\\Program Files\\Amazon Corretto\\jdk21.0.10_7",
+      "default": true
+    }
+  ],
+  "java.import.maven.enabled": true,
+  "java.configuration.updateBuildConfiguration": "automatic",
+  "java.autobuild.enabled": true,
+  "java.import.maven.java.home": "C:\\Program Files\\Amazon Corretto\\jdk21.0.10_7",
+  "java.jdt.ls.lombokSupport.enabled": true
 }

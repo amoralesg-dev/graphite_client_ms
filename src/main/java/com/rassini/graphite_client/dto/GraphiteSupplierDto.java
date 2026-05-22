@@ -4,6 +4,7 @@ import java.util.List;
 
 import lombok.Data;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -14,7 +15,7 @@ public class GraphiteSupplierDto {
     // =========================
     // Datos generales
     // =========================
-    @JsonProperty("ERP_ID")
+    @JsonProperty("RASSINI_ERP_ID")
     private String erpIdQad;
 
     @JsonProperty("Entity_Public_Id")
@@ -26,15 +27,31 @@ public class GraphiteSupplierDto {
     @JsonProperty("Integration_Tax_ID")
     private String integrationTaxId;
 
-    // Usado por SupplierRowMapper (NO quitar)
-    @JsonProperty("Payment_Contact_Email")
+    /**
+     * En algunos JSON llega como Supplier_Contact_Email.
+     * En otros puede venir como Payment_Contact_Email.
+     */
+    @JsonAlias({ "Supplier_Contact_Email", "Payment_Contact_Email" })
     private String supplierContactEmail;
 
-    @JsonProperty("Payment_Contact_Name")
+    /**
+     * Mantengo el nombre del campo para no romper tu mapper actual
+     * que usa dto.getPaymentContactName().
+     * Pero lo mapeo al nodo correcto: Supplier_Contact_Name
+     * y dejo alias a Payment_Contact_Name por compatibilidad.
+     */
+    @JsonAlias({ "Supplier_Contact_Name", "Payment_Contact_Name" })
     private String paymentContactName;
 
+    /**
+     * Lo dejo porque ya existe en tu DTO actual.
+     * Si en algunos suppliers viene en raíz, seguirá funcionando.
+     */
     @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
     private List<SalesContactCalc> locSalesContactAlternateContactCalc;
+
+    @JsonProperty("ESTATUSNOHAYMAPEO_AUN")
+    private String statusERPGraphite;
 
     // =========================
     // Locations
@@ -61,6 +78,18 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("Address")
         private Address address;
+
+        /**
+         * En CN730447 este nodo viene aquí, dentro de la Location.
+         */
+        @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
+        private List<SalesContactCalc> locSalesContactAlternateContactCalc;
+
+        @JsonProperty("Loc_Sales_Contact_Alternate_Name_Calc")
+        private String locSalesContactAlternateNameCalc;
+
+        @JsonProperty("Loc_Sales_Contact_Alternate_Email_Calc")
+        private String locSalesContactAlternateEmailCalc;
     }
 
     @Data
@@ -108,7 +137,7 @@ public class GraphiteSupplierDto {
         @JsonProperty("address3")
         private String address3;
 
-         @JsonProperty("deliveryLine1")
+        @JsonProperty("deliveryLine1")
         private String deliveryLine1;
 
         @JsonProperty("lastLine")
@@ -136,7 +165,6 @@ public class GraphiteSupplierDto {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Components {
 
-        // ===== actuales =====
         @JsonProperty("premise")
         private String premise;
 
@@ -149,7 +177,6 @@ public class GraphiteSupplierDto {
         @JsonProperty("locality")
         private String locality;
 
-        // ===== faltantes MX/INTL =====
         @JsonProperty("premiseNumber")
         private String premiseNumber;
 
@@ -180,7 +207,6 @@ public class GraphiteSupplierDto {
         @JsonProperty("building")
         private String building;
 
-        // ===== faltantes US =====
         @JsonProperty("primaryNumber")
         private String primaryNumber;
 
@@ -277,7 +303,6 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Account_Number")
         private String bankAccountNumber;
 
-        // --- nuevos campos útiles para BD ---
         @JsonProperty("Bank_Country")
         private String bankCountry;
 
@@ -287,11 +312,9 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Account_Currency")
         private String bankAccountCurrency;
 
-        // Objeto: Bank_Number { bank_name, swift, routing, ... }
         @JsonProperty("Bank_Number")
         private BankNumber bankNumber;
 
-        // Objeto: Bank_SWIFT { routing, valid }
         @JsonProperty("Bank_SWIFT")
         private BankSwift bankSwift;
 

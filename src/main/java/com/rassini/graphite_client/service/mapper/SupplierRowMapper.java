@@ -31,12 +31,12 @@ public class SupplierRowMapper {
     }
 
     public static void fill(
-            SuppliersRowEntity row,
-            GraphiteSupplierDto dto,
-            GraphiteSupplierDto.Location headquarters,
-            GraphiteSupplierDto.ErpRecord erp,
-            CatalogService catalogService
-    ) {
+        SuppliersRowEntity row,
+        GraphiteSupplierDto dto,
+        GraphiteSupplierDto.Location headquarters,
+        GraphiteSupplierDto.ErpRecord erp,
+        CatalogService catalogService) 
+    {
 
         // -------------------------------
         // Validaciones mínimas
@@ -51,7 +51,7 @@ public class SupplierRowMapper {
         // Identidad
         // -------------------------------
         row.setSupplierCode(dto.getEntityPublicId());
-        row.setSupplierCodeDisIntegrity(dto.getEntityPublicId());
+        row.setSupplierCodeDisIntegrity(dto.getErpIdQad());
         row.setBusinessUnitCode(erp.getRassiniErpEntityId());
         row.setErpIdQad(dto.getErpIdQad());
 
@@ -60,38 +60,65 @@ public class SupplierRowMapper {
         row.setRfc(dto.getIntegrationTaxId());
 
         // -------------------------------
-        // Contact Email (siempre del DTO)
-        // -------------------------------
-        row.setContactEmail(dto.getSupplierContactEmail());
-
-        // -------------------------------
-        // Contact Name
+        // Contact Name + Contact Email
+        // Primero desde headquarters, luego fallback a root
         // -------------------------------
         String contactName = null;
+        String contactEmail = null;
 
-        if (dto.getLocSalesContactAlternateContactCalc() != null
-                && !dto.getLocSalesContactAlternateContactCalc().isEmpty()
-                && dto.getLocSalesContactAlternateContactCalc().get(0) != null) {
+        if (headquarters != null
+                && headquarters.getLocSalesContactAlternateContactCalc() != null
+                && !headquarters.getLocSalesContactAlternateContactCalc().isEmpty()
+                && headquarters.getLocSalesContactAlternateContactCalc().get(0) != null) {
 
-            contactName = dto.getLocSalesContactAlternateContactCalc()
+            contactName = headquarters.getLocSalesContactAlternateContactCalc()
                     .get(0)
                     .getName();
+
+            contactEmail = headquarters.getLocSalesContactAlternateContactCalc()
+                    .get(0)
+                    .getEmail();
+        }
+
+        if ((contactName == null || contactName.isBlank())
+                && headquarters != null
+                && headquarters.getLocSalesContactAlternateNameCalc() != null
+                && !headquarters.getLocSalesContactAlternateNameCalc().isBlank()) {
+
+            contactName = headquarters.getLocSalesContactAlternateNameCalc();
+        }
+
+        if ((contactEmail == null || contactEmail.isBlank())
+                && headquarters != null
+                && headquarters.getLocSalesContactAlternateEmailCalc() != null
+                && !headquarters.getLocSalesContactAlternateEmailCalc().isBlank()) {
+
+            contactEmail = headquarters.getLocSalesContactAlternateEmailCalc();
         }
 
         if (contactName == null || contactName.isBlank()) {
             contactName = dto.getPaymentContactName();
         }
 
-        if ((contactName == null || contactName.isBlank())
+        if ((contactEmail == null || contactEmail.isBlank())
                 && dto.getSupplierContactEmail() != null
                 && !dto.getSupplierContactEmail().isBlank()) {
 
-            contactName = dto.getSupplierContactEmail()
+            contactEmail = dto.getSupplierContactEmail();
+        }
+
+        if ((contactName == null || contactName.isBlank())
+                && contactEmail != null
+                && !contactEmail.isBlank()) {
+
+            contactName = contactEmail
                     .split("@")[0]
                     .toUpperCase();
         }
 
         row.setContactName(contactName);
+        row.setContactEmail(contactEmail);
+
 
         // -------------------------------
         // Dirección (resolver por estructura real)
@@ -107,12 +134,10 @@ public class SupplierRowMapper {
             row.setZipCode(resolvedAddress.getPostalCode());
             row.setCityCode(resolvedAddress.getCity());
 
-            row.setStateCode(
-                    catalogService.mapState(
-                            resolvedAddress.getRegion(),
-                            erp.getRassiniErpEntityId()
-                    )
-            );
+            row.setStateCode(catalogService.getEquivalenciaState(
+                    resolvedAddress.getRegion(),
+                    erp.getRassiniErpEntityId()
+            ));
 
             row.setCountryCode(
                     catalogService.mapCountry(
@@ -262,7 +287,6 @@ public class SupplierRowMapper {
             row.setIntermediaryAccountCountry(null);
         }
     }
-
     // ======================================================
     // HELPERS
     // ======================================================

@@ -24,6 +24,7 @@ public class XMLConstants {
 
     // Address
     public static final String ADDRESS_LOGIC_KEY = "413826";
+    public static final String CATALOG_STATE = "state";
 
     private XMLConstants() {
         // no instanciable

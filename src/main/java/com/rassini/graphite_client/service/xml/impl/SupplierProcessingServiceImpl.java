@@ -4,11 +4,14 @@ import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.ProviderState;
 import com.rassini.graphite_client.entity.SupplierEntity;
+import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.repository.SupplierRepository;
+import com.rassini.graphite_client.service.sync.GraphiteProfileRefreshService;
 import com.rassini.graphite_client.service.sync.IntegrityService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
 import com.rassini.graphite_client.service.xml.SupplierProcessingService;
@@ -25,8 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Transactional
 @Slf4j
-public class SupplierProcessingServiceImpl
-        implements SupplierProcessingService {
+public class SupplierProcessingServiceImpl implements SupplierProcessingService {
 
     private final SupplierRepository supplierRepository;
     private final ObjectMapper objectMapper;
@@ -38,35 +40,49 @@ public class SupplierProcessingServiceImpl
     private final XmlBreakesService xmlBreakesService;
     private final IntegrityService integrityService;
 
+    private final GraphiteProfileRefreshService graphiteProfileRefreshService;
+
+
+    
     @Override
     public void processSupplier(String publicId) {
 
-        //  Tomar solo si está en DESCARGA
+        // 1. Refrescar desde Graphite y guardar fullJson nuevo
+        boolean refreshed = graphiteProfileRefreshService.processAndSaveInternal(publicId);
+        if (!refreshed) {
+            return;
+        }
+
+        // 2. Tomar nuevamente desde BD solo si quedó en DESCARGA
         SupplierEntity supplier = supplierRepository
             .findByPublicIdAndStatus(publicId, ProviderState.DESCARGA)
             .orElse(null);
 
         if (supplier == null) {
-            // No está en DESCARGA → no se procesa
             return;
         }
 
         try {
-            //  PROCESSINGJPA
             updateStatus(supplier, ProviderState.PROCESSINGJPA);
 
+            String raw = supplier.getFullJson();
+
+            JsonNode root = objectMapper.readTree(raw);
+
+            
+            log.debug("ERP_ID root = {}", root.path("ERP_ID").asText(null));
+            log.debug("Entity_Public_Id root = {}", root.path("Entity_Public_Id").asText(null));
+            log.debug("Entity_Name root = {}", root.path("Entity_Name").asText(null));
+
             GraphiteSupplierDto dto =
-                objectMapper.readValue(supplier.getFullJson(),
-                                        GraphiteSupplierDto.class);
+                objectMapper.readValue(raw, GraphiteSupplierDto.class);
 
-            // Inserta en tabla suppliers (una fila por ERP_Record)
-            
-            log.info("[PROCESS] Antes de upsertSuppliersRows");
+            log.debug("[PROCESS] Antes de upsertSuppliersRows GraphiteSupplierDto: {}", dto);
+            log.debug("[PROCESS] Antes de upsertSuppliersRows");
             supplierJpaMapper.upsertSuppliersRows(dto);
-            log.info("[PROCESS] Despues de upsertSuppliersRows");
+            log.debug("[PROCESS] Despues de upsertSuppliersRows");
 
-            
-            log.info(
+            log.debug(
                 "[PROCESS] ERPs en dto: {}",
                 dto.getErpRecords() == null
                     ? "null"
@@ -76,36 +92,23 @@ public class SupplierProcessingServiceImpl
                         .toList()
             );
 
-
-            // 3 XML OC (0111)
             updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
             xmlOcService.generate(dto);
 
-            // 4️ XML PN (09)
             updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
             xmlPnService.generate(dto);
 
-            // 5️ XML Frenos (1000)
             updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
             xmlFrenosService.generate(dto);
 
-            // 6 XML Breakes (1850)
             updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
             xmlBreakesService.generate(dto);
 
-            // 7 Todos los XML listos
             updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
 
-
-            //genera archivo de integrity
             integrityService.createFileSupplierSync(dto.getErpIdQad());
 
-
-           
-
         } catch (Exception e) {
-            // ❗ No cambias status (no hay ERROR en enum)
-            // Queda en el último estado alcanzado
             throw new IllegalStateException(
                 "Error procesando proveedor " + publicId, e
             );

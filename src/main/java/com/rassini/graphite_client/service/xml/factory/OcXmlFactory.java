@@ -161,7 +161,6 @@ public class OcXmlFactory {
                 .tcAddressTypeCode("HEADOFFICE")
                 .tcLngCode(XMLConstants.LANG_CODE)
                 .tcStateDescription(supplier.getStateDescription())
-                .tcCountryDescription("MEXICO")
                 .tiCountryFormat(XMLConstants.CERO)
                 .tcLngDescription("latin spanish")
                 .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
@@ -220,7 +219,7 @@ public class OcXmlFactory {
                 CesarQadRules.resolvePaymentTerms(Domain.RFCORPO, paymentTerms);
 
         return CreditorNodoXML.builder()
-                .creditorIsActive("false")
+                .creditorIsActive("true")
                 .creditorCode(supplier.getErpIdQad())
                 .vatDeliveryType("PRODUCT")
                 .vatPercentageLevel("NONE")
@@ -231,6 +230,8 @@ public class OcXmlFactory {
                 .creditorIsTaxIncluded("false")
                 .creditorTaxIDFederal(supplier.getRfc())
                 .creditorTaxIDState(supplier.getRfc())
+                .tcCreditorTypeCode(supplier.getSupplierTypeCode())
+                .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
                 .creditorTaxDeclaration(XMLConstants.CERO)
                 .creditorIsTaxReport("false")
                 .creditorIsTaxConfirmed("false")

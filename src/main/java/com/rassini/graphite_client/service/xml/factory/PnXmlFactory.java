@@ -203,7 +203,7 @@ public class PnXmlFactory {
 
         return CreditorNodoXML.builder()
 
-                .creditorIsActive("false")
+                .creditorIsActive("true")
                 .creditorCode(supplier.getErpIdQad())
                 .vatDeliveryType("PRODUCT")
                 .vatPercentageLevel("NONE")

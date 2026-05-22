@@ -5,7 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- 🔥 IMPORTANTE: usar parent -->
+    <!-- IMPORTANTE: usar parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -62,11 +62,14 @@
             <scope>runtime</scope>
         </dependency>
 
+        
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <version>1.18.38</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Tests -->
