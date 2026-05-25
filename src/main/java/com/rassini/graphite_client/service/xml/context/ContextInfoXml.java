@@ -22,6 +22,4 @@ public class ContextInfoXml {
     private String lastModifiedDate;
     private String lastModifiedTime;
     private String lastModifiedUser;
-    private String tc_Rowid;
-    private String tc_ParentRowid;
 }

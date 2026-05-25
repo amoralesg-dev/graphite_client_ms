@@ -8,6 +8,11 @@ graphite:
   sync:
     cron: ${GRAPHITE_SYNC_CRON:0 */2 * * * *}
 
+
+app:
+  xml:
+    output-path: ${XML_OUTPUT_PATH:C:/temp}
+
 server:
   port: ${SERVER_PORT:8080}
   servlet:
@@ -25,12 +30,19 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
 
-
 logging:
+  file:
+    name: logs/graphite-client.log
+  logback:
+    rollingpolicy:
+      file-name-pattern: logs/archive/graphite-client.%d{yyyy-MM-dd}.%i.log.gz
+      max-file-size: 20MB
+      max-history: 5
+      total-size-cap: 500MB
+      clean-history-on-start: true
   level:
     root: INFO
-    java.com.rassini.graphite_client.service: DEBUG
-
+    com.rassini.graphite_client: DEBUG
 management:
   endpoints:
     web:

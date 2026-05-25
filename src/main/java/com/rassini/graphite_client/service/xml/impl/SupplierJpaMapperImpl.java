@@ -8,35 +8,43 @@ import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.mapper.SupplierRowMapper;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
 
+  
 
     private String statusIntegrity(SuppliersRowEntity row, GraphiteSupplierDto dto) {
 
-        String statusFromRow = (row.getId() == null) ? "A" : "M";
+        String statusFromRow = (row.getId() == null) ? XMLConstants.ALTA : XMLConstants.MOD;
         String statusFromDto = null;
+
+        
 
         String statusErpGraphite = dto.getStatusERPGraphite();
 
         if (statusErpGraphite != null) {
             if ("CAMBIARDESPUESALTA".equalsIgnoreCase(statusErpGraphite)) {
-                statusFromDto = "A";
+                statusFromDto = XMLConstants.ALTA;
             } else if ("CAMBIARDESPUESMOD".equalsIgnoreCase(statusErpGraphite)) {
-                statusFromDto = "M";
+                statusFromDto = XMLConstants.MOD;
             } else if ("CAMBIARDESPUESBAJA".equalsIgnoreCase(statusErpGraphite)) {
-                statusFromDto = "D";
+                statusFromDto = XMLConstants.BAJA;
             }
         }
+        String status = statusFromDto != null ? statusFromDto : statusFromRow;
+        log.info("Estatus  {} resuelto para supplier{}",status, row.getSupplierCode());
 
-        return statusFromDto != null ? statusFromDto : statusFromRow;
+        return status;
     }
 
 
@@ -59,7 +67,10 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                     .findBySupplierCodeAndBusinessUnitCode(creditor, bu)
                     .orElseGet(SuppliersRowEntity::new);
 
-            row.setStatusIntegrity(statusIntegrity(row, dto));   
+            String statusIntegrity = statusIntegrity(row, dto);
+
+            log.info("Status integrity resuelto: {} para supplierCode={} y businessUnitCode={}", statusIntegrity, creditor, bu);
+            row.setStatusIntegrity(statusIntegrity);   
 
 
             //  llenar el MISMO objeto (no crear otro)

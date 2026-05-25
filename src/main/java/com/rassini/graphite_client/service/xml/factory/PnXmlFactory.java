@@ -59,7 +59,7 @@ public class PnXmlFactory {
 
         return CreditorXmlContext.builder()
                 .outputFileName("RPIEDRAS_creditor_" + supplier.getErpIdQad() + ".xml")
-                .contextInfo(buildContextInfoCreditor(erpId))
+                .contextInfo(buildContextInfoCreditor(erpId, supplier))
                 .creditor(buildCreditor(supplier, tax))
                 .build();
     }
@@ -70,24 +70,28 @@ public class PnXmlFactory {
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
+
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode("Create")
-                .tlPartialUpdate("false")
+                .tcActivityCode(catalogService.getActivityCode(supplier))
+                .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }
 
-    private ContextInfoXml buildContextInfoCreditor(String erpId) {
+    private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
+                .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode("Create")
-                .tlPartialUpdate("false")
+                .tcActivityCode(catalogService.getActivityCode(supplier))
+                .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }
+
+    
 
     // =====================================================
     // NODES
@@ -102,13 +106,13 @@ public class PnXmlFactory {
                 .businessRelationName2(supplier.getSupplierName())
                 .businessRelationName3(supplier.getSupplierName())
                 .businessRelationSearchName(name20)
-                .businessRelationIsActive("true")
-                .businessRelationIsInterco("false")
-                .businessRelationIsInComp("false")
-                .businessRelationIsCompens("true")
-                .businessRelationIsTaxRep("false")
-                .businessRelationIsLastFill("false")
-                .businessRelationIsDomRestr("false")
+                .businessRelationIsActive(XMLConstants.TRUE)
+                .businessRelationIsInterco((XMLConstants.FALSE))
+                .businessRelationIsInComp((XMLConstants.FALSE))
+                .businessRelationIsCompens(XMLConstants.TRUE)
+                .businessRelationIsTaxRep((XMLConstants.FALSE))
+                .businessRelationIsLastFill((XMLConstants.FALSE))
+                .businessRelationIsDomRestr((XMLConstants.FALSE))
                 .tcCorporateGroupCode(XMLConstants.PROVEEDOR)
                 .tcLngCode(XMLConstants.LANG_CODE)
                 .lastModifiedDate(DateUtil.todayYyyyMD())
@@ -136,13 +140,13 @@ public class PnXmlFactory {
                 .addressTelephone("")
                 .addressEMail("")
                 .addressFormat(XMLConstants.CERO)
-                .addressIsTemporary("false")
+                .addressIsTemporary((XMLConstants.FALSE))
                 .txzTaxZone(tax.txzTaxZone())
                 .txclTaxCls(tax.txclTaxCls())
-                .addressIsSendToPostal("false")
-                .addressIsTaxable("false")
-                .addressIsTaxInCity("false")
-                .addressIsTaxIncluded("false")
+                .addressIsSendToPostal((XMLConstants.FALSE))
+                .addressIsTaxable((XMLConstants.FALSE))
+                .addressIsTaxInCity((XMLConstants.FALSE))
+                .addressIsTaxIncluded((XMLConstants.FALSE))
                 .addressTaxIDFederal(supplier.getRfc())
                 .addressTaxIDState(supplier.getRfc())
                 .addressTaxDeclaration(XMLConstants.CERO)
@@ -169,8 +173,8 @@ public class PnXmlFactory {
                 .contactName(supplier.getContactName())
                 .contactGender(XMLConstants.CONTACT_MALE)
                 .contactEmail(supplier.getContactEmail())
-                .contactIsPrimary("true")
-                .contactIsSecondary("false")
+                .contactIsPrimary(XMLConstants.TRUE)
+                .contactIsSecondary((XMLConstants.FALSE))
                 .tcLngCode(XMLConstants.LANG_CODE)
                 .lastModifiedDate(DateUtil.todayYyyyMD())
                 .lastModifiedTime(DateUtil.nowHhMmSs())
@@ -203,24 +207,24 @@ public class PnXmlFactory {
 
         return CreditorNodoXML.builder()
 
-                .creditorIsActive("true")
+                .creditorIsActive(XMLConstants.TRUE)
                 .creditorCode(supplier.getErpIdQad())
                 .vatDeliveryType("PRODUCT")
                 .vatPercentageLevel("NONE")
-                .creditorIsSendRemittance("false")
-                .creditorIsIndividualPaymnt("false")
-                .creditorIsTaxable("false")
-                .creditorIsTaxInCity("false")
-                .creditorIsTaxIncluded("false")
+                .creditorIsSendRemittance((XMLConstants.FALSE))
+                .creditorIsIndividualPaymnt((XMLConstants.FALSE))
+                .creditorIsTaxable((XMLConstants.FALSE))
+                .creditorIsTaxInCity((XMLConstants.FALSE))
+                .creditorIsTaxIncluded((XMLConstants.FALSE))
 
                 .creditorTaxIDFederal(supplier.getRfc())
                 .creditorTaxIDState(supplier.getRfc())
                 .creditorTaxDeclaration(XMLConstants.CERO)
 
-                .creditorIsTaxReport("false")
-                .creditorIsTaxConfirmed("false")
-                .creditorIsWHT("false")
-                .creditorIsBearBankCharge("false")
+                .creditorIsTaxReport((XMLConstants.FALSE))
+                .creditorIsTaxConfirmed((XMLConstants.FALSE))
+                .creditorIsWHT((XMLConstants.FALSE))
+                .creditorIsBearBankCharge((XMLConstants.FALSE))
                 .creditorBirthDate(XMLConstants.NULL)
 
                 .txzTaxZone(tax.txzTaxZone())
@@ -236,7 +240,7 @@ public class PnXmlFactory {
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
                 .tcReasonCode("INICIAL")
-                .tlBusinessRelationIsInterco("false")
+                .tlBusinessRelationIsInterco((XMLConstants.FALSE))
                 .tcBusinessRelationCode("PR"+supplier.getErpIdQad())
                 .tcBusinessRelationName1(supplier.getSupplierName())
                 .tcCurrencyCode(currency)
