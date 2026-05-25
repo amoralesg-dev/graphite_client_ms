@@ -2,8 +2,10 @@ package com.rassini.graphite_client;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest
+@ActiveProfiles("dev")
 class GraphiteClientApplicationTests {
 
 	@Test
