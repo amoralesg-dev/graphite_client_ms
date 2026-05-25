@@ -22,7 +22,7 @@ jobs:
           java-version: '21'
 
       - name: Compilar y correr tests
-        run: vn clean verify -Dspring.profiles.active=test -e
+        run: mvn clean verify -Dspring.profiles.active=test -e
       
       - name: Subir reportes de Surefire
         if: always()
