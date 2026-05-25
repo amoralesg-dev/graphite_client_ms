@@ -56,7 +56,7 @@ public class OcXmlFactory {
 
         return CreditorXmlContext.builder()
                 .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
-                .contextInfo(buildContextInfoCreditor(erpId))
+                .contextInfo(buildContextInfoCreditor(erpId, supplier))
                 .creditor(buildCreditor(supplier, tax, paymentTerms))
                 .build();
     }
@@ -68,27 +68,28 @@ public class OcXmlFactory {
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
-                .tcAction("")
+                .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcComment("")
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
                 .tcComponentVersion("")
-                .tcActivityCode(XMLConstants.CREATE)
+                .tcActivityCode(catalogService.getActivityCode(supplier))
                 .tlPartialUpdate(XMLConstants.FALSE)
                 .tcPartialUpdateExceptionList("")
                 .build();
     }
 
-    private ContextInfoXml buildContextInfoCreditor(String erpId) {
+    private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
+                .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(XMLConstants.CREATE)
+                .tcActivityCode(catalogService.getActivityCode(supplier))
                 .tlPartialUpdate(XMLConstants.FALSE)
                 .build();
     }

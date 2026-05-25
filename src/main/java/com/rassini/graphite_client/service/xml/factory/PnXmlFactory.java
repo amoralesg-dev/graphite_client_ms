@@ -59,7 +59,7 @@ public class PnXmlFactory {
 
         return CreditorXmlContext.builder()
                 .outputFileName("RPIEDRAS_creditor_" + supplier.getErpIdQad() + ".xml")
-                .contextInfo(buildContextInfoCreditor(erpId))
+                .contextInfo(buildContextInfoCreditor(erpId, supplier))
                 .creditor(buildCreditor(supplier, tax))
                 .build();
     }
@@ -70,24 +70,28 @@ public class PnXmlFactory {
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
+
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(XMLConstants.CREATE)
+                .tcActivityCode(catalogService.getActivityCode(supplier))
                 .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }
 
-    private ContextInfoXml buildContextInfoCreditor(String erpId) {
+    private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
+                .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(XMLConstants.CREATE)
+                .tcActivityCode(catalogService.getActivityCode(supplier))
                 .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }
+
+    
 
     // =====================================================
     // NODES
