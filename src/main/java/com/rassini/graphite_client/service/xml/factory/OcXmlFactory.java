@@ -75,7 +75,7 @@ public class OcXmlFactory {
                 .tcComment("")
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
                 .tcComponentVersion("")
-                .tcActivityCode("Create")
+                .tcActivityCode(XMLConstants.CREATE)
                 .tlPartialUpdate(XMLConstants.FALSE)
                 .tcPartialUpdateExceptionList("")
                 .build();
@@ -88,7 +88,7 @@ public class OcXmlFactory {
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode("Create")
+                .tcActivityCode(XMLConstants.CREATE)
                 .tlPartialUpdate(XMLConstants.FALSE)
                 .build();
     }

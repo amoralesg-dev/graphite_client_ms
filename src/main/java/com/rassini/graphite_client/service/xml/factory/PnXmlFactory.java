@@ -73,7 +73,7 @@ public class PnXmlFactory {
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode("Create")
+                .tcActivityCode(XMLConstants.CREATE)
                 .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }
@@ -84,7 +84,7 @@ public class PnXmlFactory {
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode("Create")
+                .tcActivityCode(XMLConstants.CREATE)
                 .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }

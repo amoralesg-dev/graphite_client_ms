@@ -5,6 +5,7 @@ public class XMLConstants {
     // Básicos
     public static final String FALSE = "false";
     public static final String TRUE = "true";
+    public static final String CREATE = "Create";
     public static final String CERO = "0";
     public static final String NULL = "NULL";
     public static final String LANG_CODE = "ls";
@@ -27,6 +28,7 @@ public class XMLConstants {
     // Address
     public static final String ADDRESS_LOGIC_KEY = "413826";
     public static final String CATALOG_STATE = "state";
+    
 
     private XMLConstants() {
         // no instanciable
