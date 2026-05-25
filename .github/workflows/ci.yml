@@ -22,4 +22,4 @@ jobs:
           java-version: '21'
 
       - name: Compilar y correr tests
-        run: mvn clean verify
+        run: vn clean verify -Dspring.profiles
