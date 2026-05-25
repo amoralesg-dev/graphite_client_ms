@@ -1,1 +1,25 @@
-.
+name: CI
+
+on:
+  push:
+    branches:
+      - DEV
+      - main
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Compilar y correr tests
+        run: mvn clean verify
