@@ -3,6 +3,8 @@ package com.rassini.graphite_client.service.xml.impl.util;
 public class XMLConstants {
 
     // Básicos
+    public static final String FALSE = "false";
+    public static final String TRUE = "true";
     public static final String CERO = "0";
     public static final String NULL = "NULL";
     public static final String LANG_CODE = "ls";
