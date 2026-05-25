@@ -31,3 +31,10 @@ jobs:
           name: surefire-reports
           path: target/surefire-reports
           if-no-files-found: warn
+      - name: Subir JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: graphite-client-jar
+          path: target/graphite-client-0.0.1-SNAPSHOT.jar
+          if-no-files-found: error
