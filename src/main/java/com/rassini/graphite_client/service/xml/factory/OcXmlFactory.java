@@ -89,7 +89,7 @@ public class OcXmlFactory {
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
                 .tcActivityCode("Create")
-                .tlPartialUpdate(XMLConstants."false"m)
+                .tlPartialUpdate(XMLConstants.FALSE)
                 .build();
     }
 
