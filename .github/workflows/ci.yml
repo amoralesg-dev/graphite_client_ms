@@ -89,7 +89,7 @@ jobs:
 
       - name: Esperar arranque
         shell: cmd
-        run: timeout /t 15 /nobreak
+        run: Start-Sleep -Seconds 15
 
       - name: Validar health DEV
         shell: cmd
