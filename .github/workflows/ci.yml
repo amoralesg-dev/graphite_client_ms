@@ -89,7 +89,7 @@ jobs:
 
       - name: Esperar arranque
         shell: cmd
-        run: Start-Sleep -Seconds 15
+        run: ping 127.0.0.1 -n 16 > nul
 
       - name: Validar health DEV
         shell: cmd
