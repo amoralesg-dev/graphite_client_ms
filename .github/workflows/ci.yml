@@ -6,6 +6,7 @@ on:
       - DEV
       - main
   pull_request:
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,7 +24,7 @@ jobs:
 
       - name: Compilar y correr tests
         run: mvn clean verify -Dspring.profiles.active=test -e
-      
+
       - name: Subir reportes de Surefire
         if: always()
         uses: actions/upload-artifact@v4
@@ -31,6 +32,7 @@ jobs:
           name: surefire-reports
           path: target/surefire-reports
           if-no-files-found: warn
+
       - name: Subir JAR
         if: success()
         uses: actions/upload-artifact@v4
@@ -38,3 +40,40 @@ jobs:
           name: graphite-client-jar
           path: target/graphite-client-0.0.1-SNAPSHOT.jar
           if-no-files-found: error
+
+  deploy-dev:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/DEV'
+    runs-on: [self-hosted, Windows, X64, backend, graphite-client]
+
+    steps:
+      - name: Descargar JAR generado
+        uses: actions/download-artifact@v4
+        with:
+          name: graphite-client-jar
+          path: C:\deploy\graphite-client
+
+      - name: Validar artifact descargado
+        shell: cmd
+        run: dir C:\deploy\graphite-client
+
+      - name: Crear carpeta backup si no existe
+        shell: cmd
+        run: |
+          if not exist C:\apps\graphite-client\backup mkdir C:\apps\graphite-client\backup
+
+      - name: Respaldar JAR actual
+        shell: cmd
+        run: |
+          if exist C:\apps\graphite-client\graphite-client.jar (
+            copy C:\apps\graphite-client\graphite-client.jar C:\apps\graphite-client\backup\graphite-client-%GITHUB_RUN_NUMBER%.jar
+          )
+
+      - name: Copiar nuevo JAR
+        shell: cmd
+        run: |
+          copy C:\deploy\graphite-client\graphite-client-0.0.1-SNAPSHOT.jar C:\apps\graphite-client\graphite-client.jar /Y
+
+      - name: Validar JAR desplegado
+        shell: cmd
+        run: dir C:\apps\graphite-client\*.jar
