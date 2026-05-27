@@ -6,7 +6,7 @@ graphite:
   interface-name: ${GRAPHITE_INTERFACE_NAME:QAD}
   limit: ${GRAPHITE_LIMIT:100}
   sync:
-    cron: ${GRAPHITE_SYNC_CRON:0 */15 * * * *}
+    cron: ${GRAPHITE_SYNC_CRON:0 */14 * * * *}
 
 
 app:
