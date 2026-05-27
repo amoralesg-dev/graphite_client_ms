@@ -54,6 +54,8 @@ management:
     health:
       show-details: always
   metrics:
+    tags:
+      application: graphite-client
     export:
       prometheus:
         enabled: true
