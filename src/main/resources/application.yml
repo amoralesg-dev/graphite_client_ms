@@ -6,7 +6,7 @@ graphite:
   interface-name: ${GRAPHITE_INTERFACE_NAME:QAD}
   limit: ${GRAPHITE_LIMIT:100}
   sync:
-    cron: ${GRAPHITE_SYNC_CRON:0 */15 * * * *}
+    cron: ${GRAPHITE_SYNC_CRON:0 */2 * * * *}
 
 
 app:
@@ -21,6 +21,23 @@ server:
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
+
+  mail:
+    host: smtp.office365.com
+    port: 587
+    username: botrss@rassini.com
+    password: M4ng3rR4ssini2
+    cron: "${GRAPHITE_EMAIL_ERROR_CRON:0 */2 * * * *}"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+mail:
+  notification:
+    to: destinatario@empresa.com
 
   jpa:
     hibernate:
