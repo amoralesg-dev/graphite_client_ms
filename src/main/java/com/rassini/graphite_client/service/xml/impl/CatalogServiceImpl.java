@@ -2,6 +2,7 @@ package com.rassini.graphite_client.service.xml.impl;
 
 
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
+import com.rassini.graphite_client.service.catalog.CatalogEquivalenciaFaltanteService;
 import com.rassini.graphite_client.service.catalog.CatalogManagerCacheService;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
@@ -19,7 +20,7 @@ public class CatalogServiceImpl implements CatalogService {
     private static final String DEFAULT_GL_PROFILE = "P_20010001";
 
     private final CatalogManagerCacheService catalogManagerCacheService;
-
+    private final CatalogEquivalenciaFaltanteService catalogEquivalenciaFaltanteService;
 
 
     @Override
@@ -66,6 +67,11 @@ public class CatalogServiceImpl implements CatalogService {
                 XMLConstants.CATALOG_STATE, graphiteState,plantId);
 
         if(equivalencia == null) {
+            catalogEquivalenciaFaltanteService.registrar(
+                    XMLConstants.CATALOG_STATE,
+                    graphiteState,
+                    plantId
+            );
             log.info("No se encontró equivalencia para state='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteState, plantId);
         }else {
             log.info("Equivalencia encontrada para state='{}' y plantId='{}': '{}'", graphiteState, plantId, equivalencia);
