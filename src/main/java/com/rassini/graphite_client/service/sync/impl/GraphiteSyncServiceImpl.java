@@ -83,7 +83,7 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
                     supplierProcessingService.processSupplier(publicId);
 
                     // 3) ACK + CONFIMADOACK (SE QUEDA AQUI)
-                    sendAcknowledge(publicId);
+                    //sendAcknowledge(publicId);
 
                 } catch (Exception e) {
                     log.error("[SERVICE] Error procesando {}: {}", publicId, e.getMessage(), e);
