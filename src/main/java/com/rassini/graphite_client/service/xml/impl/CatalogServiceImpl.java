@@ -67,11 +67,11 @@ public class CatalogServiceImpl implements CatalogService {
                 XMLConstants.CATALOG_STATE, graphiteState,plantId);
 
         if(equivalencia == null) {
-           /* catalogEquivalenciaFaltanteService.registrar(
+            catalogEquivalenciaFaltanteService.registrar(
                     XMLConstants.CATALOG_STATE,
                     graphiteState,
                     plantId
-            );*/
+            );
             log.info("No se encontró equivalencia para state='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteState, plantId);
         }else {
             log.info("Equivalencia encontrada para state='{}' y plantId='{}': '{}'", graphiteState, plantId, equivalencia);
