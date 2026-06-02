@@ -26,7 +26,7 @@ spring:
     host: smtp.office365.com
     port: 587
     username: botrss@rassini.com
-    password: M4ng3rR4ssini2
+    password: PASSWORD
     cron: "${GRAPHITE_EMAIL_ERROR_CRON:0 */2 * * * *}"
     properties:
       mail:

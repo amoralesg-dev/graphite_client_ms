@@ -67,7 +67,7 @@ public class CatalogServiceImpl implements CatalogService {
                 XMLConstants.CATALOG_STATE, graphiteState,plantId);
 
         if(equivalencia == null) {
-           /*catalogEquivalenciaFaltanteService.registrar(
+           /* catalogEquivalenciaFaltanteService.registrar(
                     XMLConstants.CATALOG_STATE,
                     graphiteState,
                     plantId
