@@ -58,9 +58,7 @@ public class CatalogEquivalenciaScheduler {
             body.append("---------------------------------\n");
         });
 
-        emailService.enviarCorreo(
-                "Catalog Manager - Equivalencias faltantes",
-                body.toString());
+       // emailService.enviarCorreo("Catalog Manager - Equivalencias faltantes",body.toString());
 
         pendientes.forEach(item -> {
 

@@ -45,10 +45,10 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
     
     @Override
-    public void processSupplier(String publicId) {
+    public void processSupplier(String publicId, String detonante) {
 
         // 1. Refrescar desde Graphite y guardar fullJson nuevo
-        boolean refreshed = graphiteProfileRefreshService.processAndSaveInternal(publicId);
+        boolean refreshed = graphiteProfileRefreshService.processAndSaveInternal(publicId,detonante);
         if (!refreshed) {
             return;
         }
@@ -76,6 +76,9 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
             GraphiteSupplierDto dto =
                 objectMapper.readValue(raw, GraphiteSupplierDto.class);
+
+            log.debug("ERP Records: " +
+            (dto.getErpRecords() == null ? 0 : dto.getErpRecords().size()));
 
             log.debug("[PROCESS] Antes de upsertSuppliersRows GraphiteSupplierDto: {}", dto);
             log.debug("[PROCESS] Antes de upsertSuppliersRows");

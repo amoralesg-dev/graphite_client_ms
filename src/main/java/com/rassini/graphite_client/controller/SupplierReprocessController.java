@@ -30,7 +30,7 @@ public class SupplierReprocessController {
 
         log.info("[REPROCESS] Reprocesando proveedor {}", publicId);
 
-        supplierProcessingService.processSupplier(publicId);
+        supplierProcessingService.processSupplier(publicId,"REPROCESSO MANUAL/byID");
 
         return ResponseEntity.ok(
                 "Reproceso iniciado para proveedor " + publicId
@@ -53,7 +53,7 @@ public class SupplierReprocessController {
 
         for (String publicId : publicIds) {
             try {
-                supplierProcessingService.processSupplier(publicId);
+                supplierProcessingService.processSupplier(publicId, "REPROCESSO MANUAL/batch");
             } catch (Exception e) {
                 log.error(
                         "[REPROCESS] Error reprocesando {}: {}",
