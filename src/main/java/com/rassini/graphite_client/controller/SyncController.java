@@ -22,19 +22,19 @@ public class SyncController {
 
     @PostMapping("/graphite/full")
     public ResponseEntity<?> triggerFullSync() {
-        CompletableFuture.runAsync(syncService::executeFullSync);
+        CompletableFuture.runAsync(() -> syncService.executeFullSync("/graphite/full"));
         return ResponseEntity.accepted().body(Map.of("message", "Sincronización total iniciada"));
     }
 
     @Scheduled(cron = "#{@environment.getProperty('graphite.sync.cron')}")
     public void scheduledSync() {
-        syncService.executeFullSync();
+        syncService.executeFullSync("/scheduler");
     }
 
     @PostMapping("/graphite/suppliers")
     public ResponseEntity<?> triggerSpecificSync(@RequestParam(value = "ids", required = false) String ids) {
         // 1. Ejecutar de forma asíncrona
-        CompletableFuture.runAsync(() -> syncService.syncSpecificSuppliers(ids));
+        CompletableFuture.runAsync(() -> syncService.syncSpecificSuppliers(ids,"/graphite/suppliers"));
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Sincronización bajo demanda iniciada");

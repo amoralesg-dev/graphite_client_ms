@@ -39,13 +39,13 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
     // =========================
 
     @Override
-    public void executeFullSync() {
+    public void executeFullSync(String detonante) {
         log.info("[SERVICE] Iniciando Full Sync...");
-        syncSpecificSuppliers(null);
+        syncSpecificSuppliers(null, detonante);
     }
 
     @Override
-    public void syncSpecificSuppliers(String publicIds) {
+    public void syncSpecificSuppliers(String publicIds, String detonante) {
 
         log.info("[SERVICE] === INICIO DE PROCESAMIENTO DE CAMBIOS ===");
         log.info("[SERVICE] Interfaz usada: {}", interfaceName);
@@ -72,7 +72,7 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
 
                 try {
                     // 1) Descarga perfil y guarda con status DESCARGA
-                    boolean saved = graphiteProfileRefreshService.processAndSaveInternal(publicId);
+                    boolean saved = graphiteProfileRefreshService.processAndSaveInternal(publicId, detonante);
 
                     if (!saved) {
                         log.warn("[SERVICE] Perfil {} no se pudo guardar", publicId);
@@ -80,7 +80,7 @@ public class GraphiteSyncServiceImpl implements GraphiteSyncService {
                     }
 
                     // 2) Ejecuta pipeline interno (JPA + XML)
-                    supplierProcessingService.processSupplier(publicId);
+                    supplierProcessingService.processSupplier(publicId, detonante);
 
                     // 3) ACK + CONFIMADOACK (SE QUEDA AQUI)
                     //sendAcknowledge(publicId);
