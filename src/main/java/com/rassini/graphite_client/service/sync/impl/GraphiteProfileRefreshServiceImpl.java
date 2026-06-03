@@ -26,22 +26,32 @@ public class GraphiteProfileRefreshServiceImpl implements GraphiteProfileRefresh
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public boolean processAndSaveInternal(String publicId) {
+    public boolean processAndSaveInternal(String publicId, String detonante) {
 
-        log.info("[SERVICE] Solicitando perfil a Graphite para {}", publicId);
+    log.info("[SERVICE] Solicitando perfil a Graphite para {}, lo detona{}", publicId, detonante);
 
-        if (publicId == null) {
-            log.error("[SERVICE] publicId is null");
-            return false;
-        }
+    if (publicId == null || publicId.isBlank()) {
+        log.error("[SERVICE] publicId es nulo o vacío");
+        return false;
+    }
 
-        // IMPORTANTE: false para no mandar reglas que te cambien el payload
+    try {
+
+        // IMPORTANTE: false para no aplicar reglas que modifiquen el payload
         JsonNode profile = apiClient.getProfile(publicId, false);
 
         if (profile == null || profile.isNull() || profile.isMissingNode()) {
             log.error("[SERVICE] Perfil vacío para {}", publicId);
             return false;
         }
+
+        String json = profile.toPrettyString();
+
+        log.info(
+            "[SERVICE] Perfil recibido para {}. Tamaño JSON={} caracteres",
+            publicId,
+            json.length()
+        );
 
         SupplierEntity entity = supplierRepository.findById(publicId)
                 .orElseGet(() -> {
@@ -51,12 +61,30 @@ public class GraphiteProfileRefreshServiceImpl implements GraphiteProfileRefresh
                 });
 
         entity.setStatus(ProviderState.DESCARGA);
-        entity.setFullJson(profile.toString());
+        entity.setFullJson(json);
         entity.setLastSync(LocalDateTime.now());
 
-        supplierRepository.save(entity);
+        SupplierEntity saved = supplierRepository.save(entity);
 
-        log.info("[SERVICE] Proveedor {} guardado con status DESCARGA", publicId);
+        log.info(
+            "[SERVICE] Proveedor {} guardado correctamente. JSON almacenado={} caracteres. LastSync={}",
+            saved.getPublicId(),
+            saved.getFullJson() != null ? saved.getFullJson().length() : 0,
+            saved.getLastSync()
+        );
+
         return true;
+
+    } catch (Exception e) {
+
+        log.error(
+            "[SERVICE] Error al procesar proveedor {}: {}",
+            publicId,
+            e.getMessage(),
+            e
+        );
+
+        return false;
     }
+}
 }
