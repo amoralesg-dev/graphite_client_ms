@@ -31,7 +31,7 @@ public class EmailServiceImpl implements EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-            // remitente configurado en yml
+            // remitente configurado en yml y el mismo que el usuario autenticado en el mail server
             helper.setFrom(from);
 
             // destinatarios separados por coma
