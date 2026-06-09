@@ -35,6 +35,7 @@ public class XMLConstants {
     public static final String ALTA = "A";
     public static final String MOD = "M";
     public static final String BAJA = "D";
+    public static final String CATALOG_COUNTRY = "country";
 
     private XMLConstants() {
         // no instanciable

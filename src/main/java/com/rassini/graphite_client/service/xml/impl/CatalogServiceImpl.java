@@ -25,7 +25,21 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     public String mapCountry(String graphiteCountry, String plantId) {
-        return graphiteCountry;
+        String equivalencia =null;
+        equivalencia = catalogManagerCacheService.getEquivalencia(
+                XMLConstants.CATALOG_COUNTRY, graphiteCountry,plantId);
+
+        if(equivalencia == null) {
+            catalogEquivalenciaFaltanteService.registrar(
+                    XMLConstants.CATALOG_COUNTRY,
+                    graphiteCountry,
+                    plantId
+            );
+            log.info("No se encontró equivalencia para country='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteCountry, plantId);
+        }else {
+            log.info("Equivalencia encontrada para country='{}' y plantId='{}': '{}'", graphiteCountry, plantId, equivalencia);
+        }
+        return equivalencia;
     }
     @Override
     public String getActivityCode(SuppliersRowEntity supplier) {
