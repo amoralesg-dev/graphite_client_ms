@@ -38,11 +38,12 @@ public class FrenosXmlFactory {
 
         TaxInfo tax = resolveTaxInfoFrenos(erpId, taxClassFromErp, taxZoneFromErp);
         String name20 = left(supplier.getSupplierName(), 20);
+        String name36 = left(supplier.getSupplierName(), 36);
 
         return XmlContext.builder()
                 .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
-                .businessRelation(buildBusinessRelation(supplier, name20))
+                .businessRelation(buildBusinessRelation(supplier, name20, name36))
                 .address(buildAddress(supplier, name20, tax))
                 .contact(buildContact(supplier))
                 .build();
@@ -100,13 +101,13 @@ public class FrenosXmlFactory {
     // =====================================================
     private BusinessRelationXml buildBusinessRelation(
             SuppliersRowEntity supplier,
-            String name20
+            String name20, String name36
     ) {
         return BusinessRelationXml.builder()
                 .businessRelationCode(supplier.getErpIdQad())
-                .businessRelationName1(supplier.getSupplierName())
-                .businessRelationName2(supplier.getSupplierName())
-                .businessRelationName3(supplier.getSupplierName())
+                .businessRelationName1(name36)
+                .businessRelationName2(name36)
+                .businessRelationName3(name36)
                 .businessRelationSearchName(name20)
                 .businessRelationIsActive(XMLConstants.TRUE)
                 .businessRelationIsInterco(XMLConstants.FALSE)

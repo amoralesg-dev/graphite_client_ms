@@ -5,6 +5,7 @@ import java.util.List;
 import lombok.Data;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -259,6 +260,7 @@ public class GraphiteSupplierDto {
         private String rassiniErpTaxClass;
 
         @JsonProperty("RASSINI_ERP_Tax_Zone")
+        @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY)
         private List<String> rassiniErpTaxZone;
 
         @JsonProperty("RASSINI_ERP_Payment_Type")
@@ -304,6 +306,11 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Account_Number")
         private String bankAccountNumber;
 
+        
+        @JsonProperty("Bank_Account_Number_IBAN")
+        private String bankAccountNumberIban;
+
+
         @JsonProperty("Bank_Country")
         private String bankCountry;
 
@@ -327,6 +334,16 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("Bank_Account_Currency_Correspondent_Bank")
         private CorrespondentBank bankAccountCurrencyCorrespondentBank;
+        
+        
+    public String getBankAccountNumber() {
+            if (bankAccountNumber != null && !bankAccountNumber.trim().isEmpty()) {
+                return bankAccountNumber;
+            }
+            return bankAccountNumberIban;
+        }
+
+    
     }
 
     // =========================
