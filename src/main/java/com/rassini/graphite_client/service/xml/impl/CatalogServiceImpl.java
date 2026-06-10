@@ -25,7 +25,21 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     public String mapCountry(String graphiteCountry, String plantId) {
-        return graphiteCountry;
+        String equivalencia =null;
+        equivalencia = catalogManagerCacheService.getEquivalencia(
+                XMLConstants.CATALOG_COUNTRY, graphiteCountry,plantId);
+
+        if(equivalencia == null) {
+            catalogEquivalenciaFaltanteService.registrar(
+                    XMLConstants.CATALOG_COUNTRY,
+                    graphiteCountry,
+                    plantId
+            );
+            log.info("No se encontró equivalencia para country='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteCountry, plantId);
+        }else {
+            log.info("Equivalencia encontrada para country='{}' y plantId='{}': '{}'", graphiteCountry, plantId, equivalencia);
+        }
+        return equivalencia;
     }
     @Override
     public String getActivityCode(SuppliersRowEntity supplier) {
@@ -139,9 +153,9 @@ public class CatalogServiceImpl implements CatalogService {
 
         log.info("Evaluando partial update para supplierCode={} con statusIntegrity={}", supplier.getSupplierCode(), supplier.getStatusIntegrity());
         
-        if(XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
+       /* if(XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
            partialUpdate = XMLConstants.TRUE;
-        }
+        }*/
         log.info("Resuelto Partial update para supplierCode={}: '{}'", supplier.getSupplierCode(), partialUpdate);
         return partialUpdate;
     }
