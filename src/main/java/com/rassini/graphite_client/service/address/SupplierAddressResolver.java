@@ -465,20 +465,14 @@ public class SupplierAddressResolver {
     }
 
     private static String buildMxLikeStreet1(AddressSource source) {
-        return joinNonBlank(
-                stringValue(invoke(source.components, "getThoroughfareType")),
-                firstNonBlank(
-                        stringValue(invoke(source.components, "getThoroughfareName")),
-                        stringValue(invoke(source.components, "getThoroughfare"))
-                ),
-                firstNonBlank(
-                        stringValue(invoke(source.components, "getPremise")),
-                        stringValue(invoke(source.components, "getPremiseNumber"))
-                ),
-                stringValue(invoke(source.components, "getSubBuilding"))
-        );
-    }
-
+    return joinNonBlank(
+            stringValue(invoke(source.components, "getThoroughfareType")),
+            firstNonBlank(
+                    stringValue(invoke(source.components, "getThoroughfareName")),
+                    stringValue(invoke(source.components, "getThoroughfare"))
+            )
+    );
+}
     private static String buildMxLikeStreet2(AddressSource source) {
         return firstNonBlank(
                 stringValue(invoke(source.components, "getBuilding")),

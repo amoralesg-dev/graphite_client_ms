@@ -25,8 +25,8 @@ spring:
   mail:
     host: smtp.office365.com
     port: 587
-    username: botrss@rassini.com
-    password: PASSWORD
+    username: ${EMAIL_USERNAME:botrss@rassini.com}
+    password: ${EMAIL_PASSWORD}
     cron: "${GRAPHITE_EMAIL_ERROR_CRON:0 */2 * * * *}"
     properties:
       mail:
@@ -37,7 +37,7 @@ spring:
 
 mail:
   notification:
-    to: destinatario@empresa.com
+    to: ${EMAIL_TO:amoralesg@rassini.com,eguzman@rassini.com}
 
   jpa:
     hibernate:

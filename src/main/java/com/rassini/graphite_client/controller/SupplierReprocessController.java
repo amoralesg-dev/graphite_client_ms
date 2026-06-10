@@ -1,5 +1,6 @@
 package com.rassini.graphite_client.controller;
 
+import com.rassini.graphite_client.service.catalog.CatalogManagerCacheService;
 import com.rassini.graphite_client.service.xml.SupplierProcessingService;
 
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ import java.util.List;
 public class SupplierReprocessController {
 
     private final SupplierProcessingService supplierProcessingService;
+    private final CatalogManagerCacheService catalogManagerCacheService;
 
     /**
      * Reprocesa UN proveedor si su status es DESCARGA
@@ -67,5 +69,75 @@ public class SupplierReprocessController {
         return ResponseEntity.ok(
                 "Reproceso batch iniciado para " + publicIds.size() + " proveedores"
         );
+    }
+
+     /**
+     * Recarga manualmente el cache desde BD.
+     */
+    @PostMapping("/reload")
+    public ResponseEntity<String> reload() {
+
+        log.info("[CACHE] Iniciando recarga manual de catalog_manager");
+
+        long start = System.currentTimeMillis();
+
+        catalogManagerCacheService.reload();
+
+        long elapsed = System.currentTimeMillis() - start;
+
+        log.info(
+                "[CACHE] Recarga completada correctamente en {} ms",
+                elapsed
+        );
+
+        return ResponseEntity.ok(
+                "Cache catalog_manager recargado correctamente en "
+                        + elapsed + " ms"
+        );
+    }
+
+    /**
+     * Consulta cantidad de registros actualmente cargados.
+     */
+    @PostMapping("/reload/size")
+    public ResponseEntity<Integer> size() {
+
+        return ResponseEntity.ok(
+                catalogManagerCacheService.getAll().size()
+        );
+    }
+
+    @GetMapping("/reload/equivalencia")
+    public ResponseEntity<String> getEquivalencia(
+            @RequestParam String idCatalogo,
+            @RequestParam String code,
+            @RequestParam String businessUnit) {
+
+        log.info(
+                "[CACHE] Buscando equivalencia idCatalogo={}, code={}, businessUnit={}",
+                idCatalogo,
+                code,
+                businessUnit
+        );
+
+        String equivalencia = catalogManagerCacheService.getEquivalencia(
+                idCatalogo,
+                code,
+                businessUnit
+        );
+
+        if (equivalencia == null) {
+
+            log.warn(
+                    "[CACHE] No se encontró equivalencia para idCatalogo={}, code={}, businessUnit={}",
+                    idCatalogo,
+                    code,
+                    businessUnit
+            );
+
+            return ResponseEntity.notFound().build();
+        }
+
+        return ResponseEntity.ok(equivalencia);
     }
 }

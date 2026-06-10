@@ -34,6 +34,7 @@ public class PnXmlFactory {
 
         String erpId = "09";
         String name20 = left(supplier.getSupplierName(), 20);
+        String name36 = left(supplier.getSupplierName(), 36);   
 
         TaxInfo tax = resolveTaxInfoPn(erpId, taxClassFromErp);
 
@@ -41,7 +42,7 @@ public class PnXmlFactory {
                 .outputFileName("RPIEDRAS_busrel_" + supplier.getErpIdQad() + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier))
-                .address(buildAddress(supplier, name20, tax))
+                .address(buildAddress(supplier, name20,name36, tax))
                 .contact(buildContact(supplier))
                 .build();
     }
@@ -125,13 +126,14 @@ public class PnXmlFactory {
     private AddressXml buildAddress(
             SuppliersRowEntity supplier,
             String name20,
+            String name36,
             TaxInfo tax
     ) {
 
         return AddressXml.builder()
-                .addressStreet1(supplier.getStreetName())
-                .addressStreet2(supplier.getStreetName2())
-                .addressStreet3(supplier.getStreetName3())
+                .addressStreet1(name36)
+                .addressStreet2(name36)
+                .addressStreet3(name36)
                 .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
                 .addressCityCode(supplier.getCityCode())

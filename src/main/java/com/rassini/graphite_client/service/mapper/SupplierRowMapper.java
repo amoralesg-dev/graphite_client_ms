@@ -55,7 +55,7 @@ public class SupplierRowMapper {
         row.setBusinessUnitCode(erp.getRassiniErpEntityId());
         row.setErpIdQad(dto.getErpIdQad());
 
-        row.setSupplierName(dto.getEntityName());
+        row.setSupplierName(left(dto.getEntityName(), 36));
         row.setSupplierSearchName(left(dto.getEntityName(), 20));
         row.setRfc(dto.getIntegrationTaxId());
 
