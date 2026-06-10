@@ -278,10 +278,10 @@ public class FrenosXmlFactory {
 
         String txz = "MEX";
 
-        if (taxZoneFromErp != null && !taxZoneFromErp.isEmpty()
+       /*if (taxZoneFromErp != null && !taxZoneFromErp.isEmpty()
                 && taxZoneFromErp.get(0) != null && !taxZoneFromErp.get(0).isBlank()) {
             txz = taxZoneFromErp.get(0);
-        }
+        }*/
 
         String txcl =
                 (taxClassFromErp != null && !taxClassFromErp.isBlank())
