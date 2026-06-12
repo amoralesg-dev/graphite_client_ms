@@ -137,7 +137,7 @@ public class PnXmlFactory {
                 .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
                 .addressCityCode(supplier.getCityCode())
-                .addressName(supplier.getStreetName())
+                .addressName(name36)
                 .addressSearchName(name20)
                 .addressTelephone("")
                 .addressEMail("")

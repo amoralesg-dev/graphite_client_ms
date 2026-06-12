@@ -37,7 +37,7 @@ public class OcXmlFactory {
                 .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier, name20, name36))
-                .address(buildAddress(supplier, name20, tax))
+                .address(buildAddress(supplier, name20, name36, tax))
                 .contact(buildContact(supplier))
                 .build();
     }
@@ -133,6 +133,7 @@ public class OcXmlFactory {
     private AddressXml buildAddress(
             SuppliersRowEntity supplier,
             String name20,
+            String name36,
             TaxInfo tax
     ) {
         return AddressXml.builder()
@@ -142,7 +143,7 @@ public class OcXmlFactory {
                 .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
                 .addressCityCode("") // OC va vacío
-                .addressName(supplier.getStreetName())
+                .addressName(name36)
                 .addressSearchName(name20)
                 .addressTelephone("")
                 .addressEMail("")
