@@ -130,14 +130,16 @@ public class FrenosXmlFactory {
             String name36,
             TaxInfo tax
     ) {
+        String streetName36 = left(supplier.getStreetName(), 36);
+
         return AddressXml.builder()
-                .addressStreet1(supplier.getStreetName())
+                .addressStreet1(streetName36)
                 .addressStreet2(supplier.getStreetName2())
                 .addressStreet3(supplier.getStreetName3())
                 .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
                 .addressCityCode(supplier.getCityCode())
-                .addressName(name36)
+                .addressName(streetName36)
                 .addressSearchName(name20)
                 .addressTelephone("")
                 .addressEMail("")
