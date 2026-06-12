@@ -153,9 +153,9 @@ public class CatalogServiceImpl implements CatalogService {
 
         log.info("Evaluando partial update para supplierCode={} con statusIntegrity={}", supplier.getSupplierCode(), supplier.getStatusIntegrity());
         
-       /* if(XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
+        if(XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
            partialUpdate = XMLConstants.TRUE;
-        }*/
+        }
         log.info("Resuelto Partial update para supplierCode={}: '{}'", supplier.getSupplierCode(), partialUpdate);
         return partialUpdate;
     }
