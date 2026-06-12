@@ -44,7 +44,7 @@ public class FrenosXmlFactory {
                 .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier, name20, name36))
-                .address(buildAddress(supplier, name20, tax))
+                .address(buildAddress(supplier, name20,name36, tax))
                 .contact(buildContact(supplier))
                 .build();
     }
@@ -127,16 +127,19 @@ public class FrenosXmlFactory {
     private AddressXml buildAddress(
             SuppliersRowEntity supplier,
             String name20,
+            String name36,
             TaxInfo tax
     ) {
+        String streetName36 = left(supplier.getStreetName(), 36);
+
         return AddressXml.builder()
-                .addressStreet1(supplier.getStreetName())
+                .addressStreet1(streetName36)
                 .addressStreet2(supplier.getStreetName2())
                 .addressStreet3(supplier.getStreetName3())
                 .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
                 .addressCityCode(supplier.getCityCode())
-                .addressName(supplier.getStreetName())
+                .addressName(streetName36)
                 .addressSearchName(name20)
                 .addressTelephone("")
                 .addressEMail("")
