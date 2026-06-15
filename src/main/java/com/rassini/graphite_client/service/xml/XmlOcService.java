@@ -1,6 +1,7 @@
 package com.rassini.graphite_client.service.xml;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
+import com.rassini.graphite_client.entity.SupplierEntity;
 
 public interface XmlOcService
         extends XmlBusinessRelationService,
@@ -11,5 +12,5 @@ public interface XmlOcService
      *  - 1 XML BusinessRelation (busrel)
      *  - 1 XML Creditor (creditor)
      */
-    void generate(GraphiteSupplierDto dto);
+    void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter);
 }

@@ -2,9 +2,14 @@ package com.rassini.graphite_client.service.catalog.impl;
 
 import com.rassini.graphite_client.entity.CatalogEquivalenciaFaltanteEntity;
 import com.rassini.graphite_client.entity.CorreoPendienteEntity;
+import com.rassini.graphite_client.entity.ProviderState;
+import com.rassini.graphite_client.entity.SupplierEntity;
 import com.rassini.graphite_client.repository.CatalogEquivalenciaFaltanteRepository;
 import com.rassini.graphite_client.repository.CorreoPendienteRepository;
+import com.rassini.graphite_client.repository.SupplierRepository;
 import com.rassini.graphite_client.service.catalog.CatalogEquivalenciaFaltanteService;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,11 +26,35 @@ public class CatalogEquivalenciaFaltanteServiceImpl
 
     private final CatalogEquivalenciaFaltanteRepository repository;
     private final CorreoPendienteRepository correoRepository;
+    private final SupplierRepository supplierRepository;
+
 
     @Value("${mail.notification.to}")
     private String destinatariosConfig;
 
-    public void registrar(String idCatalogo, String code, String businessUnit) {
+    @Transactional
+    public void setStatusError(String publicId) {
+
+        SupplierEntity supplier = supplierRepository
+                .findByPublicId(publicId)
+                .orElse(null);
+
+        if (supplier == null) {
+            log.warn("No se encontró proveedor {} con estado DESCARGA", publicId);
+            return;
+        }
+
+        supplier.setStatus(ProviderState.ERRORMAPPING);
+        SupplierEntity saved = supplierRepository.save(supplier);
+
+        log.info(
+            "Guardado proveedor {} con status {}",
+            saved.getPublicId(),
+            saved.getStatus()
+        );
+    }
+
+    public void registrar(String publicId, String idCatalogo, String code, String businessUnit) {
 
         repository
             .findByIdCatalogoAndCodeAndBusinessUnitAndNotificado(
@@ -37,6 +66,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
                 // Si ya existe, solo incrementa ocurrencias
                 entity.setTotalOcurrencias(entity.getTotalOcurrencias() + 1);
                 repository.save(entity);
+                this.setStatusError(publicId);
 
             }, () -> {
                 // Si no existe, crea nuevo registro
@@ -53,11 +83,11 @@ public class CatalogEquivalenciaFaltanteServiceImpl
                 // Además, registra un correo pendiente
                 CorreoPendienteEntity correo = new CorreoPendienteEntity();
                 correo.setTo(destinatariosConfig); 
-                correo.setSubject("Equivalencia faltante detectada");
+                correo.setSubject("Equivalencia faltante detectada proveedor "+publicId);
                 correo.setBody(
                         "<html>" +
                                 "<body>" +
-                                "<h3>Se detectó una equivalencia faltante</h3>" +
+                                "<h3>Se detectó una equivalencia faltante para proveedor <b>"+publicId+"</b></h3>" +
                                 "<p><b>Catálogo:</b> " + idCatalogo + "</p>" +
                                 "<p><b>Code:</b> " + code + "</p>" +
                                 "<p><b>Business Unit:</b> " + businessUnit + "</p>" +
@@ -67,6 +97,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
                 );
 
                 correo.setEnviado(false);
+                this.setStatusError(publicId);
 
                 correoRepository.save(correo);
             });
