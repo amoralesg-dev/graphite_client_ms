@@ -60,10 +60,10 @@ jobs:
         shell: cmd
         run: dir C:\deploy\graphite-client
 
-      - name: Detener servicio DEV
+      - name: Detener servicio PROD
         shell: cmd
         run: |
-          net stop graphite-client-dev || exit /b 0
+          net stop graphite-client-prod || exit /b 0
 
       - name: Crear carpeta backup si no existe
         shell: cmd
@@ -86,9 +86,9 @@ jobs:
         shell: cmd
         run: dir C:\apps\graphite-client\*.jar
 
-      - name: Iniciar servicio DEV
+      - name: Iniciar servicio PROD
         shell: cmd
-        run: net start graphite-client-dev
+        run: net start graphite-client-prod
 
       - name: Esperar arranque
         shell: cmd
