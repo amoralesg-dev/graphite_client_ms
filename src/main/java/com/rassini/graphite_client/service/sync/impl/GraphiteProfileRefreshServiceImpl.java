@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.HttpClientErrorException;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.rassini.graphite_client.client.GraphiteApiClient;
@@ -74,6 +75,15 @@ public class GraphiteProfileRefreshServiceImpl implements GraphiteProfileRefresh
         );
 
         return true;
+
+    } catch (HttpClientErrorException.NotFound e) {
+
+            log.warn(
+                    "[SERVICE] Proveedor {} no encontrado en Graphite (404)",
+                    publicId
+            );
+
+            return false;
 
     } catch (Exception e) {
 

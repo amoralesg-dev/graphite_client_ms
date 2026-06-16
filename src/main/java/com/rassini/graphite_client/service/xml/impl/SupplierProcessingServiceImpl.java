@@ -95,21 +95,27 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                         .toList()
             );
 
-            updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
-            xmlOcService.generate(dto);
+            xmlOcService.generate(dto, supplier);
+            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+                updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
+            
+            xmlPnService.generate(dto, supplier);
+            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+                updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
+            
+            xmlFrenosService.generate(dto, supplier);
+            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+                updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
+            
+            xmlBreakesService.generate(dto, supplier);
+            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+                updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
+            
+            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+                updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
 
-            updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
-            xmlPnService.generate(dto);
-
-            updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
-            xmlFrenosService.generate(dto);
-
-            updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
-            xmlBreakesService.generate(dto);
-
-            updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
-
-            integrityService.createFileSupplierSync(dto.getErpIdQad());
+            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+                integrityService.createFileSupplierSync(dto.getErpIdQad());
 
         } catch (Exception e) {
             throw new IllegalStateException(
