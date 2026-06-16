@@ -47,7 +47,7 @@ jobs:
   deploy-main:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: [self-hosted, Windows, X64, backend, graphite-client, dev]
+    runs-on: [self-hosted, Windows, X64, backend, graphite-client, prod]
 
     steps:
       - name: Descargar JAR generado
