@@ -15,6 +15,7 @@ import com.rassini.graphite_client.service.xml.context.CreditorXmlContext;
 import com.rassini.graphite_client.service.xml.context.XmlContext;
 import com.rassini.graphite_client.service.xml.factory.PnXmlFactory;
 import com.rassini.graphite_client.service.xml.helper.XmlGenerationHelper;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +44,10 @@ public class XmlPnServiceImpl implements XmlPnService {
         PnXmlFactory factory = new PnXmlFactory(catalogService);
 
         dto.getErpRecords().stream()
-            .filter(erp -> "09".equals(erp.getRassiniErpEntityId()))
+            .filter(erp -> XMLConstants.PN.equals(erp.getRassiniErpEntityId()))
             .forEach(erp -> {
 
-                String erpId = "09";
+                String erpId = XMLConstants.PN;
 
                 SuppliersRowEntity supplier =
                         suppliersRowRepository

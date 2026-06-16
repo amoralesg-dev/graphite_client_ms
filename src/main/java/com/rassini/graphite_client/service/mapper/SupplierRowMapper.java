@@ -5,6 +5,7 @@ import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.address.ResolvedAddress;
 import com.rassini.graphite_client.service.address.SupplierAddressResolver;
 import com.rassini.graphite_client.service.xml.CatalogService;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -139,14 +140,18 @@ public class SupplierRowMapper {
                     resolvedAddress.getRegion(),
                     erp.getRassiniErpEntityId()
             ));
-
-            row.setCountryCode(
-                    catalogService.mapCountry(
-                            dto.getEntityPublicId(),
-                            resolvedAddress.getCountry(),
-                            erp.getRassiniErpEntityId()
-                    )
-            );
+            if(XMLConstants.FRENOS.equals(erp.getRassiniErpEntityId())){
+                row.setCountryCode( resolvedAddress.getCountry());
+            }else{
+                row.setCountryCode(
+                        catalogService.mapCountry(
+                                dto.getEntityPublicId(),
+                                resolvedAddress.getCountry(),
+                                erp.getRassiniErpEntityId()
+                        )
+                );
+            }
+            
 
             // dejamos state_description con la ciudad/localidad resuelta
             row.setStateDescription(resolvedAddress.getCity());
