@@ -3,8 +3,8 @@ package com.rassini.graphite_client.service.xml;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 
 public interface CatalogService {
-  String getEquivalenciaState(String graphiteState, String plantId);
-  String mapCountry(String graphiteCountry, String plantId);
+  String getEquivalenciaState(String publicId, String graphiteState, String plantId);
+  String mapCountry(String publicId, String graphiteCountry, String plantId);
   String mapCurrency(String graphiteCurrency, String plantId);
 
   CatalogService.GlProfile resolveGlProfile(String plantId, String currency, boolean isForeign);

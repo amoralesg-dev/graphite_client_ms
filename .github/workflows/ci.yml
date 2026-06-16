@@ -44,9 +44,9 @@ jobs:
           path: target/graphite-client-0.0.1-SNAPSHOT.jar
           if-no-files-found: error
 
-  deploy-dev:
+  deploy-main:
     needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/DEV'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Windows, X64, backend, graphite-client, dev]
 
     steps:

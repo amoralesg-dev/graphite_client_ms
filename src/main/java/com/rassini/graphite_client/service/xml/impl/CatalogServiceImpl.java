@@ -24,13 +24,14 @@ public class CatalogServiceImpl implements CatalogService {
 
 
     @Override
-    public String mapCountry(String graphiteCountry, String plantId) {
+    public String mapCountry(String publicId, String graphiteCountry, String plantId) {
         String equivalencia =null;
         equivalencia = catalogManagerCacheService.getEquivalencia(
                 XMLConstants.CATALOG_COUNTRY, graphiteCountry,plantId);
 
         if(equivalencia == null) {
             catalogEquivalenciaFaltanteService.registrar(
+                    publicId,
                     XMLConstants.CATALOG_COUNTRY,
                     graphiteCountry,
                     plantId
@@ -75,13 +76,14 @@ public class CatalogServiceImpl implements CatalogService {
         );
     }
     @Override
-    public String getEquivalenciaState(String graphiteState, String plantId) {
+    public String getEquivalenciaState(String publicId, String graphiteState, String plantId) {
         String equivalencia =null;
         equivalencia = catalogManagerCacheService.getEquivalencia(
                 XMLConstants.CATALOG_STATE, graphiteState,plantId);
 
         if(equivalencia == null) {
             catalogEquivalenciaFaltanteService.registrar(
+                    publicId,
                     XMLConstants.CATALOG_STATE,
                     graphiteState,
                     plantId

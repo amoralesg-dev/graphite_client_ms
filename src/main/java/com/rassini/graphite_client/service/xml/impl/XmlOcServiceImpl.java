@@ -3,6 +3,8 @@ package com.rassini.graphite_client.service.xml.impl;
 import org.springframework.stereotype.Service;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
+import com.rassini.graphite_client.entity.ProviderState;
+import com.rassini.graphite_client.entity.SupplierEntity;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.xml.CatalogService;
@@ -31,10 +33,14 @@ public class XmlOcServiceImpl implements XmlOcService {
      * Orquestador por planta OC (0111 / 0301)
      */
     @Override
-    public void generate(GraphiteSupplierDto dto) {
+    public void generate(GraphiteSupplierDto dto , SupplierEntity supplierParameter) {
 
         if (dto == null || dto.getErpRecords() == null) {
             return;
+        }
+        if (supplierParameter != null
+            && ProviderState.ERRORMAPPING.equals(supplierParameter.getStatus())) {
+                return;
         }
 
         OcXmlFactory factory = new OcXmlFactory(catalogService);

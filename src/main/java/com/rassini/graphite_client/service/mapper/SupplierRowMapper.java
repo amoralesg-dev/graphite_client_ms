@@ -135,12 +135,14 @@ public class SupplierRowMapper {
             row.setCityCode(resolvedAddress.getCity());
 
             row.setStateCode(catalogService.getEquivalenciaState(
+                    dto.getEntityPublicId(),
                     resolvedAddress.getRegion(),
                     erp.getRassiniErpEntityId()
             ));
 
             row.setCountryCode(
                     catalogService.mapCountry(
+                            dto.getEntityPublicId(),
                             resolvedAddress.getCountry(),
                             erp.getRassiniErpEntityId()
                     )

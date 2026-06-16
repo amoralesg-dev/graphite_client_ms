@@ -16,5 +16,7 @@ public interface SupplierRepository extends JpaRepository<SupplierEntity, String
             String publicId, ProviderState status
         );
 
+    Optional<SupplierEntity> findByPublicId( String publicId);
+
 
 }
