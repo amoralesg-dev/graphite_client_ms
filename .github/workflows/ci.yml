@@ -43,6 +43,59 @@ jobs:
           name: graphite-client-jar
           path: target/graphite-client-0.0.1-SNAPSHOT.jar
           if-no-files-found: error
+  deploy-dev:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/DEV'
+    runs-on: [self-hosted, Windows, X64, backend, dev, graphite]
+
+    steps:
+      - name: Descargar JAR generado
+        uses: actions/download-artifact@v4
+        with:
+          name: graphite-client-jar
+          path: C:\deploy\graphite-client
+
+      - name: Validar artifact descargado
+        shell: cmd
+        run: dir C:\deploy\graphite-client
+
+      - name: Detener servicio DEV
+        shell: cmd
+        run: |
+          net stop graphite-client-dev || exit /b 0
+
+      - name: Crear carpeta backup si no existe
+        shell: cmd
+        run: |
+          if not exist C:\apps\graphite-client\backup mkdir C:\apps\graphite-client\backup
+
+      - name: Respaldar JAR actual
+        shell: cmd
+        run: |
+          if exist C:\apps\graphite-client\graphite-client.jar (
+            copy C:\apps\graphite-client\graphite-client.jar C:\apps\graphite-client\backup\graphite-client-%GITHUB_RUN_NUMBER%.jar
+          )
+
+      - name: Copiar nuevo JAR
+        shell: cmd
+        run: |
+          copy C:\deploy\graphite-client\graphite-client-0.0.1-SNAPSHOT.jar C:\apps\graphite-client\graphite-client.jar /Y
+
+      - name: Validar JAR desplegado
+        shell: cmd
+        run: dir C:\apps\graphite-client\*.jar
+
+      - name: Iniciar servicio DEV
+        shell: cmd
+        run: net start graphite-client-dev
+
+      - name: Esperar arranque
+        shell: cmd
+        run: ping 127.0.0.1 -n 16 > nul
+
+      - name: Validar health DEV
+        shell: cmd
+        run: curl http://localhost:8081/graphite-client/actuator/health
 
   deploy-main:
     needs: build
