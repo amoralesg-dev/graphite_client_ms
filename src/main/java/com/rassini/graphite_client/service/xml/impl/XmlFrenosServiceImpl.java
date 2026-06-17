@@ -15,6 +15,7 @@ import com.rassini.graphite_client.service.xml.context.CreditorXmlContext;
 import com.rassini.graphite_client.service.xml.context.XmlContext;
 import com.rassini.graphite_client.service.xml.factory.FrenosXmlFactory;
 import com.rassini.graphite_client.service.xml.helper.XmlGenerationHelper;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +44,10 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
         FrenosXmlFactory factory = new FrenosXmlFactory(catalogService);
 
         dto.getErpRecords().stream()
-            .filter(erp -> "1000".equals(erp.getRassiniErpEntityId()))
+            .filter(erp -> XMLConstants.FRENOS.equals(erp.getRassiniErpEntityId()))
             .forEach(erp -> {
 
-                String erpId = "1000";
+                String erpId = XMLConstants.FRENOS;
 
                 SuppliersRowEntity supplier =
                         suppliersRowRepository

@@ -15,6 +15,7 @@ import com.rassini.graphite_client.service.xml.context.CreditorXmlContext;
 import com.rassini.graphite_client.service.xml.context.XmlContext;
 import com.rassini.graphite_client.service.xml.factory.FrenosXmlFactory;
 import com.rassini.graphite_client.service.xml.helper.XmlGenerationHelper;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,10 +45,10 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
         FrenosXmlFactory factory = new FrenosXmlFactory(catalogService);
 
         dto.getErpRecords().stream()
-            .filter(erp -> "1850".equals(erp.getRassiniErpEntityId()))
+            .filter(erp -> XMLConstants.BREAKES.equals(erp.getRassiniErpEntityId()))
             .forEach(erp -> {
 
-                final String erpId = "1850";
+                final String erpId = XMLConstants.BREAKES;
 
                 SuppliersRowEntity supplier =
                         suppliersRowRepository

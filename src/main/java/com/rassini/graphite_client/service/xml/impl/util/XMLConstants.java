@@ -2,6 +2,14 @@ package com.rassini.graphite_client.service.xml.impl.util;
 
 public class XMLConstants {
 
+    public static final String FRENOS = "1000";
+    public static final String OC = "0111";
+    public static final String BYPASA = "0301";
+    public static final String BREAKES = "1850";
+    public static final String PN = "09";
+
+
+
     // Básicos
     public static final String FALSE = "false";
     public static final String TRUE = "true";

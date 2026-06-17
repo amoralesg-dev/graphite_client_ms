@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.ProviderState;
 import com.rassini.graphite_client.entity.SupplierEntity;
-import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.repository.SupplierRepository;
 import com.rassini.graphite_client.service.sync.GraphiteProfileRefreshService;
 import com.rassini.graphite_client.service.sync.IntegrityService;
@@ -96,26 +95,27 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             );
 
             xmlOcService.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+            if(!ProviderState.ERRORMAPOC.equals(supplier.getStatus()))
                 updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
             
             xmlPnService.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+            if(!ProviderState.ERRORMAPPN.equals(supplier.getStatus()))
                 updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
             
             xmlFrenosService.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+            if(!ProviderState.ERRORMAPFRENOS.equals(supplier.getStatus()))
                 updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
             
             xmlBreakesService.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+            if(!ProviderState.ERRORMAPBREAKES.equals(supplier.getStatus()))
                 updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
             
-            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
+            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus())){
                 updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
-
-            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus()))
                 integrityService.createFileSupplierSync(dto.getErpIdQad());
+            }
+
+                
 
         } catch (Exception e) {
             throw new IllegalStateException(

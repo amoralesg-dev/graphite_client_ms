@@ -8,6 +8,7 @@ import com.rassini.graphite_client.repository.CatalogEquivalenciaFaltanteReposit
 import com.rassini.graphite_client.repository.CorreoPendienteRepository;
 import com.rassini.graphite_client.repository.SupplierRepository;
 import com.rassini.graphite_client.service.catalog.CatalogEquivalenciaFaltanteService;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
     private String destinatariosConfig;
 
     @Transactional
-    public void setStatusError(String publicId) {
+    public void setStatusError(String publicId, String businessUnit) {
 
         SupplierEntity supplier = supplierRepository
                 .findByPublicId(publicId)
@@ -43,8 +44,19 @@ public class CatalogEquivalenciaFaltanteServiceImpl
             log.warn("No se encontró proveedor {} con estado DESCARGA", publicId);
             return;
         }
-
-        supplier.setStatus(ProviderState.ERRORMAPPING);
+        if (XMLConstants.FRENOS.equals(businessUnit)) {
+            supplier.setStatus(ProviderState.ERRORMAPFRENOS);
+        } else if (XMLConstants.BREAKES.equals(businessUnit)) {
+            supplier.setStatus(ProviderState.ERRORMAPBREAKES);
+        } else if (XMLConstants.BYPASA.equals(businessUnit)) {
+            supplier.setStatus(ProviderState.ERRORMAPBYPASA);
+        } else if (XMLConstants.OC.equals(businessUnit)) {
+            supplier.setStatus(ProviderState.ERRORMAPOC);
+        } else if (XMLConstants.PN.equals(businessUnit)) {
+            supplier.setStatus(ProviderState.ERRORMAPPN);
+        } else {
+            supplier.setStatus(ProviderState.ERRORMAPPING);
+        }
         SupplierEntity saved = supplierRepository.save(supplier);
 
         log.info(
@@ -66,7 +78,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
                 // Si ya existe, solo incrementa ocurrencias
                 entity.setTotalOcurrencias(entity.getTotalOcurrencias() + 1);
                 repository.save(entity);
-                this.setStatusError(publicId);
+                this.setStatusError(publicId,businessUnit);
 
             }, () -> {
                 // Si no existe, crea nuevo registro
@@ -97,7 +109,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
                 );
 
                 correo.setEnviado(false);
-                this.setStatusError(publicId);
+                this.setStatusError(publicId,businessUnit);
 
                 correoRepository.save(correo);
             });
