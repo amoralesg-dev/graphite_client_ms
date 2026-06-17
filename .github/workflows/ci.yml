@@ -147,6 +147,6 @@ jobs:
         shell: cmd
         run: ping 127.0.0.1 -n 16 > nul
 
-      - name: Validar health DEV
+      - name: Validar health PROD
         shell: cmd
         run: curl http://localhost:8081/graphite-client/actuator/health
