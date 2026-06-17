@@ -15,6 +15,7 @@ import com.rassini.graphite_client.service.xml.context.CreditorXmlContext;
 import com.rassini.graphite_client.service.xml.context.XmlContext;
 import com.rassini.graphite_client.service.xml.factory.OcXmlFactory;
 import com.rassini.graphite_client.service.xml.helper.XmlGenerationHelper;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ public class XmlOcServiceImpl implements XmlOcService {
         dto.getErpRecords().stream()
             .filter(erp -> {
                 String id = erp.getRassiniErpEntityId();
-                return "0111".equals(id) || "0301".equals(id);
+                return XMLConstants.OC.equals(id) || XMLConstants.BYPASA.equals(id);
             })
             .forEach(erp -> {
 
