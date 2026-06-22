@@ -145,7 +145,7 @@ jobs:
 
       - name: Esperar arranque
         shell: cmd
-        run: ping 127.0.0.1 -n 16 > nul
+        run: ping 127.0.0.1 -n 46 > nul
 
       - name: Validar health PROD
         shell: cmd
