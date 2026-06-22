@@ -75,6 +75,19 @@ jobs:
           if exist C:\apps\graphite-client\graphite-client.jar (
             copy C:\apps\graphite-client\graphite-client.jar C:\apps\graphite-client\backup\graphite-client-%GITHUB_RUN_NUMBER%.jar
           )
+      
+      - name: Conservar últimos 6 backups DEV
+        shell: powershell
+        run: |
+          $backups = Get-ChildItem "C:\apps\graphite-client\backup\graphite-client-*.jar" |
+                     Sort-Object LastWriteTime -Descending
+
+          $backups | Select-Object -Skip 6 | Remove-Item -Force
+
+          Write-Host "Backups conservados:"
+          Get-ChildItem "C:\apps\graphite-client\backup\graphite-client-*.jar" |
+          Sort-Object LastWriteTime -Descending |
+          Select-Object Name, LastWriteTime
 
       - name: Copiar nuevo JAR
         shell: cmd
