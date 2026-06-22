@@ -137,7 +137,7 @@ jobs:
           netstat -ano | findstr :8081
 
           exit 1
-          
+
   deploy-main:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -186,8 +186,49 @@ jobs:
 
       - name: Esperar arranque
         shell: cmd
-        run: ping 127.0.0.1 -n 46 > nul
+        run: ping 127.0.0.1 -n 31 > nul
 
-      - name: Validar health PROD
+      - name: Validar servicio Windows
         shell: cmd
-        run: curl http://localhost:8081/graphite-client/actuator/health
+        run: |
+          sc query graphite-client-prod
+
+      - name: Validar puerto 8081
+        shell: cmd
+        run: |
+          netstat -ano | findstr :8081
+
+      - name: Esperar Health PROD
+        shell: powershell
+        run: |
+          $url = "http://localhost:8081/graphite-client/actuator/health"
+          $maxAttempts = 12
+
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+
+            Write-Host "Intento $i de $maxAttempts"
+
+            try {
+              $response = Invoke-RestMethod `
+                -Uri $url `
+                -TimeoutSec 10
+
+              Write-Host "Health OK"
+
+              $response | ConvertTo-Json -Depth 10
+
+              exit 0
+            }
+            catch {
+              Write-Host $_.Exception.Message
+              Start-Sleep -Seconds 5
+            }
+          }
+
+          Write-Host "El servicio nunca respondió al health endpoint"
+
+          sc.exe query graphite-client-prod
+
+          netstat -ano | findstr :8081
+
+          exit 1
