@@ -91,11 +91,51 @@ jobs:
 
       - name: Esperar arranque
         shell: cmd
-        run: ping 127.0.0.1 -n 46 > nul
+        run: ping 127.0.0.1 -n 31 > nul
 
-      - name: Validar health DEV
+      - name: Validar servicio Windows
         shell: cmd
-        run: curl http://localhost:8081/graphite-client/actuator/health
+        run: |
+          sc query graphite-client-dev
+
+      - name: Validar puerto 8081
+        shell: cmd
+        run: |
+          netstat -ano | findstr :8081
+
+      - name: Esperar Health DEV
+        shell: powershell
+        run: |
+          $url = "http://localhost:8081/graphite-client/actuator/health"
+          $maxAttempts = 12
+
+          for ($i = 1; $i -le $maxAttempts; $i++) {
+
+            Write-Host "Intento $i de $maxAttempts"
+
+            try {
+              $response = Invoke-WebRequest `
+                -Uri $url `
+                -UseBasicParsing `
+                -TimeoutSec 10
+
+              Write-Host "Health OK"
+              Write-Host $response.Content
+              exit 0
+            }
+            catch {
+              Write-Host $_.Exception.Message
+              Start-Sleep -Seconds 5
+            }
+          }
+
+          Write-Host "El servicio nunca respondió al health endpoint"
+
+          sc.exe query graphite-client-dev
+
+          netstat -ano | findstr :8081
+
+          exit 1
 
   deploy-main:
     needs: build
