@@ -114,13 +114,14 @@ jobs:
             Write-Host "Intento $i de $maxAttempts"
 
             try {
-              $response = Invoke-WebRequest `
+              $response = Invoke-RestMethod `
                 -Uri $url `
-                -UseBasicParsing `
                 -TimeoutSec 10
 
               Write-Host "Health OK"
-              $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10
+
+              $response | ConvertTo-Json -Depth 10
+
               exit 0
             }
             catch {
@@ -136,7 +137,7 @@ jobs:
           netstat -ano | findstr :8081
 
           exit 1
-
+          
   deploy-main:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
