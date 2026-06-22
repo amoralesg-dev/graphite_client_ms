@@ -7,7 +7,7 @@ on:
       - main
 
   workflow_dispatch:
-
+  
 permissions:
   contents: read
 
@@ -43,20 +43,12 @@ jobs:
           name: graphite-client-jar
           path: target/graphite-client-0.0.1-SNAPSHOT.jar
           if-no-files-found: error
-
   deploy-dev:
     needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/DEV'
     runs-on: [self-hosted, Windows, X64, backend, dev, graphite]
 
     steps:
-      - name: Limpiar artifacts previos DEV
-        shell: cmd
-        run: |
-          if exist C:\deploy\graphite-client (
-            del /Q C:\deploy\graphite-client\*.jar
-          )
-
       - name: Descargar JAR generado
         uses: actions/download-artifact@v4
         with:
@@ -83,20 +75,6 @@ jobs:
           if exist C:\apps\graphite-client\graphite-client.jar (
             copy C:\apps\graphite-client\graphite-client.jar C:\apps\graphite-client\backup\graphite-client-%GITHUB_RUN_NUMBER%.jar
           )
-
-      - name: Limpiar backups antiguos DEV
-        shell: powershell
-        run: |
-          $backups = Get-ChildItem "C:\apps\graphite-client\backup\graphite-client-*.jar" |
-                     Sort-Object LastWriteTime -Descending
-
-          $backups | Select-Object -Skip 10 | Remove-Item -Force
-
-      - name: Mostrar backups conservados
-        shell: powershell
-        run: |
-          Get-ChildItem "C:\apps\graphite-client\backup\graphite-client-*.jar" |
-          Sort-Object LastWriteTime -Descending
 
       - name: Copiar nuevo JAR
         shell: cmd
@@ -125,13 +103,6 @@ jobs:
     runs-on: [self-hosted, Windows, X64, backend, graphite-client, prod]
 
     steps:
-      - name: Limpiar artifacts previos PROD
-        shell: cmd
-        run: |
-          if exist C:\deploy\graphite-client (
-            del /Q C:\deploy\graphite-client\*.jar
-          )
-
       - name: Descargar JAR generado
         uses: actions/download-artifact@v4
         with:
@@ -158,20 +129,6 @@ jobs:
           if exist C:\apps\graphite-client\graphite-client.jar (
             copy C:\apps\graphite-client\graphite-client.jar C:\apps\graphite-client\backup\graphite-client-%GITHUB_RUN_NUMBER%.jar
           )
-
-      - name: Limpiar backups antiguos PROD
-        shell: powershell
-        run: |
-          $backups = Get-ChildItem "C:\apps\graphite-client\backup\graphite-client-*.jar" |
-                     Sort-Object LastWriteTime -Descending
-
-          $backups | Select-Object -Skip 10 | Remove-Item -Force
-
-      - name: Mostrar backups conservados
-        shell: powershell
-        run: |
-          Get-ChildItem "C:\apps\graphite-client\backup\graphite-client-*.jar" |
-          Sort-Object LastWriteTime -Descending
 
       - name: Copiar nuevo JAR
         shell: cmd
