@@ -120,7 +120,7 @@ jobs:
                 -TimeoutSec 10
 
               Write-Host "Health OK"
-              Write-Host $response.Content
+              $response.Content | ConvertFrom-Json | ConvertTo-Json -Depth 10
               exit 0
             }
             catch {
