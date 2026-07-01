@@ -33,6 +33,11 @@ public class CatalogEquivalenciaFaltanteServiceImpl
     @Value("${mail.notification.to}")
     private String destinatariosConfig;
 
+    
+    @Value("${spring.profiles.active:local}")
+    private String environment;
+
+
     @Transactional
     public void setStatusError(String publicId, String businessUnit) {
 
@@ -66,7 +71,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
         );
     }
 
-    public void registrar(String publicId, String idCatalogo, String code, String businessUnit) {
+    public void registrar(String publicId, String idCatalogo, String code, String businessUnit, String proceso) {
 
         repository
             .findByIdCatalogoAndCodeAndBusinessUnitAndNotificado(
@@ -95,7 +100,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
                 // Además, registra un correo pendiente
                 CorreoPendienteEntity correo = new CorreoPendienteEntity();
                 correo.setTo(destinatariosConfig); 
-                correo.setSubject("Equivalencia faltante detectada proveedor "+publicId);
+                correo.setSubject("Equivalencia faltante detectada proveedor "+publicId+", ambiente:"+environment+", en proceso"+proceso);
                 correo.setBody(
                         "<html>" +
                                 "<body>" +
@@ -103,6 +108,7 @@ public class CatalogEquivalenciaFaltanteServiceImpl
                                 "<p><b>Catálogo:</b> " + idCatalogo + "</p>" +
                                 "<p><b>Code:</b> " + code + "</p>" +
                                 "<p><b>Business Unit:</b> " + businessUnit + "</p>" +
+                                "<p><b>Ambiente:</b> " + environment + "</p>" +
                                 "<p><b>Fecha detección:</b> " + entity.getFechaDeteccion() + "</p>" +
                                 "</body>" +
                         "</html>"

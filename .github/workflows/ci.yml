@@ -1,4 +1,4 @@
-name: CI DEV
+name: CI CD GRAPHITE-CLIENT
 
 on:
   push:
