@@ -1,6 +1,7 @@
 package com.rassini.graphite_client.dto;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.Data;
 
@@ -25,6 +26,11 @@ public class GraphiteSupplierDto {
 
     @JsonProperty("Entity_Name")
     private String entityName;
+
+    
+    @JsonProperty("Entity_Name_Translations")
+    private Map<String, String> entityNameTranslations;
+
 
     @JsonProperty("Integration_Tax_ID")
     private String integrationTaxId;
@@ -335,13 +341,27 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Account_Currency_Correspondent_Bank")
         private CorrespondentBank bankAccountCurrencyCorrespondentBank;
         
+        @JsonProperty("Bank_Name_Translations")
+        private Map<String, String> bankNameTranslations;
+
+        public Map<String, String> getBankNameTranslations() {
+            return bankNameTranslations;
+        }
+
+        @JsonProperty("Bank_Account_Holder_Name_Translations")
+        private Map<String, String> bankAccountHolderNameTranslations;
+
+        public Map<String, String> getBankAccountHolderNameTranslations() {
+            return bankAccountHolderNameTranslations;
+        }
         
-    public String getBankAccountNumber() {
+        public String getBankAccountNumber() {
             if (bankAccountNumber != null && !bankAccountNumber.trim().isEmpty()) {
                 return bankAccountNumber;
             }
             return bankAccountNumberIban;
         }
+        
 
     
     }

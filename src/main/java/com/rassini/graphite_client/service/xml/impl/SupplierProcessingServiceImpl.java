@@ -110,7 +110,14 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             if(!ProviderState.ERRORMAPBREAKES.equals(supplier.getStatus()))
                 updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
             
-            if(!ProviderState.ERRORMAPPING.equals(supplier.getStatus())){
+            
+            if (!ProviderState.ERRORMAPOC.equals(supplier.getStatus())
+                && !ProviderState.ERRORMAPPN.equals(supplier.getStatus())
+                && !ProviderState.ERRORMAPFRENOS.equals(supplier.getStatus())
+                && !ProviderState.ERRORMAPBREAKES.equals(supplier.getStatus())
+                && !ProviderState.ERRORMAPBYPASA.equals(supplier.getStatus())
+                && !ProviderState.ERRORMAPPING.equals(supplier.getStatus())) {
+
                 updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
                 integrityService.createFileSupplierSync(dto.getErpIdQad());
             }
