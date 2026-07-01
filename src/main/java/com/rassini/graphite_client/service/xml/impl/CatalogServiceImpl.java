@@ -34,9 +34,30 @@ public class CatalogServiceImpl implements CatalogService {
                     publicId,
                     XMLConstants.CATALOG_COUNTRY,
                     graphiteCountry,
-                    plantId
+                    plantId,
+                    "graphite"
             );
             log.info("No se encontró equivalencia para country='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteCountry, plantId);
+        }else {
+            log.info("Equivalencia encontrada para country='{}' y plantId='{}': '{}'", graphiteCountry, plantId, equivalencia);
+        }
+        return equivalencia;
+    }
+    @Override
+    public String mapCountry09(String publicId, String graphiteCountry, String plantId) {
+        String equivalencia =null;
+        equivalencia = catalogManagerCacheService.getEquivalencia(
+                XMLConstants.CATALOG_COUNTRY_INTEGITY, graphiteCountry,plantId);
+
+        if(equivalencia == null) {
+            catalogEquivalenciaFaltanteService.registrar(
+                    publicId,
+                    XMLConstants.CATALOG_COUNTRY_INTEGITY,
+                    graphiteCountry,
+                    plantId,
+                    "Integrity"
+            );
+            log.info("No se encontró equivalencia para country='{}' y plantId='{}'. Se debe enviar correo proceso{}", graphiteCountry, plantId,"Integrity");
         }else {
             log.info("Equivalencia encontrada para country='{}' y plantId='{}': '{}'", graphiteCountry, plantId, equivalencia);
         }
@@ -86,7 +107,8 @@ public class CatalogServiceImpl implements CatalogService {
                     publicId,
                     XMLConstants.CATALOG_STATE,
                     graphiteState,
-                    plantId
+                    plantId,
+                    "graphite"
             );
             log.info("No se encontró equivalencia para state='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteState, plantId);
         }else {

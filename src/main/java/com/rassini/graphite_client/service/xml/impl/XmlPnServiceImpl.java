@@ -104,5 +104,6 @@ public class XmlPnServiceImpl implements XmlPnService {
                         )
                 );
             });
+            supplierParameter.setStatus(ProviderState.PROCESSINGXMLPN);
     }
 }

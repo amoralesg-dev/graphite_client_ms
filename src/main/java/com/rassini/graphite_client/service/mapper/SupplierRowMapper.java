@@ -9,12 +9,14 @@ import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
+
 @Slf4j
 public class SupplierRowMapper {
 
-    private SupplierRowMapper() {
-        // utility class
-    }
+    private static final String LOCALE = "en-US";
+
+    private SupplierRowMapper() {}
 
     // ======================================================
     // PUBLIC API
@@ -32,38 +34,48 @@ public class SupplierRowMapper {
     }
 
     public static void fill(
-        SuppliersRowEntity row,
-        GraphiteSupplierDto dto,
-        GraphiteSupplierDto.Location headquarters,
-        GraphiteSupplierDto.ErpRecord erp,
-        CatalogService catalogService) 
-    {
+            SuppliersRowEntity row,
+            GraphiteSupplierDto dto,
+            GraphiteSupplierDto.Location headquarters,
+            GraphiteSupplierDto.ErpRecord erp,
+            CatalogService catalogService
+    ) {
 
-        // -------------------------------
-        // Validaciones mínimas
-        // -------------------------------
         if (row == null || dto == null || erp == null || catalogService == null) {
-            log.warn("[MAPPER] fill cancelado por argumentos nulos. row={} dto={} erp={} catalogService={}",
-                    row, dto, erp, catalogService);
+            log.warn("[MAPPER] fill cancelado por argumentos nulos");
             return;
         }
 
-        // -------------------------------
-        // Identidad
-        // -------------------------------
+        // ===============================
+        // IDENTIDAD
+        // ===============================
         row.setSupplierCode(dto.getEntityPublicId());
         row.setSupplierCodeDisIntegrity(dto.getErpIdQad());
         row.setBusinessUnitCode(erp.getRassiniErpEntityId());
         row.setErpIdQad(dto.getErpIdQad());
 
-        row.setSupplierName(left(dto.getEntityName(), 36));
-        row.setSupplierSearchName(left(dto.getEntityName(), 20));
+        // ✅ SUPPLIER NAME (translations)
+        String supplierName = null;
+
+        if (dto.getEntityNameTranslations() != null) {
+            supplierName = dto.getEntityNameTranslations().get(LOCALE);
+        }
+
+        if (isBlank(supplierName)) {
+            supplierName = dto.getEntityName();
+        }
+
+        if (isBlank(supplierName)) {
+            supplierName = dto.getIntegrationTaxId();
+        }
+
+        row.setSupplierName(left(supplierName, 36));
+        row.setSupplierSearchName(left(supplierName, 20));
         row.setRfc(dto.getIntegrationTaxId());
 
-        // -------------------------------
-        // Contact Name + Contact Email
-        // Primero desde headquarters, luego fallback a root
-        // -------------------------------
+        // ===============================
+        // CONTACTO
+        // ===============================
         String contactName = null;
         String contactEmail = null;
 
@@ -72,275 +84,190 @@ public class SupplierRowMapper {
                 && !headquarters.getLocSalesContactAlternateContactCalc().isEmpty()
                 && headquarters.getLocSalesContactAlternateContactCalc().get(0) != null) {
 
-            contactName = headquarters.getLocSalesContactAlternateContactCalc()
-                    .get(0)
-                    .getName();
-
-            contactEmail = headquarters.getLocSalesContactAlternateContactCalc()
-                    .get(0)
-                    .getEmail();
+            contactName = headquarters.getLocSalesContactAlternateContactCalc().get(0).getName();
+            contactEmail = headquarters.getLocSalesContactAlternateContactCalc().get(0).getEmail();
         }
 
-        if ((contactName == null || contactName.isBlank())
-                && headquarters != null
-                && headquarters.getLocSalesContactAlternateNameCalc() != null
-                && !headquarters.getLocSalesContactAlternateNameCalc().isBlank()) {
-
+        if (isBlank(contactName) && headquarters != null) {
             contactName = headquarters.getLocSalesContactAlternateNameCalc();
         }
 
-        if ((contactEmail == null || contactEmail.isBlank())
-                && headquarters != null
-                && headquarters.getLocSalesContactAlternateEmailCalc() != null
-                && !headquarters.getLocSalesContactAlternateEmailCalc().isBlank()) {
-
+        if (isBlank(contactEmail) && headquarters != null) {
             contactEmail = headquarters.getLocSalesContactAlternateEmailCalc();
         }
 
-        if (contactName == null || contactName.isBlank()) {
+        if (isBlank(contactName)) {
             contactName = dto.getPaymentContactName();
         }
 
-        if ((contactEmail == null || contactEmail.isBlank())
-                && dto.getSupplierContactEmail() != null
-                && !dto.getSupplierContactEmail().isBlank()) {
-
+        if (isBlank(contactEmail)) {
             contactEmail = dto.getSupplierContactEmail();
         }
 
-        if ((contactName == null || contactName.isBlank())
-                && contactEmail != null
-                && !contactEmail.isBlank()) {
-
-            contactName = contactEmail
-                    .split("@")[0]
-                    .toUpperCase();
+        if (isBlank(contactName) && !isBlank(contactEmail)) {
+            contactName = contactEmail.split("@")[0].toUpperCase();
         }
 
         row.setContactName(contactName);
         row.setContactEmail(contactEmail);
 
+        // ===============================
+        // DIRECCION
+        // ===============================
+        ResolvedAddress address = SupplierAddressResolver.resolve(dto, headquarters, erp);
 
-        // -------------------------------
-        // Dirección (resolver por estructura real)
-        // -------------------------------
-        ResolvedAddress resolvedAddress = SupplierAddressResolver.resolve(dto, headquarters, erp);
+        if (address != null) {
 
-        if (resolvedAddress != null) {
-            row.setStreetName(resolvedAddress.getStreetName());
-            row.setStreetName2(resolvedAddress.getStreetName2());
-            row.setStreetName3(resolvedAddress.getStreetName3());
-            row.setStreetNumber(resolvedAddress.getStreetNumber());
+            row.setStreetName(address.getStreetName());
+            row.setStreetName2(address.getStreetName2());
+            row.setStreetName3(address.getStreetName3());
+            row.setStreetNumber(address.getStreetNumber());
 
-            row.setZipCode(resolvedAddress.getPostalCode());
-            row.setCityCode(resolvedAddress.getCity());
+            row.setZipCode(address.getPostalCode());
+            row.setCityCode(address.getCity());
 
             row.setStateCode(catalogService.getEquivalenciaState(
                     dto.getEntityPublicId(),
-                    resolvedAddress.getRegion(),
+                    address.getRegion(),
                     erp.getRassiniErpEntityId()
             ));
-            if(XMLConstants.FRENOS.equals(erp.getRassiniErpEntityId())){
-                row.setCountryCode( resolvedAddress.getCountry());
-            }else{
-                row.setCountryCode(
-                        catalogService.mapCountry(
-                                dto.getEntityPublicId(),
-                                resolvedAddress.getCountry(),
-                                erp.getRassiniErpEntityId()
-                        )
-                );
-            }
+
             
+            if (XMLConstants.PN.equals(erp.getRassiniErpEntityId())) {
 
-            // dejamos state_description con la ciudad/localidad resuelta
-            row.setStateDescription(resolvedAddress.getCity());
+                row.setCountryCode(
+                    catalogService.mapCountry(
+                        dto.getEntityPublicId(),
+                        address.getCountry(),
+                        erp.getRassiniErpEntityId()
+                    )
+                );
 
-            log.info(
-                    "[ADDR-MAPPER] provider={} street1={} street2={} street3={} streetNumber={} city={} region={} zip={} country={}",
-                    dto.getEntityPublicId(),
-                    resolvedAddress.getStreetName(),
-                    resolvedAddress.getStreetName2(),
-                    resolvedAddress.getStreetName3(),
-                    resolvedAddress.getStreetNumber(),
-                    resolvedAddress.getCity(),
-                    resolvedAddress.getRegion(),
-                    resolvedAddress.getPostalCode(),
-                    resolvedAddress.getCountry()
-            );
-        } else {
-            row.setStreetName(null);
-            row.setStreetName2(null);
-            row.setStreetName3(null);
-            row.setStreetNumber(null);
-            row.setZipCode(null);
-            row.setCityCode(null);
-            row.setStateCode(null);
-            row.setCountryCode(null);
-            row.setStateDescription(null);
+            } else {
 
-            log.warn("[ADDR-MAPPER] provider={} no resolved address found", dto.getEntityPublicId());
+                row.setCountryCode(address.getCountry());
+            }
+
+            row.setStateDescription(address.getCity());
+
         }
 
-        // -------------------------------
-        // ERP-level fields
-        // -------------------------------
-        row.setPurchaseTypeCode(
-                erp.getRassiniErpPaymentType()
-        );
+        // ===============================
+        // ERP
+        // ===============================
+        row.setPurchaseTypeCode(erp.getRassiniErpPaymentType());
+        row.setSupplierTypeCode(erp.getRassiniErpSupplierType());
 
-        row.setSupplierTypeCode(
-                erp.getRassiniErpSupplierType()
-        );
-
-        // -------------------------------
-        // Banco
-        // -------------------------------
+        // ===============================
+        // BANCO
+        // ===============================
         if (erp.getErpBankList() != null && !erp.getErpBankList().isEmpty()) {
 
             GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
 
+            // currency
             String currency =
                     (bank.getBankCurrencyList() != null && !bank.getBankCurrencyList().isEmpty())
                             ? bank.getBankCurrencyList().get(0)
                             : null;
 
             row.setSupplierCurrency(
-                    catalogService.mapCurrency(
-                            currency,
-                            erp.getRassiniErpEntityId()
-                    )
+                    catalogService.mapCurrency(currency, erp.getRassiniErpEntityId())
             );
 
-            row.setBeneficiaryAccountName(bank.getBankAccountHolderName());
+            // ✅ ACCOUNT NAME
+            String account = null;
+
+            if (bank.getBankAccountHolderNameTranslations() != null) {
+                account = bank.getBankAccountHolderNameTranslations().get(LOCALE);
+            }
+
+            if (isBlank(account)) {
+                account = bank.getBankAccountHolderName();
+            }
+
+            if (isBlank(account)) {
+                account = supplierName;
+            }
+
+            row.setBeneficiaryAccountName(account);
+
+            // datos básicos
             row.setAccountNumber(bank.getBankAccountNumber());
             row.setBankCountry(bank.getBankCountry());
+            row.setBankCurrency(bank.getBankAccountCurrency());
 
-            row.setBankCurrency(
-                    bank.getBankAccountCurrency()
+            // ✅ BANK NAME
+            String bankName = null;
+
+            if (bank.getBankNameTranslations() != null) {
+                bankName = bank.getBankNameTranslations().get(LOCALE);
+            }
+
+            if (isBlank(bankName)) {
+                bankName = bank.getBankName();
+            }
+
+            if (isBlank(bankName) && erp.getBankWireAbaRouting() != null) {
+                bankName = erp.getBankWireAbaRouting().getBankName();
+            }
+
+            if (isBlank(bankName) && bank.getBankNumber() != null) {
+                bankName = bank.getBankNumber().getBankName();
+            }
+
+            if (isBlank(bankName) && bank.getBankAccountCurrencyCorrespondentBank() != null) {
+                bankName = bank.getBankAccountCurrencyCorrespondentBank().getBankName();
+            }
+
+            if (isBlank(bankName)) {
+                bankName = account;
+            }
+
+            row.setBeneficiaryBankName(bankName);
+
+            // routing
+            row.setRoutingCodeSwift(
+                    bank.getBankSwift() != null ? bank.getBankSwift().getRouting() : null
             );
 
-            // --------------------------------------------------
-            // BeneficiaryBankName
-            // --------------------------------------------------
-            String beneficiaryBankName = null;
+            row.setRoutingCodeAba(
+                    erp.getBankWireAbaRouting() != null
+                            ? erp.getBankWireAbaRouting().getRouting()
+                            : null
+            );
 
-            if (bank.getBankNumber() != null
-                    && bank.getBankNumber().getBankName() != null
-                    && !bank.getBankNumber().getBankName().isBlank()) {
-
-                beneficiaryBankName = bank.getBankNumber().getBankName();
-            }
-
-            if ((beneficiaryBankName == null || beneficiaryBankName.isBlank())
-                    && erp.getBankWireAbaRouting() != null) {
-
-                beneficiaryBankName = erp.getBankWireAbaRouting().getBankName();
-            }
-
-            row.setBeneficiaryBankName(beneficiaryBankName);
-
-            // RoutingCodeBIC
-            if (bank.getBankSwift() != null) {
-                row.setRoutingCodeSwift(bank.getBankSwift().getRouting());
-            } else {
-                row.setRoutingCodeSwift(null);
-            }
-
-            // RoutingCodeABA
-            if (erp.getBankWireAbaRouting() != null) {
-                row.setRoutingCodeAba(
-                        erp.getBankWireAbaRouting().getRouting()
-                );
-            } else {
-                row.setRoutingCodeAba(null);
-            }
-
-            // --------------------------------------------------
-            // Intermediary
-            // --------------------------------------------------
-            row.setIntermediaryAccount(null);
-            row.setIntermediaryRoutingCodeAba(null);
-
+            // intermediario
             if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
                 row.setIntermediaryRoutingCodeSwift(
-                        bank.getBankAccountCurrencyCorrespondentBank().getSwift()
-                );
-
+                        bank.getBankAccountCurrencyCorrespondentBank().getSwift());
                 row.setIntermediaryBankName(
-                        bank.getBankAccountCurrencyCorrespondentBank().getBankName()
-                );
-            } else {
-                row.setIntermediaryRoutingCodeSwift(null);
-                row.setIntermediaryBankName(null);
+                        bank.getBankAccountCurrencyCorrespondentBank().getBankName());
             }
-
-            row.setIntermediaryAccountCountry(
-                    bank.getBankAccountCurrencyCorrespondentBankCountry()
-            );
-        } else {
-            row.setSupplierCurrency(null);
-            row.setBeneficiaryAccountName(null);
-            row.setAccountNumber(null);
-            row.setBankCountry(null);
-            row.setBankCurrency(null);
-            row.setBeneficiaryBankName(null);
-            row.setRoutingCodeSwift(null);
-            row.setRoutingCodeAba(null);
-            row.setIntermediaryAccount(null);
-            row.setIntermediaryRoutingCodeAba(null);
-            row.setIntermediaryRoutingCodeSwift(null);
-            row.setIntermediaryBankName(null);
-            row.setIntermediaryAccountCountry(null);
         }
     }
+
     // ======================================================
     // HELPERS
     // ======================================================
 
     public static GraphiteSupplierDto.Location findHeadquarters(GraphiteSupplierDto dto) {
-        if (dto == null || dto.getLocations() == null || dto.getLocations().isEmpty()) {
-            return null;
-        }
+        if (dto == null || dto.getLocations() == null) return null;
 
-        log.debug("[DEBUG] provider={} locations={}", dto.getEntityPublicId(), dto.getLocations());
-
-        GraphiteSupplierDto.Location headquarters = dto.getLocations().stream()
-                .filter(l -> l != null && "Headquarters".equalsIgnoreCase(l.getLocationName()))
-                .peek(l -> log.debug("[DEBUG] provider={} found Headquarters={}", dto.getEntityPublicId(), l.getLocationName()))
+        return dto.getLocations().stream()
+                .filter(l -> l != null
+                        && ("Headquarters".equalsIgnoreCase(l.getLocationName())
+                        || "Office".equalsIgnoreCase(l.getLocationName())))
                 .findFirst()
-                .orElse(null);
-
-        if (headquarters != null) {
-            return headquarters;
-        }
-
-        GraphiteSupplierDto.Location office = dto.getLocations().stream()
-                .filter(l -> l != null && "Office".equalsIgnoreCase(l.getLocationName()))
-                .peek(l -> log.info("[DEBUG] provider={} found Office={}", dto.getEntityPublicId(), l.getLocationName()))
-                .findFirst()
-                .orElse(null);
-
-        if (office != null) {
-            return office;
-        }
-
-        GraphiteSupplierDto.Location fallback = dto.getLocations().stream()
-                .filter(l -> l != null)
-                .findFirst()
-                .orElse(null);
-
-        if (fallback != null) {
-            log.debug("[DEBUG] provider={} fallback location={}", dto.getEntityPublicId(), fallback.getLocationName());
-        }
-
-        return fallback;
+                .orElse(dto.getLocations().stream().filter(l -> l != null).findFirst().orElse(null));
     }
 
     private static String left(String value, int length) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         return value.length() <= length ? value : value.substring(0, length);
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

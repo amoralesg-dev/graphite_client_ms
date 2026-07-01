@@ -109,5 +109,6 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                         )
                 );
             });
+            supplierParameter.setStatus(ProviderState.PROCESSINGXMLFRN);
     }
 }

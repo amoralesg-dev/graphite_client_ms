@@ -125,6 +125,7 @@ public class XmlOcServiceImpl implements XmlOcService {
                         )
                 );
             });
+            supplierParameter.setStatus(ProviderState.PROCESSINGXMLOC);
     }
 
 
