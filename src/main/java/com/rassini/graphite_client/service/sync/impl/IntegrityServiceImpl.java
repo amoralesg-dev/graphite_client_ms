@@ -90,7 +90,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         // Province / Estate - Max: 35
         line.append(cleanAndTruncate(supplier.getStateCode(), 35)).append("|");
         // Country - Max: 2
-        line.append(cleanAndTruncate(supplier.getCountryCode(), 2)).append("|");
+        line.append(cleanAndTruncate(getCountryCode09(supplier), 2)).append("|");
         // Email Address - Max: 50
         line.append(cleanAndTruncate(supplier.getContactEmail(), 50)).append("|");
         // Cpty Account Code - Max: 10
@@ -104,7 +104,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         // Beneficiary Bank - Max: 140
         line.append(cleanAndTruncate(supplier.getBeneficiaryBankName(), 140)).append("|");
         // Country (Bank) - Max: 2
-        line.append(cleanAndTruncate(getCountryCode09(supplier), 2)).append("|");
+        line.append(cleanAndTruncate(supplier.getBankCountry(), 2)).append("|");
         // SWIFT - Max: 11
         line.append(cleanAndTruncate(supplier.getRoutingCodeSwift(), 11)).append("|");
         // ABA - Max: 9
