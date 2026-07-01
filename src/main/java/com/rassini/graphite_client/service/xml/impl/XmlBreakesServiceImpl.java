@@ -110,5 +110,6 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
                         )
                 );
             });
+            supplierParameter.setStatus(ProviderState.PROCESSINGXMLBRK);
     }
 }

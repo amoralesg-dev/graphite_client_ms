@@ -6,5 +6,6 @@ public interface CatalogEquivalenciaFaltanteService {
             String publicId,
             String idCatalogo,
             String code,
-            String businessUnit);
+            String businessUnit,
+            String proceso);
 }

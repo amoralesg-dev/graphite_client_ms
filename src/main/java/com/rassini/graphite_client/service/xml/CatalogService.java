@@ -19,4 +19,5 @@ public interface CatalogService {
 
   String getAction(SuppliersRowEntity supplier);
   String getPartialUpdate(SuppliersRowEntity supplier);
+  String mapCountry09(String publicId, String graphiteCountry, String plantId);
 }

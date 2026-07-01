@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.sync.IntegrityService;
+import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.XmlConstants;
+import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +28,7 @@ import java.util.List;
 public class IntegrityServiceImpl implements IntegrityService {
 
     private final SuppliersRowRepository suppliersRowRepository;
+    private final CatalogService catalogService;
 
     
     @Override
@@ -87,7 +90,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         // Province / Estate - Max: 35
         line.append(cleanAndTruncate(supplier.getStateCode(), 35)).append("|");
         // Country - Max: 2
-        line.append(cleanAndTruncate(supplier.getCountryCode(), 2)).append("|");
+        line.append(cleanAndTruncate(getCountryCode09(supplier), 2)).append("|");
         // Email Address - Max: 50
         line.append(cleanAndTruncate(supplier.getContactEmail(), 50)).append("|");
         // Cpty Account Code - Max: 10
@@ -118,6 +121,14 @@ public class IntegrityServiceImpl implements IntegrityService {
         line.append(cleanAndTruncate(supplier.getIntermediaryAccountCountry(), 2));
 
         return line.toString();
+    }
+
+    private String getCountryCode09(SuppliersRowEntity supplier) {
+        if(XMLConstants.PN.equals(supplier.getBusinessUnitCode())){
+            return this.catalogService.mapCountry09(supplier.getSupplierCode(), supplier.getCountryCode(), supplier.getBusinessUnitCode());
+        }else{
+            return supplier.getCountryCode();
+        }
     }
 
     private String cleanAndTruncate(String input, int maxLength) {
