@@ -132,21 +132,8 @@ public class SupplierRowMapper {
                     erp.getRassiniErpEntityId()
             ));
 
-            
-            if (XMLConstants.PN.equals(erp.getRassiniErpEntityId())) {
-
-                row.setCountryCode(
-                    catalogService.mapCountry(
-                        dto.getEntityPublicId(),
-                        address.getCountry(),
-                        erp.getRassiniErpEntityId()
-                    )
-                );
-
-            } else {
-
-                row.setCountryCode(address.getCountry());
-            }
+            //ya no se hace la traducción de estado, se deja tal cual viene del address resolver incluso para PN
+            row.setCountryCode(address.getCountry());
 
             row.setStateDescription(address.getCity());
 

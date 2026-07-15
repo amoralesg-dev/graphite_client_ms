@@ -1,6 +1,7 @@
 package com.rassini.graphite_client.service.xml.impl;
 
 
+import com.rassini.graphite_client.dto.UpdateInfo;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.catalog.CatalogEquivalenciaFaltanteService;
 import com.rassini.graphite_client.service.catalog.CatalogManagerCacheService;
@@ -63,6 +64,66 @@ public class CatalogServiceImpl implements CatalogService {
         }
         return equivalencia;
     }
+    @Override
+    public UpdateInfo resolveUpdateInfo(SuppliersRowEntity supplier) {
+
+        String businessUnit = supplier.getBusinessUnitCode();
+        String statusIntegrity = supplier.getStatusIntegrity();
+
+        String partialUpdate = XMLConstants.FALSE;
+        String activityCode = XMLConstants.CREATE;
+
+        log.info(
+                "Evaluando update info supplierCode={}, businessUnit={}, statusIntegrity={}",
+                supplier.getSupplierCode(),
+                businessUnit,
+                statusIntegrity);
+
+        // Alta o registro nuevo
+        if (statusIntegrity == null
+                || XMLConstants.ALTA.equalsIgnoreCase(statusIntegrity)) {
+
+            activityCode = XMLConstants.CREATE;
+            partialUpdate = XMLConstants.FALSE;
+        }
+
+        // Modificación
+        else if (XMLConstants.MOD.equalsIgnoreCase(statusIntegrity)) {
+
+            partialUpdate = XMLConstants.TRUE;
+
+            // Corpo
+            if (XMLConstants.OC.equals(businessUnit)) {
+                activityCode = XMLConstants.MODIFY; // Activity Code
+            }
+
+            // Frenos
+            else if (XMLConstants.FRENOS.equals(businessUnit)
+                    || XMLConstants.BREAKES.equals(businessUnit)) {
+
+                activityCode = XMLConstants.MODIFY;
+            }
+
+            // Suspensiones
+            else if (XMLConstants.PN.equals(businessUnit)) {
+
+                activityCode = XMLConstants.MODIFY;
+            }
+        }
+
+        log.info(
+                "Resuelto supplierCode={} partialUpdate={} activityCode={}",
+                supplier.getSupplierCode(),
+                partialUpdate,
+                activityCode);
+
+        return UpdateInfo.builder()
+                .partialUpdate(partialUpdate)
+                .activityCode(activityCode)
+                .build();
+    }
+
+
     @Override
     public String getActivityCode(SuppliersRowEntity supplier) {
         String activityCode = null;
@@ -171,18 +232,5 @@ public class CatalogServiceImpl implements CatalogService {
         log.info("Resuelto Action  para supplierCode={}: '{}'", supplier.getSupplierCode(), action);
         return action;
     }
-    @Override
-    public String getPartialUpdate(SuppliersRowEntity supplier) {
-        String partialUpdate = null;
-
-        log.info("Evaluando partial update para supplierCode={} con statusIntegrity={}", supplier.getSupplierCode(), supplier.getStatusIntegrity());
-        
-        if(XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
-            partialUpdate = XMLConstants.TRUE;
-        }else{
-            partialUpdate = XMLConstants.FALSE;
-        }
-        log.info("Resuelto Partial update para supplierCode={}: '{}'", supplier.getSupplierCode(), partialUpdate);
-        return partialUpdate;
-    }
+    
 }
