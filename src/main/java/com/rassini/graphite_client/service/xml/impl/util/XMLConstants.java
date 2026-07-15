@@ -14,6 +14,7 @@ public class XMLConstants {
     public static final String FALSE = "false";
     public static final String TRUE = "true";
     public static final String CREATE = "Create";
+    public static final String MODIFY = "Modify";
      public static final String SAVE = "SAVE";
     public static final String CERO = "0";
     public static final String NULL = "NULL";
