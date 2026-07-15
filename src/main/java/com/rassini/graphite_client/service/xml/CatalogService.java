@@ -1,5 +1,6 @@
 package com.rassini.graphite_client.service.xml;
 
+import com.rassini.graphite_client.dto.UpdateInfo;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 
 public interface CatalogService {
@@ -18,6 +19,6 @@ public interface CatalogService {
   record GlProfile(String invControl, String cnControl, String prepayControl, String divProfile, String purchaseGlProfile) {}
 
   String getAction(SuppliersRowEntity supplier);
-  String getPartialUpdate(SuppliersRowEntity supplier);
   String mapCountry09(String publicId, String graphiteCountry, String plantId);
+  UpdateInfo resolveUpdateInfo(SuppliersRowEntity supplier);
 }

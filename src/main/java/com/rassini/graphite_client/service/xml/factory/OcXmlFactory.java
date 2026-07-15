@@ -3,6 +3,7 @@ package com.rassini.graphite_client.service.xml.factory;
 import java.util.List;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
+import com.rassini.graphite_client.dto.UpdateInfo;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.context.*;
@@ -67,6 +68,7 @@ public class OcXmlFactory {
     // =====================================================
 
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
+        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
                 .tcAction(catalogService.getAction(supplier))
@@ -76,8 +78,8 @@ public class OcXmlFactory {
                 .tcComment("")
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
                 .tcComponentVersion("")
-                .tcActivityCode(catalogService.getActivityCode(supplier))
-                .tlPartialUpdate(XMLConstants.FALSE)
+                .tcActivityCode(updateInfo.getActivityCode())
+                .tlPartialUpdate(updateInfo.getPartialUpdate())
                 .tcPartialUpdateExceptionList("")
                 .build();
     }
