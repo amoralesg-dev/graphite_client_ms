@@ -2,6 +2,7 @@ package com.rassini.graphite_client.service.xml.factory;
 
 
 
+import com.rassini.graphite_client.dto.UpdateInfo;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.context.*;
@@ -69,14 +70,15 @@ public class PnXmlFactory {
     // CONTEXT INFO
     // =====================================================
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
+        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
 
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(catalogService.getActivityCode(supplier))
-                .tlPartialUpdate((XMLConstants.FALSE))
+                .tcActivityCode(updateInfo.getActivityCode())
+                .tlPartialUpdate(updateInfo.getPartialUpdate())
                 .build();
     }
 
@@ -129,6 +131,18 @@ public class PnXmlFactory {
             String name36,
             TaxInfo tax
     ) {
+
+        String countryCodePN = this.catalogService.mapCountry(supplier.getErpIdQad(),supplier.getCountryCode(),supplier.getBusinessUnitCode());
+        if (countryCodePN == null) {
+                throw new IllegalStateException(
+                        String.format(
+                        "No existe equivalencia de país para ERP [%s], Country [%s], BU [%s]",
+                        supplier.getErpIdQad(),
+                        supplier.getCountryCode(),
+                        supplier.getBusinessUnitCode()
+                        )
+                );
+        }
         String streetName36 = left(supplier.getStreetName(), 36);
         return AddressXml.builder()
                 .addressStreet1(streetName36)
@@ -154,11 +168,11 @@ public class PnXmlFactory {
                 .addressTaxDeclaration(XMLConstants.CERO)
                 .addressLogicKeyString(XMLConstants.ADDRESS_LOGIC_KEY)
                 .tcStateCode(supplier.getStateCode())
-                .tcCountryCode(supplier.getCountryCode())
+                .tcCountryCode(countryCodePN)
                 .tcAddressTypeCode("HEADOFFICE")
                 .tcLngCode(XMLConstants.LANG_CODE)
                 .tcStateDescription("")
-                .tcCountryDescription(supplier.getCountryCode())
+                .tcCountryDescription(countryCodePN)
                 .tiCountryFormat(XMLConstants.CERO)
                 .tcLngDescription("latin spanish")
                 .lastModifiedDate(DateUtil.todayYyyyMD())

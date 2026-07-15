@@ -2,6 +2,7 @@ package com.rassini.graphite_client.service.xml.factory;
 
 import java.util.List;
 
+import com.rassini.graphite_client.dto.UpdateInfo;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.context.*;
@@ -73,26 +74,29 @@ public class FrenosXmlFactory {
     // CONTEXT INFO
     // =====================================================
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
+        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
                 .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(catalogService.getActivityCode(supplier))
-                .tlPartialUpdate(catalogService.getPartialUpdate(supplier))
+                .tcActivityCode(updateInfo.getActivityCode())
+                .tlPartialUpdate(updateInfo.getPartialUpdate())
                 .build();
     }
 
     private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
+
+        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
                 .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(catalogService.getActivityCode(supplier))
-                .tlPartialUpdate(catalogService.getPartialUpdate(supplier))
+                .tcActivityCode(updateInfo.getActivityCode())
+                .tlPartialUpdate(updateInfo.getPartialUpdate())
                 .build();
     }
 

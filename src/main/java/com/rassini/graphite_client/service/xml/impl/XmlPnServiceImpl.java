@@ -47,63 +47,91 @@ public class XmlPnServiceImpl implements XmlPnService {
             .filter(erp -> XMLConstants.PN.equals(erp.getRassiniErpEntityId()))
             .forEach(erp -> {
 
-                String erpId = XMLConstants.PN;
+                try{
 
-                SuppliersRowEntity supplier =
-                        suppliersRowRepository
-                                .findBySupplierCodeAndBusinessUnitCode(
-                                        dto.getEntityPublicId(),
-                                        erpId
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalStateException(
-                                                "No existe supplier en BD para "
-                                                + dto.getEntityPublicId() + " / " + erpId
+                        String erpId = XMLConstants.PN;
+
+                        SuppliersRowEntity supplier =
+                                suppliersRowRepository
+                                        .findBySupplierCodeAndBusinessUnitCode(
+                                                dto.getEntityPublicId(),
+                                                erpId
                                         )
+                                        .orElseThrow(() ->
+                                                new IllegalStateException(
+                                                        "No existe supplier en BD para "
+                                                        + dto.getEntityPublicId() + " / " + erpId
+                                                )
+                                        );
+                                
+                                        
+                        // =========================
+                        // BUSREL PN
+                        // =========================
+                        XmlContext busrelCtx =
+                                factory.buildBusrelContext(
+                                        supplier,
+                                        erp.getRassiniErpTaxClass()
                                 );
 
-                // =========================
-                // BUSREL PN
-                // =========================
-                XmlContext busrelCtx =
-                        factory.buildBusrelContext(
+                        xmlGenerationHelper.generateIfFileNotExists(
                                 supplier,
-                                erp.getRassiniErpTaxClass()
+                                XmlConstants.OUTPUT_PN_DIR,
+                                busrelCtx.getOutputFileName(),
+                                log,
+                                () -> xmlTemplateEngine.generateBusinessRelationXml(
+                                        XmlConstants.TEMPLATE_PN_BUSREL,
+                                        XmlConstants.OUTPUT_PN_DIR,
+                                        busrelCtx
+                                )
                         );
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_PN_DIR,
-                        busrelCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateBusinessRelationXml(
-                                XmlConstants.TEMPLATE_PN_BUSREL,
-                                XmlConstants.OUTPUT_PN_DIR,
-                                busrelCtx
-                        )
-                );
+                        // =========================
+                        // CREDITOR PN
+                        // =========================
+                        CreditorXmlContext creditorCtx =
+                                factory.buildCreditorContext(
+                                        supplier,
+                                        erp.getRassiniErpTaxClass()
+                                );
 
-                // =========================
-                // CREDITOR PN
-                // =========================
-                CreditorXmlContext creditorCtx =
-                        factory.buildCreditorContext(
+                        xmlGenerationHelper.generateIfFileNotExists(
                                 supplier,
-                                erp.getRassiniErpTaxClass()
+                                XmlConstants.OUTPUT_PN_DIR,
+                                creditorCtx.getOutputFileName(),
+                                log,
+                                () -> xmlTemplateEngine.generateCreditorXml(
+                                        XmlConstants.TEMPLATE_PN_CREDITOR,
+                                        XmlConstants.OUTPUT_PN_DIR,
+                                        creditorCtx
+                                )
+                        );
+                        
+                } catch (IllegalStateException e) {
+
+                        
+                        log.error(
+                                "Error generando XML PN para proveedor {}: {}",
+                                dto.getEntityPublicId(),
+                                e.getMessage(),
+                                e
                         );
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_PN_DIR,
-                        creditorCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateCreditorXml(
-                                XmlConstants.TEMPLATE_PN_CREDITOR,
-                                XmlConstants.OUTPUT_PN_DIR,
-                                creditorCtx
-                        )
-                );
+                        if (supplierParameter != null) {
+                                supplierParameter.setStatus(ProviderState.ERRORMAPPN);
+                        }
+
+                        return;
+
+
+                }
+
             });
-            supplierParameter.setStatus(ProviderState.PROCESSINGXMLPN);
+            
+        if (supplierParameter != null
+                && !ProviderState.ERRORMAPPN.equals(supplierParameter.getStatus())) {
+                supplierParameter.setStatus(ProviderState.PROCESSINGXMLPN);
+        }
+
     }
 }
