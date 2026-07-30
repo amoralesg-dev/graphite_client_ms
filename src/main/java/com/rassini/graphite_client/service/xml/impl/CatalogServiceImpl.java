@@ -139,11 +139,15 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     public String mapCurrency(String graphiteCurrency, String plantId) {
-        // ejemplo básico
-        if ("MX".equalsIgnoreCase(graphiteCurrency) || "MEX".equalsIgnoreCase(graphiteCurrency)) {
-            return "MXN";
+
+        if (XMLConstants.FRENOS.equalsIgnoreCase(plantId) && ("MX".equalsIgnoreCase(graphiteCurrency) || "MEX".equalsIgnoreCase(graphiteCurrency))) {
+            return "MN";
+        }else if (XMLConstants.FRENOS.equalsIgnoreCase(plantId) && "USD".equalsIgnoreCase(graphiteCurrency)) {
+            return "US";   
+        }else{
+            return graphiteCurrency;
         }
-        return graphiteCurrency;
+        
     }
 
     @Override

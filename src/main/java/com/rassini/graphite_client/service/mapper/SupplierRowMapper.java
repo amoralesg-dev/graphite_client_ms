@@ -118,13 +118,13 @@ public class SupplierRowMapper {
 
         if (address != null) {
 
-            row.setStreetName(address.getStreetName());
-            row.setStreetName2(address.getStreetName2());
-            row.setStreetName3(address.getStreetName3());
+            row.setStreetName(left(address.getStreetName(),36));
+            row.setStreetName2(left(address.getStreetName2(),36));
+            row.setStreetName3(left(address.getStreetName3(),36));
             row.setStreetNumber(address.getStreetNumber());
 
             row.setZipCode(address.getPostalCode());
-            row.setCityCode(address.getCity());
+            row.setCityCode(left(address.getCity(), 20));
 
             row.setStateCode(catalogService.getEquivalenciaState(
                     dto.getEntityPublicId(),
