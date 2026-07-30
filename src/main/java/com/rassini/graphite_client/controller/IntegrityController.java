@@ -25,4 +25,16 @@ public class IntegrityController {
         integrityService.createFileSupplierSync(erpIdQad);
         return ResponseEntity.ok(Map.of("message", "File suppliersToIntegrity generation executed for ID "+erpIdQad));
     }
+
+    @GetMapping("/suppliers/populate-dis-integrity")
+    public ResponseEntity<?> populateSupplierCodeDisIntegrity() {
+
+        integrityService.populateSupplierCodeDisIntegrity();
+
+        return ResponseEntity.ok(
+                Map.of("message",
+                        "supplierCodeDisIntegrity populated successfully")
+        );
+    }
+    
 }

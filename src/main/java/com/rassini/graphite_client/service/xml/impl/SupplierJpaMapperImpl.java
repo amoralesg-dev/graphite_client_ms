@@ -93,4 +93,6 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
             suppliersRowRepository.save(row);
         }
     }
+
+
 }
