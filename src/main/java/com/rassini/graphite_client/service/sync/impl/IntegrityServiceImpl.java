@@ -270,7 +270,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         Map<String, List<SuppliersRowEntity>> suppliersGrouped =
         suppliersRows.stream()
                 .collect(Collectors.groupingBy(
-                        SuppliersRowEntity::getSupplierCodeDisIntegrity));
+                        SuppliersRowEntity::getErpIdQad));
 
         for (Map.Entry<String, List<SuppliersRowEntity>> supplier
         : suppliersGrouped.entrySet()) {
