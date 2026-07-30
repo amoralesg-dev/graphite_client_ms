@@ -252,7 +252,7 @@ public class BreakesXmlFactory {
                 .tcDivisionProfileCode(gl.divProfile())
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
-                .tcReasonCode("RECIBO-PENDIENTE")
+                .tcReasonCode("MATCHING PENDING")
                 .tlBusinessRelationIsInterco(XMLConstants.FALSE)
                 .tcBusinessRelationCode(supplier.getErpIdQad())
                 .tcBusinessRelationName1(supplier.getSupplierName())
