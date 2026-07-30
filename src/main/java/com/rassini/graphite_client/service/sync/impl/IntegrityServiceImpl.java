@@ -291,7 +291,7 @@ public class IntegrityServiceImpl implements IntegrityService {
 
         Path outDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
 
-        String fileName ="SUPPLIER_" + supplierCode + "_" + currentDateTime + ".txt";
+        String fileName =supplierCode + "_" + currentDateTime + ".txt";
 
         Path filePath = outDir.resolve(fileName);
 
