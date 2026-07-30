@@ -23,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -266,20 +267,31 @@ public class IntegrityServiceImpl implements IntegrityService {
 
         log.info("Records found: {}", suppliersRows.size());
 
-        generateSupplierMigrationFile(suppliersRows);
+        Map<String, List<SuppliersRowEntity>> suppliersGrouped =
+        suppliersRows.stream()
+                .collect(Collectors.groupingBy(
+                        SuppliersRowEntity::getSupplierCodeDisIntegrity));
+
+        for (Map.Entry<String, List<SuppliersRowEntity>> supplier
+        : suppliersGrouped.entrySet()) {
+
+        generateSupplierMigrationFile(
+                supplier.getKey(),
+                supplier.getValue());
+        }
+        
     }
 
     public void generateSupplierMigrationFile(
-        List<SuppliersRowEntity> suppliers) {
+        String supplierCode,List<SuppliersRowEntity> suppliers) {
 
         String currentDateTime =
                 LocalDateTime.now()
-                        .format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+                        .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
         Path outDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
 
-        String fileName =
-                "SUPPLIERS_MIGRATION_" + currentDateTime + ".txt";
+        String fileName ="SUPPLIER_" + supplierCode + "_" + currentDateTime + ".txt";
 
         Path filePath = outDir.resolve(fileName);
 
@@ -314,4 +326,6 @@ public class IntegrityServiceImpl implements IntegrityService {
                     e);
         }
     }
+
+
 }
