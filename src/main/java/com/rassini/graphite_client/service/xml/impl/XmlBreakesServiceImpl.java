@@ -13,7 +13,7 @@ import com.rassini.graphite_client.service.xml.XmlConstants;
 import com.rassini.graphite_client.service.xml.XmlTemplateEngine;
 import com.rassini.graphite_client.service.xml.context.CreditorXmlContext;
 import com.rassini.graphite_client.service.xml.context.XmlContext;
-import com.rassini.graphite_client.service.xml.factory.FrenosXmlFactory;
+import com.rassini.graphite_client.service.xml.factory.BreakesXmlFactory;
 import com.rassini.graphite_client.service.xml.helper.XmlGenerationHelper;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
@@ -41,8 +41,8 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
                 return;
         }
 
-        //  Breakes usa exactamente el MISMO factory que Frenos
-        FrenosXmlFactory factory = new FrenosXmlFactory(catalogService);
+        //  Breakes usa exactamente el MISMO factory que Frenos pero ya tiene su propio archivo
+        BreakesXmlFactory factory = new BreakesXmlFactory(catalogService);
 
         dto.getErpRecords().stream()
             .filter(erp -> XMLConstants.BREAKES.equals(erp.getRassiniErpEntityId()))

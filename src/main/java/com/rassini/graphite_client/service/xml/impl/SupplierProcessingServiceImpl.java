@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.ProviderState;
 import com.rassini.graphite_client.entity.SupplierEntity;
@@ -124,9 +125,32 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
                 
 
-        } catch (Exception e) {
+        } catch (InvalidFormatException e) {
+
+            log.error(
+                    "InvalidFormatException processing supplier={} path={} value={}",
+                    supplier.getPublicId(),
+                    e.getPathReference(),
+                    e.getValue(),
+                    e
+            );
+
             throw new IllegalStateException(
-                "Error procesando proveedor " + publicId, e
+                    "Error procesando proveedor " + supplier.getPublicId(),
+                    e
+            );
+
+        } catch (Exception e) {
+
+            log.error(
+                    "Unexpected error processing supplier={}",
+                    supplier.getPublicId(),
+                    e
+            );
+
+            throw new IllegalStateException(
+                    "Error procesando proveedor " + supplier.getPublicId(),
+                    e
             );
         }
     }
