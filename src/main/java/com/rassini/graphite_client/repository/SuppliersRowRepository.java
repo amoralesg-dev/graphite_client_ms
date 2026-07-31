@@ -54,5 +54,20 @@ public interface SuppliersRowRepository
 
        int countByErpIdQad(String erpIdQad);
 
+       List<SuppliersRowEntity> findAllByOrderBySupplierCodeAscIdAsc();
+
+       List<SuppliersRowEntity> findAllByOrderByErpIdQadAscIdAsc();
+
+       @Query("""
+       SELECT s
+       FROM SuppliersRowEntity s
+       WHERE s.supplierCodeDisIntegrity IS NOT NULL
+         AND TRIM(s.supplierCodeDisIntegrity) <> ''
+       ORDER BY s.erpIdQad,
+                s.supplierCodeDisIntegrity,
+                s.id
+       """)
+      List<SuppliersRowEntity> findAllForIntegrityMigration();
+
 
 }

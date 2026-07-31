@@ -1,6 +1,8 @@
 package com.rassini.graphite_client.controller;
 
 import com.rassini.graphite_client.service.sync.GraphiteSyncService;
+import com.rassini.graphite_client.service.sync.IntegrityService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -19,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 public class SyncController {
 
     private final GraphiteSyncService syncService;
+    private final IntegrityService integrityService;
 
     @PostMapping("/graphite/full")
     public ResponseEntity<?> triggerFullSync() {
@@ -41,6 +44,20 @@ public class SyncController {
         response.put("targets", ids != null ? ids : "TODOS");
 
         return ResponseEntity.accepted().body(response);
+    }
+    
+    @PostMapping("/graphite/suppliers/integrity/migration")
+    public ResponseEntity<?> generateIntegrityMigrationFile() {
+
+        integrityService.createFileSupplierMigration();
+
+        Map<String, Object> response = new HashMap<>();
+
+        response.put(
+                "message",
+                "Archivo de migración Integrity generado");
+
+        return ResponseEntity.ok(response);
     }
 
 }

@@ -20,7 +20,10 @@ import java.nio.file.Paths;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -90,7 +93,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         // Province / Estate - Max: 35
         line.append(cleanAndTruncate(supplier.getStateCode(), 35)).append("|");
         // Country - Max: 2
-        line.append(cleanAndTruncate(getCountryCode09(supplier), 2)).append("|");
+        line.append(cleanAndTruncate(supplier.getCountryCode(), 2)).append("|");
         // Email Address - Max: 50
         line.append(cleanAndTruncate(supplier.getContactEmail(), 50)).append("|");
         // Cpty Account Code - Max: 10
@@ -151,4 +154,178 @@ public class IntegrityServiceImpl implements IntegrityService {
 
         return cleaned;
     }
+
+
+    @Override
+    public void populateSupplierCodeDisIntegrity() {
+
+        log.info("Starting supplierCodeDisIntegrity population");
+
+        List<SuppliersRowEntity> suppliers =
+                suppliersRowRepository.findAllByOrderByErpIdQadAscIdAsc();
+
+        log.info("Records found: {}", suppliers.size());
+
+        Map<String, Integer> erpCounters = new HashMap<>();
+        Map<String, String> accountCodeByErpAndAccount = new HashMap<>();
+
+        int processed = 0;
+
+        for (SuppliersRowEntity supplier : suppliers) {
+
+            processed++;
+
+            String erpIdQad = supplier.getErpIdQad();
+            String accountNumber = supplier.getAccountNumber();
+
+            if (erpIdQad == null || erpIdQad.isBlank()) {
+                log.warn(
+                        "Skipping supplier ID={} because erpIdQad is null or blank",
+                        supplier.getId()
+                );
+                continue;
+            }
+
+            if (accountNumber == null || accountNumber.isBlank()) {
+                log.warn(
+                        "Skipping supplier ID={} ERP={} BU={} because accountNumber is null or blank",
+                        supplier.getId(),
+                        erpIdQad,
+                        supplier.getBusinessUnitCode()
+                );
+                continue;
+            }
+
+            erpIdQad = erpIdQad.trim();
+            accountNumber = accountNumber.trim();
+
+            String accountKey = erpIdQad + "|" + accountNumber;
+
+            String supplierCodeDisIntegrity =
+                    accountCodeByErpAndAccount.get(accountKey);
+
+            if (supplierCodeDisIntegrity == null) {
+
+                int currentCounter = erpCounters.getOrDefault(erpIdQad, 0);
+
+                if (currentCounter == 0) {
+                    supplierCodeDisIntegrity = erpIdQad;
+                } else {
+                    supplierCodeDisIntegrity = erpIdQad + currentCounter;
+                }
+
+                accountCodeByErpAndAccount.put(
+                        accountKey,
+                        supplierCodeDisIntegrity
+                );
+
+                erpCounters.put(
+                        erpIdQad,
+                        currentCounter + 1
+                );
+            }
+
+            supplier.setSupplierCodeDisIntegrity(supplierCodeDisIntegrity);
+
+            if ("COCHGMER".equals(erpIdQad)) {
+                log.info(
+                        "ID={} ERP={} BU={} ACCOUNT={} GENERATED={}",
+                        supplier.getId(),
+                        erpIdQad,
+                        supplier.getBusinessUnitCode(),
+                        accountNumber,
+                        supplierCodeDisIntegrity
+                );
+            }
+
+            if (processed % 1000 == 0) {
+                log.info(
+                        "Processed {} of {} records",
+                        processed,
+                        suppliers.size()
+                );
+            }
+        }
+
+        log.info("Starting saveAll...");
+
+        suppliersRowRepository.saveAll(suppliers);
+
+        log.info(
+                "supplierCodeDisIntegrity populated for {} records",
+                suppliers.size()
+        );
+    }
+
+    @Override
+    public void createFileSupplierMigration() {
+
+        log.info("Executing createFileSupplierMigration method");
+
+        List<SuppliersRowEntity> suppliersRows =
+                suppliersRowRepository.findAllForIntegrityMigration();
+
+        log.info("Records found: {}", suppliersRows.size());
+
+        Map<String, List<SuppliersRowEntity>> suppliersGrouped =
+        suppliersRows.stream()
+                .collect(Collectors.groupingBy(
+                        SuppliersRowEntity::getErpIdQad));
+
+        for (Map.Entry<String, List<SuppliersRowEntity>> supplier
+        : suppliersGrouped.entrySet()) {
+
+        generateSupplierMigrationFile(
+                supplier.getKey(),
+                supplier.getValue());
+        }
+        
+    }
+
+    public void generateSupplierMigrationFile(
+        String supplierCode,List<SuppliersRowEntity> suppliers) {
+
+        String currentDateTime =
+                LocalDateTime.now()
+                        .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+
+        Path outDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
+
+        String fileName =supplierCode + "_" + currentDateTime + ".txt";
+
+        Path filePath = outDir.resolve(fileName);
+
+        try {
+
+            Files.createDirectories(outDir);
+
+            log.info(
+                    "Generating migration file at {}",
+                    filePath.toAbsolutePath());
+
+            try (BufferedWriter writer =
+                        Files.newBufferedWriter(filePath)) {
+
+                for (SuppliersRowEntity supplier : suppliers) {
+
+                    writer.write(buildSupplierLine(supplier));
+                    writer.newLine();
+                }
+            }
+
+            log.info(
+                    "File {} generated successfully with {} records",
+                    filePath.toAbsolutePath(),
+                    suppliers.size());
+
+        } catch (IOException e) {
+
+            log.error(
+                    "Error generating migration file {}",
+                    filePath.toAbsolutePath(),
+                    e);
+        }
+    }
+
+
 }
