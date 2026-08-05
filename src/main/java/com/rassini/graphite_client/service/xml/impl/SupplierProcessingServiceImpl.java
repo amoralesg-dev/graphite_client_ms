@@ -98,10 +98,10 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             log.debug("ERP Records: " +
             (dto.getErpRecords() == null ? 0 : dto.getErpRecords().size()));
 
-            log.debug("[PROCESS] Antes de upsertSuppliersRows GraphiteSupplierDto: {}", dto);
-            log.debug("[PROCESS] Antes de upsertSuppliersRows");
+            //log.debug("[PROCESS] Antes de upsertSuppliersRows GraphiteSupplierDto: {}", dto);
+            //log.debug("[PROCESS] Antes de upsertSuppliersRows");
             supplierJpaMapper.upsertSuppliersRows(dto);
-            log.debug("[PROCESS] Despues de upsertSuppliersRows");
+            //log.debug("[PROCESS] Despues de upsertSuppliersRows");
 
             log.debug(
                 "[PROCESS] ERPs en dto: {}",
