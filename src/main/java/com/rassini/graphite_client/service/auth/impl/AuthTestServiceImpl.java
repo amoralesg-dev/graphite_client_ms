@@ -4,6 +4,8 @@ import com.rassini.graphite_client.dto.AuthResponse;
 import com.rassini.graphite_client.service.auth.AuthService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -17,6 +19,7 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthTestServiceImpl implements AuthService{
 
     private final RestTemplate restTemplate;
@@ -43,6 +46,13 @@ public class AuthTestServiceImpl implements AuthService{
 
         HttpEntity<Map<String, String>> request =
                 new HttpEntity<>(body, headers);
+
+        log.info("Auth URL={}", authUrl);
+        log.info("ClientId={}", clientId);
+        log.info("ClientSecret vacío={}",
+                clientSecret == null || clientSecret.isBlank());
+        log.info("Body={}", body);
+        log.info("Headers={}", headers);
 
         ResponseEntity<AuthResponse> response = restTemplate.exchange(
                 authUrl,

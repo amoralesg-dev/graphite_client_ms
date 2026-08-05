@@ -34,11 +34,6 @@ spring:
           auth: true
           starttls:
             enable: true
-
-mail:
-  notification:
-    to: ${EMAIL_TO:amoralesg@rassini.com,eguzman@rassini.com}
-
   jpa:
     hibernate:
       ddl-auto: none
@@ -46,6 +41,14 @@ mail:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.MySQLDialect
+
+mail:
+  notification:
+    to: ${EMAIL_TO:amoralesg@rassini.com,eguzman@rassini.com}
+  
+  nuevos-proveedores:
+    destinatarios: ${EMAIL_NUEVOS_PROVEEDORES:agustin.morales@rassini.com,eguzman@rassini.com,developerrss@rassini.com}
+
 
 logging:
   file:
