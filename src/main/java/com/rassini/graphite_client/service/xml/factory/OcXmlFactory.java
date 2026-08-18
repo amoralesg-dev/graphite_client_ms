@@ -9,6 +9,7 @@ import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.context.*;
 import com.rassini.graphite_client.service.xml.impl.util.CesarQadRules;
 import com.rassini.graphite_client.service.xml.impl.util.CesarQadRules.Domain;
+import com.rassini.graphite_client.service.xml.impl.util.DateUtil;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 public class OcXmlFactory {
@@ -120,8 +121,8 @@ public class OcXmlFactory {
                 .businessRelationIsDomRestr(XMLConstants.FALSE)
                 .tcCorporateGroupCode(XMLConstants.PROVEEDOR)
                 .tcLngCode(XMLConstants.LANG_CODE)
-                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
-                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
+                .lastModifiedDate(DateUtil.todayDdMMyyyy())
+                .lastModifiedTime(DateUtil.nowHhMmSs())
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.PARENT_ROW_ID)
                 .tc_ParentRowid("")
@@ -169,8 +170,8 @@ public class OcXmlFactory {
                 .tcStateDescription(supplier.getStateDescription())
                 .tiCountryFormat(XMLConstants.CERO)
                 .tcLngDescription("latin spanish")
-                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
-                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
+                .lastModifiedDate(DateUtil.todayDdMMyyyy())
+                .lastModifiedTime(DateUtil.nowHhMmSs())
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.ROW_ID)
                 .tc_ParentRowid(XMLConstants.PARENT_ROW_ID)
@@ -190,8 +191,8 @@ public class OcXmlFactory {
                 .contactIsPrimary(XMLConstants.TRUE)
                 .contactIsSecondary(XMLConstants.FALSE)
                 .tcLngCode(XMLConstants.LANG_CODE)
-                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
-                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
+                .lastModifiedDate(DateUtil.todayDdMMyyyy())
+                .lastModifiedTime(DateUtil.nowHhMmSs())
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.CONTACT_ROW_ID)
                 .tc_ParentRowid(XMLConstants.ROW_ID)
@@ -262,8 +263,8 @@ public class OcXmlFactory {
                 .tcBusinessRelationName1(supplier.getSupplierName())
                 .tcCurrencyCode(currency)
 
-                .lastModifiedDate(XMLConstants.OC_LAST_MODIFIED_DATE)
-                .lastModifiedTime(XMLConstants.LAST_MODIFIED_TIME)
+                .lastModifiedDate(DateUtil.todayDdMMyyyy())
+                .lastModifiedTime(DateUtil.nowHhMmSs())
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.ROW_ID)
                 .build();
