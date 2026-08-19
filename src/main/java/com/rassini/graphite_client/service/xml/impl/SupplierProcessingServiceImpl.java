@@ -91,7 +91,7 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             log.debug("ERP_ID root = {}", root.path("ERP_ID").asText(null));
             log.debug("Entity_Public_Id root = {}", root.path("Entity_Public_Id").asText(null));
             log.debug("Entity_Name root = {}", root.path("Entity_Name").asText(null));
-
+            logGraphiteContractIssues(root, supplier.getPublicId());
             GraphiteSupplierDto dto =
                 objectMapper.readValue(raw, GraphiteSupplierDto.class);
 
@@ -158,12 +158,22 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
         } catch (InvalidFormatException e) {
 
             log.error(
-                    "InvalidFormatException processing supplier={} path={} value={}",
+                    "[GRAPHITE_JSON_ERROR] supplier={} path={} value={} targetType={}",
                     supplier.getPublicId(),
                     e.getPathReference(),
                     e.getValue(),
+                    e.getTargetType(),
                     e
             );
+            if (e.getPathReference() != null
+                    && e.getPathReference().contains("Bank_Number")) {
+
+                log.error(
+                        "[GRAPHITE_CONTRACT] supplier={} recibió Bank_Number inválido. Valor='{}'",
+                        supplier.getPublicId(),
+                        e.getValue()
+                );
+            }
 
             throw new IllegalStateException(
                     "Error procesando proveedor " + supplier.getPublicId(),
@@ -182,6 +192,48 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                     "Error procesando proveedor " + supplier.getPublicId(),
                     e
             );
+        }
+    }
+
+    private void logGraphiteContractIssues(
+        JsonNode root,
+        String supplierCode) {
+
+        JsonNode erps = root.path("ERP_Record");
+
+        if (!erps.isArray()) {
+            return;
+        }
+
+        for (JsonNode erp : erps) {
+
+            String bu =
+                    erp.path("RASSINI_ERP_Entity_ID").asText();
+
+            JsonNode banks = erp.path("ERP_Bank_List");
+
+            if (!banks.isArray()) {
+                continue;
+            }
+
+            for (JsonNode bank : banks) {
+
+                JsonNode bankNumberNode =
+                        bank.get("Bank_Number");
+
+                if (bankNumberNode != null
+                        && bankNumberNode.isTextual()
+                        && bankNumberNode.asText().isBlank()) {
+
+                    log.warn(
+                            "[GRAPHITE_CONTRACT] supplier={} bu={} account={} Bank_Number llegó como string vacío",
+                            supplierCode,
+                            bu,
+                            bank.path("Bank_Account_Number").asText(),
+                            bankNumberNode.asText()
+                    );
+                }
+            }
         }
     }
 

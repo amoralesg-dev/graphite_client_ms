@@ -45,6 +45,12 @@ public interface SuppliersRowRepository
                 String businessUnitCode
         );
 
+        Optional<SuppliersRowEntity> findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
+               String supplierCode,
+               String businessUnitCode,
+               String accountNumber
+         );
+
 
 
         int countByErpIdQadAndAccountNumber(String erpIdQad, String accountNumber);
@@ -68,6 +74,19 @@ public interface SuppliersRowRepository
                 s.id
        """)
       List<SuppliersRowEntity> findAllForIntegrityMigration();
+
+
+      Optional<SuppliersRowEntity> findFirstBySupplierCodeAndAccountNumber(
+               String supplierCode,
+               String accountNumber);
+
+      @Query("""
+         select count(distinct s.accountNumber)
+         from SuppliersRowEntity s
+         where s.supplierCode = :supplierCode
+      """)
+      long countDistinctAccountsBySupplierCode(
+            @Param("supplierCode") String supplierCode);
 
 
 }

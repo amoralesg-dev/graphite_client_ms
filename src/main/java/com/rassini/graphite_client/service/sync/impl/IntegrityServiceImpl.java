@@ -199,12 +199,32 @@ public class IntegrityServiceImpl implements IntegrityService {
             erpIdQad = erpIdQad.trim();
             accountNumber = accountNumber.trim();
 
-            String accountKey = erpIdQad + "|" + accountNumber;
+            String accountKey =
+                erpIdQad
+                + "|"
+                + supplier.getBusinessUnitCode()
+                + "|"
+                + accountNumber;
+
 
             String supplierCodeDisIntegrity =
                     accountCodeByErpAndAccount.get(accountKey);
+            
+            log.info(
+                "ERP={} BU={} ACCOUNT={} accountKey={}",
+                erpIdQad,
+                supplier.getBusinessUnitCode(),
+                accountNumber,
+                accountKey
+            );
 
             if (supplierCodeDisIntegrity == null) {
+
+                log.info(
+                    "NUEVO CODIGO ERP={} counter={}",
+                    erpIdQad,
+                    erpCounters.getOrDefault(erpIdQad, 0)
+                );
 
                 int currentCounter = erpCounters.getOrDefault(erpIdQad, 0);
 
