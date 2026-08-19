@@ -29,7 +29,7 @@ public class SupplierRowMapper {
             CatalogService catalogService
     ) {
         SuppliersRowEntity row = new SuppliersRowEntity();
-        fill(row, dto, headquarters, erp, catalogService);
+        fill(row, dto, headquarters, erp,null, catalogService);
         return row;
     }
 
@@ -38,6 +38,7 @@ public class SupplierRowMapper {
             GraphiteSupplierDto dto,
             GraphiteSupplierDto.Location headquarters,
             GraphiteSupplierDto.ErpRecord erp,
+            GraphiteSupplierDto.Bank bank,
             CatalogService catalogService
     ) {
 
@@ -50,7 +51,6 @@ public class SupplierRowMapper {
         // IDENTIDAD
         // ===============================
         row.setSupplierCode(dto.getEntityPublicId());
-        row.setSupplierCodeDisIntegrity(dto.getErpIdQad());
         row.setBusinessUnitCode(erp.getRassiniErpEntityId());
         row.setErpIdQad(dto.getErpIdQad());
 
@@ -148,9 +148,7 @@ public class SupplierRowMapper {
         // ===============================
         // BANCO
         // ===============================
-        if (erp.getErpBankList() != null && !erp.getErpBankList().isEmpty()) {
-
-            GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
+        if (bank != null) {
 
             // currency
             String currency =
