@@ -38,6 +38,10 @@ import java.util.List;
 @AutoConfigureMockMvc
 public class IntegrityMigrationByErpIdTest {
 
+    static {
+        System.setProperty("XML_OUTPUT_PATH", "target/test-output");
+    }
+
     @Autowired
     private MockMvc mockMvc;
 
