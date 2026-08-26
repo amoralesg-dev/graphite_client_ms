@@ -7,6 +7,7 @@ public class XMLConstants {
     public static final String BYPASA = "0301";
     public static final String BREAKES = "1850";
     public static final String PN = "09";
+    public static final String PN99 = "99";
 
 
 

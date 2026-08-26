@@ -9,6 +9,9 @@ import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.XmlConstants;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
+import com.rassini.graphite_client.dto.SupplierMigrationResponse;
+import com.rassini.graphite_client.dto.MultiRecordDto;
+import com.rassini.graphite_client.dto.TruncatedListDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -96,8 +99,16 @@ public class IntegrityServiceImpl implements IntegrityService {
         line.append(cleanAndTruncate(supplier.getCountryCode(), 2)).append("|");
         // Email Address - Max: 50
         line.append(cleanAndTruncate(supplier.getContactEmail(), 50)).append("|");
-        // Cpty Account Code - Max: 10
-        line.append(cleanAndTruncate(supplier.getSupplierCodeDisIntegrity(), 10)).append("|");
+        // Regla de generación del campo Cpty Account Code:
+        // - Si supplier_code_dis_integrity tiene valor: utilizar supplier_code_dis_integrity.
+        // - Si supplier_code_dis_integrity es null o vacío: utilizar erp_id_qad.
+        // Este reemplazo aplica únicamente en memoria para la generación del TXT y no se persiste en la BD.
+        String cptyAccountCode = supplier.getSupplierCodeDisIntegrity();
+        if (cptyAccountCode == null || cptyAccountCode.trim().isEmpty()) {
+            cptyAccountCode = supplier.getErpIdQad();
+            log.info("ERP ID {} sin supplier_code_dis_integrity. Utilizando erp_id_qad como valor de exportación.", supplier.getErpIdQad());
+        }
+        line.append(cleanAndTruncate(cptyAccountCode, 10)).append("|");
         // Currency - Max: 3
         line.append(cleanAndTruncate(supplier.getSupplierCurrency(), 3)).append("|");
         // Account Name - Max: 100
@@ -199,12 +210,32 @@ public class IntegrityServiceImpl implements IntegrityService {
             erpIdQad = erpIdQad.trim();
             accountNumber = accountNumber.trim();
 
-            String accountKey = erpIdQad + "|" + accountNumber;
+            String accountKey =
+                erpIdQad
+                + "|"
+                + supplier.getBusinessUnitCode()
+                + "|"
+                + accountNumber;
+
 
             String supplierCodeDisIntegrity =
                     accountCodeByErpAndAccount.get(accountKey);
+            
+            log.info(
+                "ERP={} BU={} ACCOUNT={} accountKey={}",
+                erpIdQad,
+                supplier.getBusinessUnitCode(),
+                accountNumber,
+                accountKey
+            );
 
             if (supplierCodeDisIntegrity == null) {
+
+                log.info(
+                    "NUEVO CODIGO ERP={} counter={}",
+                    erpIdQad,
+                    erpCounters.getOrDefault(erpIdQad, 0)
+                );
 
                 int currentCounter = erpCounters.getOrDefault(erpIdQad, 0);
 
@@ -275,14 +306,208 @@ public class IntegrityServiceImpl implements IntegrityService {
         for (Map.Entry<String, List<SuppliersRowEntity>> supplier
         : suppliersGrouped.entrySet()) {
 
-        generateSupplierMigrationFile(
-                supplier.getKey(),
-                supplier.getValue());
+            generateSupplierMigrationFile(
+                    supplier.getKey(),
+                    supplier.getValue());
         }
-        
     }
 
-    public void generateSupplierMigrationFile(
+       @org.springframework.transaction.annotation.Transactional
+    @Override
+    public SupplierMigrationResponse createFileSupplierMigrationByErpIds(List<String> erpIds) {
+        long startTime = System.currentTimeMillis();
+        log.info("Executing createFileSupplierMigrationByErpIds method");
+
+        SupplierMigrationResponse.SupplierMigrationResponseBuilder responseBuilder = SupplierMigrationResponse.builder();
+
+        if (erpIds == null || erpIds.isEmpty()) {
+            log.warn("ERP IDs list is empty or null");
+            return SupplierMigrationResponse.builder()
+                    .success(true)
+                    .receivedErpIds(0)
+                    .uniqueErpIds(0)
+                    .foundErpIds(0)
+                    .notFoundErpIds(0)
+                    .foundRecords(0)
+                    .exportedRecords(0)
+                    .updatedRecords(0)
+                    .fallbackRecords(0)
+                    .generatedFiles(0)
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .notFoundList(java.util.Collections.emptyList())
+                    .fallbackErpIds(toTruncatedList(java.util.Collections.emptyList()))
+                    .multiRecordErpIds(java.util.Collections.emptyList())
+                    .files(toTruncatedList(java.util.Collections.emptyList()))
+                    .updatedErpIds(toTruncatedList(java.util.Collections.emptyList()))
+                    .exportedErpIds(toTruncatedList(java.util.Collections.emptyList()))
+                    .summary(SupplierMigrationResponse.MigrationSummary.builder()
+                            .status("SUCCESS")
+                            .message("0 ERP IDs procesados, 0 registros exportados y 0 archivos generados.")
+                            .executionDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")))
+                            .executionTimeMs(System.currentTimeMillis() - startTime)
+                            .build())
+                    .build();
+        }
+
+        int totalRecibidos = erpIds.size();
+        responseBuilder.receivedErpIds(totalRecibidos);
+
+        try {
+            // Clean, trim, and de-duplicate input ERP IDs
+            List<String> cleanedErpIds = erpIds.stream()
+                    .filter(id -> id != null && !id.trim().isEmpty())
+                    .map(String::trim)
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            responseBuilder.uniqueErpIds(cleanedErpIds.size());
+
+            List<SuppliersRowEntity> allFoundSuppliers = suppliersRowRepository.findByErpIdQadIn(cleanedErpIds);
+            responseBuilder.foundRecords(allFoundSuppliers.size());
+
+            // Find missing ERP IDs
+            java.util.Set<String> foundErpIds = allFoundSuppliers.stream()
+                    .map(SuppliersRowEntity::getErpIdQad)
+                    .filter(java.util.Objects::nonNull)
+                    .map(String::trim)
+                    .collect(Collectors.toSet());
+
+            responseBuilder.foundErpIds(foundErpIds.size());
+
+            List<String> sortedFoundErpIds = new java.util.ArrayList<>(foundErpIds);
+            java.util.Collections.sort(sortedFoundErpIds);
+            responseBuilder.updatedErpIds(toTruncatedList(sortedFoundErpIds));
+            responseBuilder.exportedErpIds(toTruncatedList(sortedFoundErpIds));
+
+            List<String> notFoundErpIds = cleanedErpIds.stream()
+                    .filter(id -> !foundErpIds.contains(id))
+                    .collect(Collectors.toList());
+
+            responseBuilder.notFoundErpIds(notFoundErpIds.size());
+            responseBuilder.notFoundList(notFoundErpIds);
+
+            for (String notFoundId : notFoundErpIds) {
+                log.warn("ERP ID no encontrado en proveedores: {}", notFoundId);
+            }
+
+            // Identify ERP IDs processed with fallback and count fallback records
+            java.util.Set<String> fallbackErpIds = new java.util.TreeSet<>();
+            int fallbackRecordsCount = 0;
+            for (SuppliersRowEntity supplier : allFoundSuppliers) {
+                String code = supplier.getSupplierCodeDisIntegrity();
+                if (code == null || code.trim().isEmpty()) {
+                    fallbackErpIds.add(supplier.getErpIdQad());
+                    fallbackRecordsCount++;
+                }
+            }
+            responseBuilder.fallbackErpIds(toTruncatedList(new java.util.ArrayList<>(fallbackErpIds)));
+            responseBuilder.fallbackRecords(fallbackRecordsCount);
+
+            // Update status_integrity to 'M' for all found suppliers
+            for (SuppliersRowEntity supplier : allFoundSuppliers) {
+                supplier.setStatusIntegrity("M");
+            }
+
+            if (!allFoundSuppliers.isEmpty()) {
+                suppliersRowRepository.saveAll(allFoundSuppliers);
+                suppliersRowRepository.flush();
+            }
+            responseBuilder.updatedRecords(allFoundSuppliers.size());
+
+            // Sort all found suppliers to match the original SQL logic style
+            allFoundSuppliers.sort(java.util.Comparator.comparing(SuppliersRowEntity::getErpIdQad)
+                    .thenComparing(s -> {
+                        String code = s.getSupplierCodeDisIntegrity();
+                        return (code == null || code.trim().isEmpty()) ? s.getErpIdQad() : code;
+                    })
+                    .thenComparing(SuppliersRowEntity::getId));
+
+            // Group by ERP ID and identify multi-record ERP IDs
+            Map<String, List<SuppliersRowEntity>> suppliersGrouped = allFoundSuppliers.stream()
+                    .collect(Collectors.groupingBy(SuppliersRowEntity::getErpIdQad));
+
+            List<com.rassini.graphite_client.dto.MultiRecordDto> multiRecordList = new java.util.ArrayList<>();
+            for (Map.Entry<String, List<SuppliersRowEntity>> entry : suppliersGrouped.entrySet()) {
+                if (entry.getValue().size() > 1) {
+                    multiRecordList.add(new com.rassini.graphite_client.dto.MultiRecordDto(entry.getKey(), entry.getValue().size()));
+                }
+            }
+            multiRecordList.sort((a, b) -> b.getRecords().compareTo(a.getRecords()));
+            responseBuilder.multiRecordErpIds(multiRecordList);
+
+            // Generate files
+            List<String> generatedFiles = new java.util.ArrayList<>();
+            int exportedRecordsCount = 0;
+            for (Map.Entry<String, List<SuppliersRowEntity>> supplier : suppliersGrouped.entrySet()) {
+                String fileName = generateSupplierMigrationFile(
+                        supplier.getKey(),
+                        supplier.getValue());
+                generatedFiles.add(fileName);
+                exportedRecordsCount += supplier.getValue().size();
+            }
+
+            responseBuilder.exportedRecords(exportedRecordsCount);
+            responseBuilder.generatedFiles(generatedFiles.size());
+            responseBuilder.files(toTruncatedList(generatedFiles));
+            responseBuilder.success(true);
+            responseBuilder.executionTimeMs(System.currentTimeMillis() - startTime);
+
+            responseBuilder.summary(SupplierMigrationResponse.MigrationSummary.builder()
+                    .status("SUCCESS")
+                    .message(String.format("%d ERP IDs procesados, %d registros exportados y %d archivos generados.",
+                            foundErpIds.size(), exportedRecordsCount, generatedFiles.size()))
+                    .executionDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")))
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .build());
+
+            return responseBuilder.build();
+
+        } catch (Exception e) {
+            log.error("Error occurred during supplier integrity migration", e);
+            responseBuilder.success(false);
+            responseBuilder.message(e.getMessage());
+            responseBuilder.executionTimeMs(System.currentTimeMillis() - startTime);
+            responseBuilder.summary(SupplierMigrationResponse.MigrationSummary.builder()
+                    .status("ERROR")
+                    .message("Error: " + e.getMessage())
+                    .executionDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")))
+                    .executionTimeMs(System.currentTimeMillis() - startTime)
+                    .build());
+            
+            SupplierMigrationResponse partial = responseBuilder.build();
+            return SupplierMigrationResponse.builder()
+                    .success(false)
+                    .message(e.getMessage())
+                    .summary(SupplierMigrationResponse.MigrationSummary.builder()
+                            .status("ERROR")
+                            .message("Error: " + e.getMessage())
+                            .executionDate(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")))
+                            .executionTimeMs(System.currentTimeMillis() - startTime)
+                            .build())
+                    .partialSummary(partial)
+                    .build();
+        }
+    }
+
+    private <T> TruncatedListDto<T> toTruncatedList(List<T> list) {
+        if (list == null) {
+            return TruncatedListDto.<T>builder()
+                    .totalItems(0)
+                    .truncated(false)
+                    .items(java.util.Collections.emptyList())
+                    .build();
+        }
+        int total = list.size();
+        boolean truncated = total > 100;
+        List<T> items = truncated ? list.subList(0, 100) : list;
+        return TruncatedListDto.<T>builder()
+                .totalItems(total)
+                .truncated(truncated)
+                .items(items)
+                .build();
+    }
+
+    public String generateSupplierMigrationFile(
         String supplierCode,List<SuppliersRowEntity> suppliers) {
 
         String currentDateTime =
@@ -325,6 +550,7 @@ public class IntegrityServiceImpl implements IntegrityService {
                     filePath.toAbsolutePath(),
                     e);
         }
+        return fileName;
     }
 
 

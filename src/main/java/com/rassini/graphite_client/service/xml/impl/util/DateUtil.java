@@ -46,4 +46,13 @@ public final class DateUtil {
             + LocalDate.now().getDayOfMonth();
     }
 
+    /**
+     * Fecha actual en formato dd/MM/yyyy
+     * Ejemplo: 13/04/2026
+     */
+    public static String todayDdMMyyyy() {
+        return LocalDate.now()
+            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+    }
+
 }

@@ -1,8 +1,7 @@
 package com.rassini.graphite_client.service.xml.factory;
 
-import java.util.List;
 
-import com.rassini.graphite_client.dto.GraphiteSupplierDto;
+
 import com.rassini.graphite_client.dto.UpdateInfo;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.service.xml.CatalogService;
@@ -12,76 +11,76 @@ import com.rassini.graphite_client.service.xml.impl.util.CesarQadRules.Domain;
 import com.rassini.graphite_client.service.xml.impl.util.DateUtil;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
-public class OcXmlFactory {
+/**
+ * Factory PN (PIEDRAS NEGRAS – ERP 99)
+ *  Un build por nodo
+ *  Creditor incluido
+ *  Sin lógica en el service
+ */
+public class Pn99XmlFactory {
 
     private final CatalogService catalogService;
 
-    public OcXmlFactory(CatalogService catalogService) {
+    public Pn99XmlFactory(CatalogService catalogService) {
         this.catalogService = catalogService;
     }
 
     // =====================================================
-    // BUSREL CONTEXT
+    // PUBLIC: BUSREL CONTEXT
     // =====================================================
-
     public XmlContext buildBusrelContext(
             SuppliersRowEntity supplier,
-            String erpId,
-            String taxClassFromErp,
-            List<String> taxZoneFromErp
+            String taxClassFromErp, 
+            String taxZoneFromErp
     ) {
 
-        TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
+        String erpId = XMLConstants.PN99;
         String name20 = left(supplier.getSupplierName(), 20);
-        String name36 = left(supplier.getSupplierName(), 36);
+        String name36 = left(supplier.getSupplierName(), 36);   
+
+        TaxInfo tax = resolveTaxInfoPn99(erpId, taxClassFromErp, taxZoneFromErp);
 
         return XmlContext.builder()
-                .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
+                .outputFileName("PN99_busrel_" + supplier.getErpIdQad() + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
-                .businessRelation(buildBusinessRelation(supplier, name20, name36))
-                .address(buildAddress(supplier, name20, name36, tax))
+                .businessRelation(buildBusinessRelation(supplier))
+                .address(buildAddress(supplier, name20,name36, tax))
                 .contact(buildContact(supplier))
                 .build();
     }
 
     // =====================================================
-    //  CREDITOR CONTEXT
+    // PUBLIC: CREDITOR CONTEXT
     // =====================================================
-
     public CreditorXmlContext buildCreditorContext(
             SuppliersRowEntity supplier,
-            String erpId,
             String taxClassFromErp,
-            List<String> taxZoneFromErp,
-            String paymentTerms
+             String taxZoneFromErp
     ) {
-        TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
+
+        String erpId = XMLConstants.PN99;
+        TaxInfo tax = resolveTaxInfoPn99(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
+                .outputFileName("PN99_creditor_" + supplier.getErpIdQad() + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId, supplier))
-                .creditor(buildCreditor(supplier, tax, paymentTerms))
+                .creditor(buildCreditor(supplier, tax))
                 .build();
     }
 
     // =====================================================
     // CONTEXT INFO
     // =====================================================
-
     private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
         UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
-                .tcAction(catalogService.getAction(supplier))
+
                 .tiPriority(XMLConstants.CERO)
-                .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
-                .tcComment("")
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcComponentVersion("")
                 .tcActivityCode(updateInfo.getActivityCode())
                 .tlPartialUpdate(updateInfo.getPartialUpdate())
-                .tcPartialUpdateExceptionList("")
                 .build();
     }
 
@@ -90,48 +89,43 @@ public class OcXmlFactory {
                 .tcCompanyCode(erpId)
                 .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
-                .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
                 .tcActivityCode(catalogService.getActivityCode(supplier))
-                .tlPartialUpdate(XMLConstants.FALSE)
+                .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }
 
-    // =====================================================
-    // BUSINESS RELATION
-    // =====================================================
+    
 
-    private BusinessRelationXml buildBusinessRelation(
-            SuppliersRowEntity supplier,
-            String name20,String name36
-    ) {
+    // =====================================================
+    // NODES
+    // =====================================================
+    private BusinessRelationXml buildBusinessRelation(SuppliersRowEntity supplier) {
+
+        String name20 = left(supplier.getSupplierName(), 20);
+
         return BusinessRelationXml.builder()
-                .businessRelationCode(supplier.getErpIdQad())
-                .businessRelationName1(name36)
-                .businessRelationName2(name36)
-                .businessRelationName3(name36)
+                .businessRelationCode("PR" + supplier.getErpIdQad())
+                .businessRelationName1(supplier.getSupplierName())
+                .businessRelationName2(supplier.getSupplierName())
+                .businessRelationName3(supplier.getSupplierName())
                 .businessRelationSearchName(name20)
                 .businessRelationIsActive(XMLConstants.TRUE)
-                .businessRelationIsInterco(XMLConstants.FALSE)
-                .businessRelationIsInComp(XMLConstants.FALSE)
+                .businessRelationIsInterco((XMLConstants.FALSE))
+                .businessRelationIsInComp((XMLConstants.FALSE))
                 .businessRelationIsCompens(XMLConstants.TRUE)
-                .businessRelationIsTaxRep(XMLConstants.FALSE)
-                .businessRelationIsLastFill(XMLConstants.FALSE)
-                .businessRelationIsDomRestr(XMLConstants.FALSE)
+                .businessRelationIsTaxRep((XMLConstants.FALSE))
+                .businessRelationIsLastFill((XMLConstants.FALSE))
+                .businessRelationIsDomRestr((XMLConstants.FALSE))
                 .tcCorporateGroupCode(XMLConstants.PROVEEDOR)
                 .tcLngCode(XMLConstants.LANG_CODE)
                 .lastModifiedDate(DateUtil.todayDdMMyyyy())
                 .lastModifiedTime(DateUtil.nowHhMmSs())
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
                 .tc_Rowid(XMLConstants.PARENT_ROW_ID)
-                .tc_ParentRowid("")
                 .build();
     }
-
-    // =====================================================
-    // ADDRESS
-    // =====================================================
 
     private AddressXml buildAddress(
             SuppliersRowEntity supplier,
@@ -139,6 +133,18 @@ public class OcXmlFactory {
             String name36,
             TaxInfo tax
     ) {
+
+        String countryCodePN = this.catalogService.mapCountry(supplier.getErpIdQad(),supplier.getCountryCode(),supplier.getBusinessUnitCode());
+        if (countryCodePN == null) {
+                throw new IllegalStateException(
+                        String.format(
+                        "No existe equivalencia de país para ERP [%s], Country [%s], BU [%s]",
+                        supplier.getErpIdQad(),
+                        supplier.getCountryCode(),
+                        supplier.getBusinessUnitCode()
+                        )
+                );
+        }
         String streetName36 = left(supplier.getStreetName(), 36);
         return AddressXml.builder()
                 .addressStreet1(streetName36)
@@ -146,28 +152,29 @@ public class OcXmlFactory {
                 .addressStreet3(supplier.getStreetName3())
                 .addressZip(supplier.getZipCode())
                 .addressCity(supplier.getCityCode())
-                .addressCityCode("") // OC va vacío
+                .addressCityCode(supplier.getCityCode())
                 .addressName(streetName36)
                 .addressSearchName(name20)
                 .addressTelephone("")
                 .addressEMail("")
                 .addressFormat(XMLConstants.CERO)
-                .addressIsTemporary(XMLConstants.FALSE)
+                .addressIsTemporary((XMLConstants.FALSE))
                 .txzTaxZone(tax.txzTaxZone())
                 .txclTaxCls(tax.txclTaxCls())
-                .addressIsSendToPostal(XMLConstants.FALSE)
-                .addressIsTaxable(XMLConstants.FALSE)
-                .addressIsTaxInCity(XMLConstants.FALSE)
-                .addressIsTaxIncluded(XMLConstants.FALSE)
+                .addressIsSendToPostal((XMLConstants.FALSE))
+                .addressIsTaxable((XMLConstants.FALSE))
+                .addressIsTaxInCity((XMLConstants.FALSE))
+                .addressIsTaxIncluded((XMLConstants.FALSE))
                 .addressTaxIDFederal(supplier.getRfc())
                 .addressTaxIDState(supplier.getRfc())
                 .addressTaxDeclaration(XMLConstants.CERO)
                 .addressLogicKeyString(XMLConstants.ADDRESS_LOGIC_KEY)
                 .tcStateCode(supplier.getStateCode())
-                .tcCountryCode(supplier.getCountryCode())
+                .tcCountryCode(countryCodePN)
                 .tcAddressTypeCode("HEADOFFICE")
                 .tcLngCode(XMLConstants.LANG_CODE)
-                .tcStateDescription(supplier.getStateDescription())
+                .tcStateDescription("")
+                .tcCountryDescription(countryCodePN)
                 .tiCountryFormat(XMLConstants.CERO)
                 .tcLngDescription("latin spanish")
                 .lastModifiedDate(DateUtil.todayDdMMyyyy())
@@ -178,10 +185,6 @@ public class OcXmlFactory {
                 .build();
     }
 
-    // =====================================================
-    // CONTACT
-    // =====================================================
-
     private ContactXml buildContact(SuppliersRowEntity supplier) {
         return ContactXml.builder()
                 .contactFunction("")
@@ -189,7 +192,7 @@ public class OcXmlFactory {
                 .contactGender(XMLConstants.CONTACT_MALE)
                 .contactEmail(supplier.getContactEmail())
                 .contactIsPrimary(XMLConstants.TRUE)
-                .contactIsSecondary(XMLConstants.FALSE)
+                .contactIsSecondary((XMLConstants.FALSE))
                 .tcLngCode(XMLConstants.LANG_CODE)
                 .lastModifiedDate(DateUtil.todayDdMMyyyy())
                 .lastModifiedTime(DateUtil.nowHhMmSs())
@@ -199,105 +202,95 @@ public class OcXmlFactory {
                 .build();
     }
 
-    // =====================================================
-    //(GLs)
-    // =====================================================
-
     private CreditorNodoXML buildCreditor(
             SuppliersRowEntity supplier,
-            TaxInfo tax,
-            String  paymentTerms
+            TaxInfo tax
     ) {
-        boolean isForeign =
-                supplier.getCountryCode() != null &&
-                !"MX".equalsIgnoreCase(supplier.getCountryCode());
 
         String currency = supplier.getSupplierCurrency();
 
         CesarQadRules.GlProfiles gl =
-                CesarQadRules.resolveGlProfiles(
-                        Domain.RFCORPO,
-                        currency,
-                        isForeign,
-                        false
+                CesarQadRules.resolvePn99GlProfiles(
+                        supplier.getCountryCode(),
+                        supplier.getPurchaseTypeCode(),
+                        currency
                 );
 
         String paymentTerm =
-                CesarQadRules.resolvePaymentTerms(Domain.RFCORPO, paymentTerms);
+                CesarQadRules.resolvePaymentTerms(
+                        Domain.RPIEDRAS,
+                        "30 DIAS P/FACTURA"
+                );
 
         return CreditorNodoXML.builder()
+
                 .creditorIsActive(XMLConstants.TRUE)
                 .creditorCode(supplier.getErpIdQad())
                 .vatDeliveryType("PRODUCT")
                 .vatPercentageLevel("NONE")
-                .creditorIsSendRemittance(XMLConstants.FALSE)
-                .creditorIsIndividualPaymnt(XMLConstants.FALSE)
-                .creditorIsTaxable(XMLConstants.FALSE)
-                .creditorIsTaxInCity(XMLConstants.FALSE)
-                .creditorIsTaxIncluded(XMLConstants.FALSE)
+                .creditorIsSendRemittance((XMLConstants.FALSE))
+                .creditorIsIndividualPaymnt((XMLConstants.FALSE))
+                .creditorIsTaxable((XMLConstants.FALSE))
+                .creditorIsTaxInCity((XMLConstants.FALSE))
+                .creditorIsTaxIncluded((XMLConstants.FALSE))
+
                 .creditorTaxIDFederal(supplier.getRfc())
                 .creditorTaxIDState(supplier.getRfc())
-                .tcCreditorTypeCode(supplier.getSupplierTypeCode())
-                .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
                 .creditorTaxDeclaration(XMLConstants.CERO)
-                .creditorIsTaxReport(XMLConstants.FALSE)
-                .creditorIsTaxConfirmed(XMLConstants.FALSE)
-                .creditorIsWHT(XMLConstants.FALSE)
-                .creditorIsBearBankCharge(XMLConstants.FALSE)
-                .tlBusinessRelationIsInterco(XMLConstants.FALSE)
+
+                .creditorIsTaxReport((XMLConstants.FALSE))
+                .creditorIsTaxConfirmed((XMLConstants.FALSE))
+                .creditorIsWHT((XMLConstants.FALSE))
+                .creditorIsBearBankCharge((XMLConstants.FALSE))
+                .creditorBirthDate(XMLConstants.NULL)
+
                 .txzTaxZone(tax.txzTaxZone())
                 .txclTaxCls(tax.txclTaxCls())
 
+                .tcNormalPaymentConditionCode(paymentTerm)
+                .tcNormalPaymentConditionType("NORMAL")
 
-                //  GLs
                 .tcInvControlGLProfileCode(gl.invControl())
                 .tcCnControlGLProfileCode(gl.cnControl())
                 .tcPrepayControlGLProfileCode(gl.prepayControl())
                 .tcDivisionProfileCode(gl.divProfile())
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
-                .tcNormalPaymentConditionCode(paymentTerm)
-                .tcNormalPaymentConditionType("NORMAL")
-                .tcReasonCode("INV TO APPROVE")
-                .tcBusinessRelationCode(supplier.getErpIdQad())
+                .tcReasonCode("INICIAL")
+                .tlBusinessRelationIsInterco((XMLConstants.FALSE))
+                .tcBusinessRelationCode("PR"+supplier.getErpIdQad())
                 .tcBusinessRelationName1(supplier.getSupplierName())
                 .tcCurrencyCode(currency)
+
+                .tcCreditorTypeCode(supplier.getSupplierTypeCode())
+                .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
 
                 .lastModifiedDate(DateUtil.todayDdMMyyyy())
                 .lastModifiedTime(DateUtil.nowHhMmSs())
                 .lastModifiedUser(XMLConstants.LAST_MODIFIED_USER)
+
+                .qADT01(XMLConstants.NULL)
+                .qADD01(XMLConstants.CERO)
                 .tc_Rowid(XMLConstants.ROW_ID)
+
                 .build();
     }
 
     // =====================================================
     // TAX
     // =====================================================
+    private TaxInfo resolveTaxInfoPn99(String erpId, String taxClassFromErp, String taxZoneFromErp) {
 
-    private TaxInfo resolveTaxInfo(
-            String erpId,
-            String taxClassFromErp,
-            List<String> taxZoneFromErp
-    ) {
-        String txz =
-                (taxZoneFromErp != null && !taxZoneFromErp.isEmpty()
-                        && taxZoneFromErp.get(0) != null
-                        && !taxZoneFromErp.get(0).isBlank())
-                        ? taxZoneFromErp.get(0)
-                        : "MX";
-
-        String txcl =
-                (taxClassFromErp != null && !taxClassFromErp.isBlank())
-                        ? taxClassFromErp
-                        : catalogService.resolveTaxClass(erpId, taxClassFromErp);
-
-        return new TaxInfo(txz, txcl);
+        return new TaxInfo(taxZoneFromErp, taxClassFromErp);
     }
 
+    // =====================================================
+    // Helpers
+    // =====================================================
     private String left(String s, int len) {
         if (s == null) return "";
         return s.length() <= len ? s : s.substring(0, len);
     }
 
-    public record TaxInfo(String txzTaxZone, String txclTaxCls) {}
+    private record TaxInfo(String txzTaxZone, String txclTaxCls) {}
 }

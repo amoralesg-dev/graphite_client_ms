@@ -1,5 +1,7 @@
 package com.rassini.graphite_client.service.xml.impl;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
@@ -62,36 +64,90 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
             String creditor = dto.getEntityPublicId();
             String bu = erp.getRassiniErpEntityId();
 
-            //  UPSERT: si existe -> UPDATE; si no -> INSERT
-            SuppliersRowEntity row = suppliersRowRepository
-                    .findBySupplierCodeAndBusinessUnitCode(creditor, bu)
-                    .orElseGet(SuppliersRowEntity::new);
-
-            String statusIntegrity = statusIntegrity(row, dto);
-
-            log.info("Status integrity resuelto: {} para supplierCode={} y businessUnitCode={}", statusIntegrity, creditor, bu);
-            row.setStatusIntegrity(statusIntegrity);   
-
-
-            //  llenar el MISMO objeto (no crear otro)
-
-            SupplierRowMapper.fill(row, dto, hq, erp, catalogService);
-
-
-            if (row.getId() == null) {
-
-                int existing =
-                        suppliersRowRepository.countBySupplierCodeAndAccountNumber(creditor, row.getAccountNumber());
-
-                row.setSupplierCodeDisIntegrity(
-                        row.getErpIdQad() + (existing + 1)
+            if (erp.getErpBankList() != null) {
+                log.info(
+                        "Supplier {} BU {} tiene {} cuentas bancarias",
+                        creditor,
+                        bu,
+                        erp.getErpBankList().size()
                 );
             }
 
+            if (erp.getErpBankList() == null || erp.getErpBankList().isEmpty()) {
+                continue;
+            }
 
-            //  guardar: si row ya tenía id -> UPDATE; si no -> INSERT
-            suppliersRowRepository.save(row);
+            for (GraphiteSupplierDto.Bank bank : erp.getErpBankList()) {
+
+                SuppliersRowEntity row = suppliersRowRepository
+                .findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
+                        creditor,
+                        bu,
+                        bank.getBankAccountNumber()
+                )
+                .orElseGet(SuppliersRowEntity::new);
+
+                log.info(
+                    "REPROCESS BU={} ACCOUNT={} ID={} CURRENT_CODE={}",
+                    bu,
+                    row.getAccountNumber(),
+                    row.getId(),
+                    row.getSupplierCodeDisIntegrity()
+                );
+
+                String statusIntegrity = statusIntegrity(row, dto);
+
+                log.info("Status integrity resuelto: {} para supplierCode={} y businessUnitCode={}", statusIntegrity, creditor, bu);
+                row.setStatusIntegrity(statusIntegrity);   
+
+
+                //  llenar el MISMO objeto (no crear otro)
+
+                SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
+
+
+                row.setSupplierCodeDisIntegrity(
+                        resolveSupplierCodeDisIntegrity(
+                                creditor,
+                                row
+                        )
+                );
+                
+
+
+                //  guardar: si row ya tenía id -> UPDATE; si no -> INSERT
+                suppliersRowRepository.save(row);
+            }
         }
+    }
+
+
+    private String resolveSupplierCodeDisIntegrity(
+        String creditor,
+        SuppliersRowEntity row) {
+
+        Optional<SuppliersRowEntity> existingAccount =
+                suppliersRowRepository
+                        .findFirstBySupplierCodeAndAccountNumber(
+                                creditor,
+                                row.getAccountNumber());
+
+        if (existingAccount.isPresent()) {
+
+            return existingAccount.get()
+                    .getSupplierCodeDisIntegrity();
+        }
+
+        long distinctAccounts =
+                suppliersRowRepository
+                        .countDistinctAccountsBySupplierCode(
+                                creditor);
+
+        if (distinctAccounts == 0) {
+            return row.getErpIdQad();
+        }
+
+        return row.getErpIdQad() + "_" + distinctAccounts;
     }
 
 
