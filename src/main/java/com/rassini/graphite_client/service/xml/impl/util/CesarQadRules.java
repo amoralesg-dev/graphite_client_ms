@@ -33,6 +33,9 @@ public final class CesarQadRules {
             String purchaseGlProfile
     ) {}
 
+    private static final String PF_20101001 = "PF_20101001";
+    private static final String PF_20111001 = "PF_20111001";
+
     // =========================================================
     // 1) TIPOS DE PROVEEDOR
     // =========================================================
@@ -107,6 +110,8 @@ public final class CesarQadRules {
                     Map.entry("90", "90"),
                     Map.entry("120", "120")
             );
+    private static final String PF_20011004 = "PF_20011004";
+    private static final String PF_20011005 = "PF_20011005";
 
     public static String resolvePaymentTerms(Domain domain, String termsFromGraphite) {
         if (isBlank(termsFromGraphite)) return null;
@@ -185,6 +190,67 @@ public final class CesarQadRules {
         }
 
         return new GlProfiles(null, null, null, null, null);
+    }
+
+
+    public static GlProfiles resolvePn99GlProfiles(
+            String country,
+            String purchaseType,
+            String currency
+    ) {
+
+        String ctry = country == null ? "" : country.trim().toUpperCase(Locale.ROOT);
+        String purchase = purchaseType == null ? "" : purchaseType.trim().toUpperCase(Locale.ROOT);
+        String curr = currency == null ? "" : currency.trim().toUpperCase(Locale.ROOT);
+
+        if ("MEX".equals(ctry)) {
+
+            if ("INTE".equals(purchase) && "MXN".equals(curr)) {
+                return new GlProfiles(
+                        PF_20101001,
+                        PF_20101001,
+                        PF_20101001,
+                        "PF_09",
+                        "PF_Compras"
+                );
+            }
+
+            if ("INTE".equals(purchase) && "USD".equals(curr)) {
+                return new GlProfiles(
+                        PF_20111001,
+                        PF_20111001,
+                        PF_20111001,
+                        "PF_09",
+                        "PF_Compras"
+                );
+            }
+
+            if (
+                    "ACFI".equals(purchase)
+                    || "COMP".equals(purchase)
+                    || "GFIO".equals(purchase)
+                    || "GVAR".equals(purchase)
+                    || "IMPT".equals(purchase)
+                    || "MAPI".equals(purchase)
+                    || "NOMI".equals(purchase)
+            ) {
+                return new GlProfiles(
+                        PF_20011004,
+                        PF_20011004,
+                        PF_20011004,
+                        "PF_09",
+                        "PF_Compras"
+                );
+            }
+        }
+
+        return new GlProfiles(
+                PF_20011005,
+                PF_20011005,
+                PF_20011005,
+                "PF_09",
+                "PF_Compras"
+        );
     }
 
     // =========================================================

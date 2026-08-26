@@ -2,14 +2,13 @@ package com.rassini.graphite_client.controller;
 
 import com.rassini.graphite_client.service.sync.GraphiteSyncService;
 import com.rassini.graphite_client.service.sync.IntegrityService;
+import com.rassini.graphite_client.dto.ErpIdMigrationRequest;
+import com.rassini.graphite_client.dto.SupplierMigrationResponse;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,8 +35,7 @@ public class SyncController {
 
     @PostMapping("/graphite/suppliers")
     public ResponseEntity<?> triggerSpecificSync(@RequestParam(value = "ids", required = false) String ids) {
-        // 1. Ejecutar de forma asíncrona
-        CompletableFuture.runAsync(() -> syncService.syncSpecificSuppliers(ids,"/graphite/suppliers"));
+        CompletableFuture.runAsync(() -> syncService.syncSpecificSuppliers(ids, "/graphite/suppliers"));
 
         Map<String, Object> response = new HashMap<>();
         response.put("message", "Sincronización bajo demanda iniciada");
@@ -45,19 +43,25 @@ public class SyncController {
 
         return ResponseEntity.accepted().body(response);
     }
-    
+
     @PostMapping("/graphite/suppliers/integrity/migration")
     public ResponseEntity<?> generateIntegrityMigrationFile() {
-
         integrityService.createFileSupplierMigration();
 
         Map<String, Object> response = new HashMap<>();
-
-        response.put(
-                "message",
-                "Archivo de migración Integrity generado");
+        response.put("message", "Archivo de migración Integrity generado");
 
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/graphite/suppliers/integrity/migration/by-erp-ids")
+    public ResponseEntity<SupplierMigrationResponse> generateIntegrityMigrationFileByErpIds(@RequestBody ErpIdMigrationRequest request) {
+        SupplierMigrationResponse response = 
+                integrityService.createFileSupplierMigrationByErpIds(request.getErpIds());
+
+        if (!response.isSuccess()) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+        return ResponseEntity.ok(response);
+    }
 }

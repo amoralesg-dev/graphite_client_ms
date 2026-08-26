@@ -17,6 +17,7 @@ public final class XmlConstants {
     public static final String OUTPUT_BASE_INTEGRITY = buildPath(OUTPUT, "integrity");
 
     public static final String OUTPUT_PN_DIR = buildPath(OUTPUT_BASE_XML, "PN");
+    public static final String OUTPUT_PN99_DIR = buildPath(OUTPUT_BASE_XML, "PN99");
     public static final String OUTPUT_OC_DIR = buildPath(OUTPUT_BASE_XML, "OCBYP");
     public static final String OUTPUT_FRENOS_DIR = buildPath(OUTPUT_BASE_XML, "FRENOS");
     public static final String OUTPUT_BREAKES_DIR = buildPath(OUTPUT_BASE_XML, "BREAKES");
@@ -36,6 +37,9 @@ public final class XmlConstants {
     // Templates PN
     public static final String TEMPLATE_PN_BUSREL = buildPath(TEMPLATE_BASE, "pn", "busrel.xml");
     public static final String TEMPLATE_PN_CREDITOR = buildPath(TEMPLATE_BASE, "pn", "creditor.xml");
+
+    public static final String TEMPLATE_PN99_BUSREL = buildPath(TEMPLATE_BASE, "pn", "busrel.xml");
+    public static final String TEMPLATE_PN99_CREDITOR = buildPath(TEMPLATE_BASE, "pn", "creditor.xml");
 
     private static String resolveOutputBase() {
         String configured =
