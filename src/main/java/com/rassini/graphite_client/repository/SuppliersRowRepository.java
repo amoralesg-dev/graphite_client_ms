@@ -88,5 +88,7 @@ public interface SuppliersRowRepository
       long countDistinctAccountsBySupplierCode(
             @Param("supplierCode") String supplierCode);
 
+      List<SuppliersRowEntity> findByErpIdQadIn(List<String> erpIds);
+
 
 }
