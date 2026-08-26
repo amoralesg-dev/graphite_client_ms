@@ -39,6 +39,7 @@ import java.util.List;
 public class IntegrityMigrationByErpIdTest {
 
     static {
+        // Force trigger pipeline execution
         System.setProperty("XML_OUTPUT_PATH", "target/test-output");
     }
 
