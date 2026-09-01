@@ -52,7 +52,7 @@ public final class DateUtil {
      */
     public static String todayDdMMyyyy() {
         return LocalDate.now()
-            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 
 }
