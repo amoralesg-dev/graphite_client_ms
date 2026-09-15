@@ -35,7 +35,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
         String statusErpGraphite = dto.getStatusERPGraphite();
 
 
-        if (statusErpGraphite != null) {
+        if (statusErpGraphite != null || !statusErpGraphite.isEmpty()) {
             if (row.getId() != null && statusErpGraphite.equals(row.getErpIdQad())){
                 statusFromDto = XMLConstants.MOD;
             }else{
@@ -106,6 +106,9 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
                 SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
 
+                if (dto.getStatusERPGraphite() != null || !dto.getStatusERPGraphite().isEmpty()){
+                    row.setErpIdQad(dto.getStatusERPGraphite());
+                }
 
                 row.setSupplierCodeDisIntegrity(
                         resolveSupplierCodeDisIntegrity(

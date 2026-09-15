@@ -122,6 +122,7 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
 
             xmlOcService.generate(dto, supplier);
+
             if(!ProviderState.ERRORMAPOC.equals(supplier.getStatus()))
                 updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
             
