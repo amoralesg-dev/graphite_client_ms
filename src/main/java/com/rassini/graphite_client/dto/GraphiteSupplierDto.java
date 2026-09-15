@@ -58,7 +58,7 @@ public class GraphiteSupplierDto {
     @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
     private List<SalesContactCalc> locSalesContactAlternateContactCalc;
 
-    @JsonProperty("ESTATUSNOHAYMAPEO_AUN")
+    @JsonProperty("RASSINI_Legacy_QAD_ID")
     private String statusERPGraphite;
 
     // =========================

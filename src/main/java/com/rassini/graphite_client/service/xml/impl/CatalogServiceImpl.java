@@ -97,15 +97,11 @@ public class CatalogServiceImpl implements CatalogService {
                 activityCode = XMLConstants.MODIFY; // Activity Code
             }
 
-            // Frenos
+            // Frenos, BREAKES, Suspensiones 09, Suspensiones 99
             else if (XMLConstants.FRENOS.equals(businessUnit)
-                    || XMLConstants.BREAKES.equals(businessUnit)) {
-
-                activityCode = XMLConstants.MODIFY;
-            }
-
-            // Suspensiones
-            else if (XMLConstants.PN.equals(businessUnit)) {
+                    || XMLConstants.BREAKES.equals(businessUnit)
+                    || XMLConstants.PN.equals(businessUnit)
+                    || XMLConstants.PN99.equals(businessUnit)) {
 
                 activityCode = XMLConstants.MODIFY;
             }

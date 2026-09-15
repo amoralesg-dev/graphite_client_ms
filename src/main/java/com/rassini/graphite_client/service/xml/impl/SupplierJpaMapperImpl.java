@@ -34,15 +34,16 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
         String statusErpGraphite = dto.getStatusERPGraphite();
 
+
         if (statusErpGraphite != null) {
-            if ("CAMBIARDESPUESALTA".equalsIgnoreCase(statusErpGraphite)) {
-                statusFromDto = XMLConstants.ALTA;
-            } else if ("CAMBIARDESPUESMOD".equalsIgnoreCase(statusErpGraphite)) {
+            if (row.getId() != null && statusErpGraphite.equals(row.getErpIdQad())){
                 statusFromDto = XMLConstants.MOD;
-            } else if ("CAMBIARDESPUESBAJA".equalsIgnoreCase(statusErpGraphite)) {
-                statusFromDto = XMLConstants.BAJA;
+            }else{
+                statusFromDto = XMLConstants.ALTA;
             }
         }
+
+        
         String status = statusFromDto != null ? statusFromDto : statusFromRow;
         log.info("Estatus  {} resuelto para supplier{}",status, row.getSupplierCode());
 
