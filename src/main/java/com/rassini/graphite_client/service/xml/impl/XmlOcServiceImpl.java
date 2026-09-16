@@ -20,6 +20,9 @@ import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Optional;
+import com.rassini.graphite_client.entity.XmlStatus;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -39,10 +42,6 @@ public class XmlOcServiceImpl implements XmlOcService {
         if (dto == null || dto.getErpRecords() == null) {
             return;
         }
-        if (supplierParameter != null
-            && ProviderState.ERRORMAPPING.equals(supplierParameter.getStatus())) {
-                return;
-        }
 
         OcXmlFactory factory = new OcXmlFactory(catalogService);
 
@@ -54,78 +53,109 @@ public class XmlOcServiceImpl implements XmlOcService {
             .forEach(erp -> {
 
                 String erpId = erp.getRassiniErpEntityId();
+                log.info("[XML-PROCESS] supplier={} businessUnit={} generator=OC eligible=true", dto.getEntityPublicId(), erpId);
 
-                SuppliersRowEntity supplier = suppliersRowRepository
+                Optional<SuppliersRowEntity> supplierOpt = suppliersRowRepository
                         .findBySupplierCodeAndBusinessUnitCode(
                                 dto.getEntityPublicId(),
                                 erpId
-                        )
-                        .orElseThrow(() ->
-                                new IllegalStateException(
-                                        "No existe supplier en BD para "
-                                                + dto.getEntityPublicId()
-                                                + " / " + erpId
-                                )
-                        );
-                log.debug(
-                "[TAX-DEBUG] erpId={} taxClass='{}' taxZone={}",
-                erpId,
-                erp.getRassiniErpTaxClass(),
-                erp.getRassiniErpTaxZone()
-                );
-                log.debug(
-                "[TERMS-DEBUG] erpId={} ErpPaymentTerms='{}'",
-                erpId,
-                erp.getRassiniErpPaymentTerms()
-                );
-                // =====================================================
-                // BUSREL
-                // =====================================================
-                XmlContext busrelCtx =
-                        factory.buildBusrelContext(
-                                supplier,
-                                erpId,
-                                erp.getRassiniErpTaxClass(),
-                                erp.getRassiniErpTaxZone()
                         );
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_OC_DIR,
-                        busrelCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateBusinessRelationXml(
-                                XmlConstants.TEMPLATE_OC_BUSREL,
-                                XmlConstants.OUTPUT_OC_DIR,
-                                busrelCtx
-                        )
-                );
+                if (supplierOpt.isEmpty()) {
+                    log.error("[XML-PROCESS] supplier={} businessUnit={} generator=OC result=ERROR reason=NO_ROW_IN_DB",
+                            dto.getEntityPublicId(), erpId);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(XMLConstants.BYPASA.equals(erpId) ? ProviderState.ERRORMAPBYPASA : ProviderState.ERRORMAPOC);
+                    }
+                    return;
+                }
 
-                // =====================================================
-                // CREDITOR
-                // =====================================================
-                CreditorXmlContext creditorCtx =
-                        factory.buildCreditorContext(
-                                supplier,
-                                erpId,
-                                erp.getRassiniErpTaxClass(),
-                                erp.getRassiniErpTaxZone(),
-                                erp.getRassiniErpPaymentTerms()
-                        );
+                SuppliersRowEntity supplier = supplierOpt.get();
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_OC_DIR,
-                        creditorCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateCreditorXml(
-                                XmlConstants.TEMPLATE_OC_CREDITOR,
-                                XmlConstants.OUTPUT_OC_DIR,
-                                creditorCtx
-                        )
-                );
+                if (XmlStatus.ERROR.equals(supplier.getXmlStatus())) {
+                    log.warn("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=ERROR", dto.getEntityPublicId(), erpId);
+                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=SKIPPED reason=CATALOG_MAPPING_MISSING", dto.getEntityPublicId(), erpId);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(XMLConstants.BYPASA.equals(erpId) ? ProviderState.ERRORMAPBYPASA : ProviderState.ERRORMAPOC);
+                    }
+                    return;
+                }
+
+                log.info("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=OK", dto.getEntityPublicId(), erpId);
+
+                try {
+                    log.debug(
+                    "[TAX-DEBUG] erpId={} taxClass='{}' taxZone={}",
+                    erpId,
+                    erp.getRassiniErpTaxClass(),
+                    erp.getRassiniErpTaxZone()
+                    );
+                    log.debug(
+                    "[TERMS-DEBUG] erpId={} ErpPaymentTerms='{}'",
+                    erpId,
+                    erp.getRassiniErpPaymentTerms()
+                    );
+
+                    // =====================================================
+                    // BUSREL
+                    // =====================================================
+                    XmlContext busrelCtx =
+                            factory.buildBusrelContext(
+                                    supplier,
+                                    erpId,
+                                    erp.getRassiniErpTaxClass(),
+                                    erp.getRassiniErpTaxZone()
+                            );
+
+                    xmlGenerationHelper.generateIfFileNotExists(
+                            supplier,
+                            XmlConstants.OUTPUT_OC_DIR,
+                            busrelCtx.getOutputFileName(),
+                            log,
+                            () -> xmlTemplateEngine.generateBusinessRelationXml(
+                                    XmlConstants.TEMPLATE_OC_BUSREL,
+                                    XmlConstants.OUTPUT_OC_DIR,
+                                    busrelCtx
+                            )
+                    );
+
+                    // =====================================================
+                    // CREDITOR
+                    // =====================================================
+                    CreditorXmlContext creditorCtx =
+                            factory.buildCreditorContext(
+                                    supplier,
+                                    erpId,
+                                    erp.getRassiniErpTaxClass(),
+                                    erp.getRassiniErpTaxZone(),
+                                    erp.getRassiniErpPaymentTerms()
+                            );
+
+                    xmlGenerationHelper.generateIfFileNotExists(
+                            supplier,
+                            XmlConstants.OUTPUT_OC_DIR,
+                            creditorCtx.getOutputFileName(),
+                            log,
+                            () -> xmlTemplateEngine.generateCreditorXml(
+                                    XmlConstants.TEMPLATE_OC_CREDITOR,
+                                    XmlConstants.OUTPUT_OC_DIR,
+                                    creditorCtx
+                            )
+                    );
+
+                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=GENERATED files=[{}, {}]",
+                            dto.getEntityPublicId(), erpId, busrelCtx.getOutputFileName(), creditorCtx.getOutputFileName());
+
+                } catch (Exception e) {
+                    log.error("[XML-PROCESS] supplier={} businessUnit={} generator=OC result=ERROR: {}",
+                            dto.getEntityPublicId(), erpId, e.getMessage(), e);
+                    supplier.setXmlStatus(XmlStatus.ERROR);
+                    suppliersRowRepository.save(supplier);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(XMLConstants.BYPASA.equals(erpId) ? ProviderState.ERRORMAPBYPASA : ProviderState.ERRORMAPOC);
+                    }
+                }
             });
-            supplierParameter.setStatus(ProviderState.PROCESSINGXMLOC);
     }
 
 
