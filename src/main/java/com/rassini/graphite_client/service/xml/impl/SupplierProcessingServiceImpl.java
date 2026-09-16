@@ -13,8 +13,11 @@ import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.CorreoPendienteEntity;
 import com.rassini.graphite_client.entity.ProviderState;
 import com.rassini.graphite_client.entity.SupplierEntity;
+import com.rassini.graphite_client.entity.SuppliersRowEntity;
+import com.rassini.graphite_client.entity.XmlStatus;
 import com.rassini.graphite_client.repository.CorreoPendienteRepository;
 import com.rassini.graphite_client.repository.SupplierRepository;
+import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.sync.GraphiteProfileRefreshService;
 import com.rassini.graphite_client.service.sync.IntegrityService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
@@ -53,6 +56,7 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
     private final XmlFrenosService xmlFrenosService;
     private final XmlBreakesService xmlBreakesService;
     private final IntegrityService integrityService;
+    private final SuppliersRowRepository suppliersRowRepository;
 
     private final GraphiteProfileRefreshService graphiteProfileRefreshService;
 
@@ -84,34 +88,31 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             updateStatus(supplier, ProviderState.PROCESSINGJPA);
 
             String raw = supplier.getFullJson();
+            log.info("[FLOW-PHASE-1][DESERIALIZE] supplier={} Iniciando deserialización JSON de Graphite ({} bytes)",
+                    supplier.getPublicId(), raw != null ? raw.length() : 0);
 
             JsonNode root = objectMapper.readTree(raw);
-
             
-            log.debug("ERP_ID root = {}", root.path("ERP_ID").asText(null));
-            log.debug("Entity_Public_Id root = {}", root.path("Entity_Public_Id").asText(null));
-            log.debug("Entity_Name root = {}", root.path("Entity_Name").asText(null));
+            log.debug("[FLOW-PHASE-1][DESERIALIZE] supplier={} ERP_ID root = {}", supplier.getPublicId(), root.path("ERP_ID").asText(null));
+            log.debug("[FLOW-PHASE-1][DESERIALIZE] supplier={} Entity_Public_Id root = {}", supplier.getPublicId(), root.path("Entity_Public_Id").asText(null));
+            log.debug("[FLOW-PHASE-1][DESERIALIZE] supplier={} Entity_Name root = {}", supplier.getPublicId(), root.path("Entity_Name").asText(null));
             logGraphiteContractIssues(root, supplier.getPublicId());
             GraphiteSupplierDto dto =
                 objectMapper.readValue(raw, GraphiteSupplierDto.class);
 
-            log.debug("ERP Records: " +
-            (dto.getErpRecords() == null ? 0 : dto.getErpRecords().size()));
+            java.util.List<String> erpIds = dto.getErpRecords() == null
+                    ? java.util.Collections.emptyList()
+                    : dto.getErpRecords().stream().map(GraphiteSupplierDto.ErpRecord::getRassiniErpEntityId).toList();
 
-            //log.debug("[PROCESS] Antes de upsertSuppliersRows GraphiteSupplierDto: {}", dto);
-            //log.debug("[PROCESS] Antes de upsertSuppliersRows");
+            log.info("[FLOW-PHASE-1][DESERIALIZE] supplier={} Deserialización exitosa. ERPs detectados={}: {}",
+                    dto.getEntityPublicId(), erpIds.size(), erpIds);
+
+            log.info("[FLOW-PHASE-2][JPA-MAPPING] supplier={} Iniciando mapeo y persistencia relacional en tabla suppliers para ERPs={}",
+                    dto.getEntityPublicId(), erpIds);
             supplierJpaMapper.upsertSuppliersRows(dto);
-            //log.debug("[PROCESS] Despues de upsertSuppliersRows");
+            log.info("[FLOW-PHASE-2][JPA-MAPPING] supplier={} Mapeo y persistencia en tabla suppliers concluido exitosamente",
+                    dto.getEntityPublicId());
 
-            log.debug(
-                "[PROCESS] ERPs en dto: {}",
-                dto.getErpRecords() == null
-                    ? "null"
-                    : dto.getErpRecords()
-                        .stream()
-                        .map(e -> "'" + e.getRassiniErpEntityId() + "'")
-                        .toList()
-            );
             if (proveedorRecienDescargado) {
                 notificarNuevoProveedor(
                         dto,
@@ -122,36 +123,41 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
 
             xmlOcService.generate(dto, supplier);
-
-            if(!ProviderState.ERRORMAPOC.equals(supplier.getStatus()))
+            if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
-            
-            xmlPnService.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPPN.equals(supplier.getStatus()))
-                updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
-            
-            xmlPn99Service.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPPN.equals(supplier.getStatus()))
-                updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
-            
-            xmlFrenosService.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPFRENOS.equals(supplier.getStatus()))
-                updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
-            
-            xmlBreakesService.generate(dto, supplier);
-            if(!ProviderState.ERRORMAPBREAKES.equals(supplier.getStatus()))
-                updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
-            
-            
-            if (!ProviderState.ERRORMAPOC.equals(supplier.getStatus())
-                && !ProviderState.ERRORMAPPN.equals(supplier.getStatus())
-                && !ProviderState.ERRORMAPFRENOS.equals(supplier.getStatus())
-                && !ProviderState.ERRORMAPBREAKES.equals(supplier.getStatus())
-                && !ProviderState.ERRORMAPBYPASA.equals(supplier.getStatus())
-                && !ProviderState.ERRORMAPPING.equals(supplier.getStatus())) {
+            }
 
+            xmlPnService.generate(dto, supplier);
+            if (!isErrorState(supplier.getStatus())) {
+                updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
+            }
+
+            xmlPn99Service.generate(dto, supplier);
+            if (!isErrorState(supplier.getStatus())) {
+                updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
+            }
+
+            xmlFrenosService.generate(dto, supplier);
+            if (!isErrorState(supplier.getStatus())) {
+                updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
+            }
+
+            xmlBreakesService.generate(dto, supplier);
+            if (!isErrorState(supplier.getStatus())) {
+                updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
+            }
+
+            // Summary per business unit
+            logProcessingSummary(dto);
+
+            if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLCOMPLETE);
-                integrityService.createFileSupplierSync(dto.getErpIdQad());
+                integrityService.createFileSupplierSync(dto);
+            } else {
+                log.warn("[XML-SUMMARY] supplier={} ended with errorStatus={}. Preserving error state, checking if any plant generated XML",
+                        supplier.getPublicId(), supplier.getStatus());
+                // Still create integrity sync if at least one plant succeeded or records exist
+                integrityService.createFileSupplierSync(dto);
             }
 
                 
@@ -283,6 +289,46 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
         );
 
         correoPendienteRepository.save(correo);
+    }
+
+    private boolean isErrorState(ProviderState status) {
+        if (status == null) return false;
+        return status == ProviderState.ERRORMAPPING
+                || status == ProviderState.ERRORMAPOC
+                || status == ProviderState.ERRORMAPPN
+                || status == ProviderState.ERRORMAPFRENOS
+                || status == ProviderState.ERRORMAPBREAKES
+                || status == ProviderState.ERRORMAPBYPASA;
+    }
+
+    private void logProcessingSummary(GraphiteSupplierDto dto) {
+        if (dto == null || dto.getErpRecords() == null) {
+            return;
+        }
+
+        java.util.List<String> generated = new java.util.ArrayList<>();
+        java.util.List<String> skipped = new java.util.ArrayList<>();
+        java.util.List<String> failed = new java.util.ArrayList<>();
+
+        for (GraphiteSupplierDto.ErpRecord erp : dto.getErpRecords()) {
+            String bu = erp.getRassiniErpEntityId();
+            SuppliersRowEntity row = suppliersRowRepository
+                    .findBySupplierCodeAndBusinessUnitCode(dto.getEntityPublicId(), bu)
+                    .orElse(null);
+
+            if (row == null) {
+                skipped.add(bu);
+            } else if (XmlStatus.GENERATED.equals(row.getXmlStatus()) || XmlStatus.GENERATED_PREV.equals(row.getXmlStatus())) {
+                generated.add(bu);
+            } else if (XmlStatus.ERROR.equals(row.getXmlStatus())) {
+                failed.add(bu);
+            } else {
+                skipped.add(bu);
+            }
+        }
+
+        log.info("[XML-SUMMARY] supplier={} summary generated={} skipped={} failed={}",
+                dto.getEntityPublicId(), generated, skipped, failed);
     }
 
     private void updateStatus(

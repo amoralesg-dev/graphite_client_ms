@@ -28,73 +28,63 @@ public class GraphiteProfileRefreshServiceImpl implements GraphiteProfileRefresh
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean processAndSaveInternal(String publicId, String detonante) {
+        log.info("[FLOW-PHASE-1][DOWNLOAD] supplier={} detonante='{}' - Solicitando perfil a Graphite", publicId, detonante);
 
-    log.info("[SERVICE] Solicitando perfil a Graphite para {}, lo detona{}", publicId, detonante);
-
-    if (publicId == null || publicId.isBlank()) {
-        log.error("[SERVICE] publicId es nulo o vacío");
-        return false;
-    }
-
-    try {
-
-        // IMPORTANTE: false para no aplicar reglas que modifiquen el payload
-        JsonNode profile = apiClient.getProfile(publicId, false);
-
-        if (profile == null || profile.isNull() || profile.isMissingNode()) {
-            log.error("[SERVICE] Perfil vacío para {}", publicId);
+        if (publicId == null || publicId.isBlank()) {
+            log.error("[FLOW-PHASE-1][DOWNLOAD] supplier={} publicId es nulo o vacio", publicId);
             return false;
         }
 
-        String json = profile.toPrettyString();
+        try {
 
-        log.info(
-            "[SERVICE] Perfil recibido para {}. Tamaño JSON={} caracteres",
-            publicId,
-            json.length()
-        );
+            // IMPORTANTE: false para no aplicar reglas que modifiquen el payload
+            JsonNode profile = apiClient.getProfile(publicId, false);
 
-        SupplierEntity entity = supplierRepository.findById(publicId)
-                .orElseGet(() -> {
-                    SupplierEntity e = new SupplierEntity();
-                    e.setPublicId(publicId);
-                    return e;
-                });
+            if (profile == null || profile.isNull() || profile.isMissingNode()) {
+                log.error("[FLOW-PHASE-1][DOWNLOAD] supplier={} Perfil vacio o no disponible en Graphite", publicId);
+                return false;
+            }
 
-        entity.setStatus(ProviderState.DESCARGA);
-        entity.setFullJson(json);
-        entity.setLastSync(LocalDateTime.now());
+            String json = profile.toPrettyString();
 
-        SupplierEntity saved = supplierRepository.save(entity);
-
-        log.info(
-            "[SERVICE] Proveedor {} guardado correctamente. JSON almacenado={} caracteres. LastSync={}",
-            saved.getPublicId(),
-            saved.getFullJson() != null ? saved.getFullJson().length() : 0,
-            saved.getLastSync()
-        );
-
-        return true;
-
-    } catch (HttpClientErrorException.NotFound e) {
-
-            log.warn(
-                    "[SERVICE] Proveedor {} no encontrado en Graphite (404)",
-                    publicId
+            log.info(
+                "[FLOW-PHASE-1][DOWNLOAD] supplier={} Perfil recibido exitosamente de Graphite. Tamano JSON={} caracteres",
+                publicId,
+                json.length()
             );
 
+            SupplierEntity entity = supplierRepository.findById(publicId)
+                    .orElseGet(() -> {
+                        SupplierEntity e = new SupplierEntity();
+                        e.setPublicId(publicId);
+                        return e;
+                    });
+
+            entity.setStatus(ProviderState.DESCARGA);
+            entity.setFullJson(json);
+            entity.setLastSync(LocalDateTime.now());
+
+            SupplierEntity saved = supplierRepository.save(entity);
+
+            log.info(
+                "[FLOW-PHASE-1][PERSIST] supplier={} Proveedor guardado en BD con status=DESCARGA. JSON almacenado={} caracteres. LastSync={}",
+                saved.getPublicId(),
+                saved.getFullJson() != null ? saved.getFullJson().length() : 0,
+                saved.getLastSync()
+            );
+
+            return true;
+
+        } catch (HttpClientErrorException.NotFound e) {
+
+            log.warn("[FLOW-PHASE-1][DOWNLOAD] supplier={} Proveedor no encontrado en Graphite (404)", publicId);
             return false;
 
-    } catch (Exception e) {
+        } catch (Exception e) {
 
-        log.error(
-            "[SERVICE] Error al procesar proveedor {}: {}",
-            publicId,
-            e.getMessage(),
-            e
-        );
-
-        return false;
+            log.error("[FLOW-PHASE-1][DOWNLOAD] supplier={} Error al consultar o guardar perfil desde Graphite: {}",
+                    publicId, e.getMessage(), e);
+            return false;
+        }
     }
-}
 }
