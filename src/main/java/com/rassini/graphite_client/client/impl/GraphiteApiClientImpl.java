@@ -111,8 +111,8 @@ public class GraphiteApiClientImpl implements GraphiteApiClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("accept", "application/json");
 
-        if (token != null && token.length() > 20) {
-            log.info("[DEBUG] Token: {}...{}", token.substring(0, 10), token.substring(token.length() - 10));
+        if (token != null && !token.isBlank()) {
+            log.info("[DEBUG] Token configured=true");
         }
 
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);

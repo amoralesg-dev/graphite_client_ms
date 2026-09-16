@@ -3,12 +3,14 @@ package com.rassini.graphite_client.service.sync.impl;
 import org.springframework.stereotype.Service;
 
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
+import com.rassini.graphite_client.entity.XmlStatus;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.sync.IntegrityService;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.XmlConstants;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
+import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.dto.SupplierMigrationResponse;
 import com.rassini.graphite_client.dto.MultiRecordDto;
 import com.rassini.graphite_client.dto.TruncatedListDto;
@@ -23,6 +25,7 @@ import java.nio.file.Paths;
 import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,36 +42,136 @@ public class IntegrityServiceImpl implements IntegrityService {
     
     @Override
     public void createFileSupplierSync(String erpIdQad) {
-        log.info("Executing createFileSupplierSync method - Fetching records and generating file");
+        createFileSupplierSync(erpIdQad, erpIdQad);
+    }
 
-        List<SuppliersRowEntity> suppliersRows = suppliersRowRepository.findDistinctAccountsByErpIdQad(erpIdQad);
-        generateSupplierSyncFile(suppliersRows,erpIdQad);
+    @Override
+    public void createFileSupplierSync(String supplierPublicId, String dtoErpIdQad) {
+        GraphiteSupplierDto dto = new GraphiteSupplierDto();
+        dto.setEntityPublicId(supplierPublicId);
+        dto.setErpIdQad(dtoErpIdQad);
+        createFileSupplierSync(dto);
+    }
+
+    @Override
+    public void createFileSupplierSync(GraphiteSupplierDto dto) {
+        String supplierCode = dto != null && dto.getEntityPublicId() != null ? dto.getEntityPublicId() : "";
+        String dtoErpIdQad = dto != null && dto.getErpIdQad() != null ? dto.getErpIdQad() : "";
+        String statusERPGraphite = dto != null && dto.getStatusERPGraphite() != null ? dto.getStatusERPGraphite() : "";
+
+        log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplier={} Iniciando generacion de archivo de sincronizacion de integridad", supplierCode);
+
+        // Consultar registros persistidos en BD para obtener persistedErpIdQad
+        List<SuppliersRowEntity> persistedSupplierRows = (!supplierCode.isBlank())
+                ? suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(supplierCode)
+                : Collections.emptyList();
+
+        String persistedErpIdQad = null;
+        for (SuppliersRowEntity r : persistedSupplierRows) {
+            if (r.getErpIdQad() != null && !r.getErpIdQad().isBlank()) {
+                persistedErpIdQad = r.getErpIdQad();
+                break;
+            }
+        }
+
+        // Selección de llave de búsqueda:
+        // 1. statusERPGraphite si no es vacío (proveedor legacy homologado)
+        // 2. persistedErpIdQad si existe en base de datos
+        // 3. dtoErpIdQad como valor por defecto (proveedor nuevo sin statusERPGraphite)
+        String selectedLookupKey;
+        if (statusERPGraphite != null && !statusERPGraphite.isBlank()) {
+            selectedLookupKey = statusERPGraphite;
+        } else if (persistedErpIdQad != null && !persistedErpIdQad.isBlank()) {
+            selectedLookupKey = persistedErpIdQad;
+        } else {
+            selectedLookupKey = dtoErpIdQad;
+        }
+
+        // Trazabilidad requerida
+        log.info("[INTEGRITY-KEY-RESOLUTION]");
+        log.info("supplier={}", supplierCode);
+        log.info("dtoErpIdQad={}", dtoErpIdQad);
+        log.info("statusERPGraphite={}", statusERPGraphite);
+        log.info("persistedErpIdQad={}", persistedErpIdQad != null ? persistedErpIdQad : "");
+        log.info("selectedLookupKey={}", selectedLookupKey);
+
+        // Antes de consultar
+        log.info("[INTEGRITY-QUERY]");
+        log.info("lookupKey={}", selectedLookupKey);
+        log.info("strategy=STATUS_ERP_GRAPHITE");
+
+        List<SuppliersRowEntity> suppliersRows = Collections.emptyList();
+        if (selectedLookupKey != null && !selectedLookupKey.isBlank()) {
+            // Si el proveedor tiene supplierCode específico, filtrar las cuentas por supplierCode exacto
+            if (!supplierCode.isBlank() && !persistedSupplierRows.isEmpty()) {
+                suppliersRows = suppliersRowRepository.findDistinctAccountsBySupplierCodeExact(supplierCode);
+            }
+            if (suppliersRows == null || suppliersRows.isEmpty()) {
+                suppliersRows = suppliersRowRepository.findDistinctAccountsByErpIdQad(selectedLookupKey);
+            }
+        }
+
+        int recordsFound = (suppliersRows != null) ? suppliersRows.size() : 0;
+
+        // Después de consultar
+        log.info("[INTEGRITY-RESULT]");
+        log.info("lookupKey={}", selectedLookupKey);
+        log.info("recordsFound={}", recordsFound);
+
+        generateSupplierSyncFile(suppliersRows, selectedLookupKey != null && !selectedLookupKey.isBlank() ? selectedLookupKey : supplierCode);
     }
 
     public void generateSupplierSyncFile(List<SuppliersRowEntity> suppliers, String supplierID) {
 
-       String currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+        String currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         
         Path outDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
         String fileName = supplierID + "_"+currentDateTime+".txt";
         Path filePath = outDir.resolve(fileName);
 
-
         try {
             Files.createDirectories(outDir);
 
-            log.info("Generating supplier sync integrity <{supplierID}> file at: {}",supplierID, filePath.toAbsolutePath());
+            log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} Generando archivo en: {}", supplierID, filePath.toAbsolutePath());
 
+            int count = 0;
             try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
-                for (SuppliersRowEntity supplier : suppliers) {
-                    writer.write(buildSupplierLine(supplier));
-                    writer.newLine();
+                if (suppliers != null) {
+                    for (SuppliersRowEntity supplier : suppliers) {
+                        String supplierCode = supplier.getSupplierCode() != null && !supplier.getSupplierCode().isBlank()
+                                ? supplier.getSupplierCode()
+                                : supplierID;
+                        String bu = supplier.getBusinessUnitCode();
+                        String xmlStatusStr = supplier.getXmlStatus() != null ? supplier.getXmlStatus().name() : "null";
+                        String statusIntegrity = supplier.getStatusIntegrity();
+
+                        boolean isError = XmlStatus.ERROR.name().equalsIgnoreCase(xmlStatusStr);
+                        boolean included = !isError;
+
+                        log.info("[INTEGRITY-ROW]");
+                        log.info("supplier={}", supplierCode);
+                        log.info("businessUnit={}", bu);
+                        log.info("xmlStatus={}", xmlStatusStr);
+                        log.info("statusIntegrity={}", statusIntegrity);
+                        log.info("included={}", included);
+                        if (!included) {
+                            log.info("excludeReason=XML_STATUS_ERROR");
+                        }
+
+                        if (included) {
+                            writer.write(buildSupplierLine(supplier));
+                            writer.newLine();
+                            count++;
+                        }
+                    }
                 }
             }
 
-            log.info("File {} generated successfully with {} records", filePath.toAbsolutePath(), suppliers.size());
+            log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} Archivo generado exitosamente con {} registros en {}",
+                    supplierID, count, filePath.toAbsolutePath());
         } catch (IOException e) {
-            log.error("Error generating file {}", filePath.toAbsolutePath(), e);
+            log.error("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} Error generando archivo {}: {}",
+                    supplierID, filePath.toAbsolutePath(), e.getMessage(), e);
         }
     }
 

@@ -129,7 +129,7 @@ public class SupplierReprocessController {
         if (equivalencia == null) {
 
             log.warn(
-                    "[CACHE] No se encontró equivalencia para idCatalogo={}, code={}, businessUnit={}",
+                    "[CACHE] No se encontro equivalencia para idCatalogo={}, code={}, businessUnit={}",
                     idCatalogo,
                     code,
                     businessUnit

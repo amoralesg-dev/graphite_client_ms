@@ -20,6 +20,9 @@ import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Optional;
+import com.rassini.graphite_client.entity.XmlStatus;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,10 +39,6 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
         if (dto == null || dto.getErpRecords() == null) {
             return;
         }
-        if (supplierParameter != null
-            && ProviderState.ERRORMAPPING.equals(supplierParameter.getStatus())) {
-                return;
-        }
 
         FrenosXmlFactory factory = new FrenosXmlFactory(catalogService);
 
@@ -48,67 +47,97 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
             .forEach(erp -> {
 
                 String erpId = XMLConstants.FRENOS;
+                log.info("[XML-PROCESS] supplier={} businessUnit={} generator=FRENOS eligible=true", dto.getEntityPublicId(), erpId);
 
-                SuppliersRowEntity supplier =
+                Optional<SuppliersRowEntity> supplierOpt =
                         suppliersRowRepository
                                 .findBySupplierCodeAndBusinessUnitCode(
                                         dto.getEntityPublicId(),
                                         erpId
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalStateException(
-                                                "No existe supplier en BD para "
-                                                + dto.getEntityPublicId() + " / " + erpId
-                                        )
                                 );
 
-                // =========================
-                // BUSREL FRENOS
-                // =========================
-                XmlContext busrelCtx =
-                        factory.buildBusrelContext(
-                                supplier,
-                                erpId,
-                                erp.getRassiniErpTaxClass(),
-                                erp.getRassiniErpTaxZone()
-                        );
+                if (supplierOpt.isEmpty()) {
+                    log.error("[XML-PROCESS] supplier={} businessUnit={} generator=FRENOS result=ERROR reason=NO_ROW_IN_DB",
+                            dto.getEntityPublicId(), erpId);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(ProviderState.ERRORMAPFRENOS);
+                    }
+                    return;
+                }
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_FRENOS_DIR,
-                        busrelCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateBusinessRelationXml(
-                                XmlConstants.TEMPLATE_FRENOS_BUSREL,
-                                XmlConstants.OUTPUT_FRENOS_DIR,
-                                busrelCtx
-                        )
-                );
+                SuppliersRowEntity supplier = supplierOpt.get();
 
-                // =========================
-                // CREDITOR FRENOS
-                // =========================
-                CreditorXmlContext creditorCtx =
-                        factory.buildCreditorContext(
-                                supplier,
-                                erpId,
-                                erp.getRassiniErpTaxClass(),
-                                erp.getRassiniErpTaxZone(),
-                                erp.getRassiniErpPaymentTerms()
-                        );
+                if (XmlStatus.ERROR.equals(supplier.getXmlStatus())) {
+                    log.warn("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=ERROR", dto.getEntityPublicId(), erpId);
+                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=SKIPPED reason=CATALOG_MAPPING_MISSING", dto.getEntityPublicId(), erpId);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(ProviderState.ERRORMAPFRENOS);
+                    }
+                    return;
+                }
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_FRENOS_DIR,
-                        creditorCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateCreditorXml(
-                                XmlConstants.TEMPLATE_FRENOS_CREDITOR,
-                                XmlConstants.OUTPUT_FRENOS_DIR,
-                                creditorCtx
-                        )
-                );
+                log.info("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=OK", dto.getEntityPublicId(), erpId);
+
+                try {
+                    // =========================
+                    // BUSREL FRENOS
+                    // =========================
+                    XmlContext busrelCtx =
+                            factory.buildBusrelContext(
+                                    supplier,
+                                    erpId,
+                                    erp.getRassiniErpTaxClass(),
+                                    erp.getRassiniErpTaxZone()
+                            );
+
+                    xmlGenerationHelper.generateIfFileNotExists(
+                            supplier,
+                            XmlConstants.OUTPUT_FRENOS_DIR,
+                            busrelCtx.getOutputFileName(),
+                            log,
+                            () -> xmlTemplateEngine.generateBusinessRelationXml(
+                                    XmlConstants.TEMPLATE_FRENOS_BUSREL,
+                                    XmlConstants.OUTPUT_FRENOS_DIR,
+                                    busrelCtx
+                            )
+                    );
+
+                    // =========================
+                    // CREDITOR FRENOS
+                    // =========================
+                    CreditorXmlContext creditorCtx =
+                            factory.buildCreditorContext(
+                                    supplier,
+                                    erpId,
+                                    erp.getRassiniErpTaxClass(),
+                                    erp.getRassiniErpTaxZone(),
+                                    erp.getRassiniErpPaymentTerms()
+                            );
+
+                    xmlGenerationHelper.generateIfFileNotExists(
+                            supplier,
+                            XmlConstants.OUTPUT_FRENOS_DIR,
+                            creditorCtx.getOutputFileName(),
+                            log,
+                            () -> xmlTemplateEngine.generateCreditorXml(
+                                    XmlConstants.TEMPLATE_FRENOS_CREDITOR,
+                                    XmlConstants.OUTPUT_FRENOS_DIR,
+                                    creditorCtx
+                            )
+                    );
+
+                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=GENERATED files=[{}, {}]",
+                            dto.getEntityPublicId(), erpId, busrelCtx.getOutputFileName(), creditorCtx.getOutputFileName());
+
+                } catch (Exception e) {
+                    log.error("[XML-PROCESS] supplier={} businessUnit={} generator=FRENOS result=ERROR: {}",
+                            dto.getEntityPublicId(), erpId, e.getMessage(), e);
+                    supplier.setXmlStatus(XmlStatus.ERROR);
+                    suppliersRowRepository.save(supplier);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(ProviderState.ERRORMAPFRENOS);
+                    }
+                }
             });
-            supplierParameter.setStatus(ProviderState.PROCESSINGXMLFRN);
     }
 }

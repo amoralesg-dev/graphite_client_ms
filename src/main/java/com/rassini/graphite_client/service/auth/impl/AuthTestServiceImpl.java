@@ -49,9 +49,7 @@ public class AuthTestServiceImpl implements AuthService{
 
         log.info("Auth URL={}", authUrl);
         log.info("ClientId={}", clientId);
-        log.info("ClientSecret vacío={}",
-                clientSecret == null || clientSecret.isBlank());
-        log.info("Body={}", body);
+        log.info("ClientSecret configured={}", clientSecret != null && !clientSecret.isBlank());
         log.info("Headers={}", headers);
 
         ResponseEntity<AuthResponse> response = restTemplate.exchange(

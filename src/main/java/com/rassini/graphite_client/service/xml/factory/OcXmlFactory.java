@@ -36,7 +36,7 @@ public class OcXmlFactory {
         String name36 = left(supplier.getSupplierName(), 36);
 
         return XmlContext.builder()
-                .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
+                .outputFileName("busrel_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode()  + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier, name20, name36))
                 .address(buildAddress(supplier, name20, name36, tax))
@@ -58,7 +58,7 @@ public class OcXmlFactory {
         TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
+                .outputFileName("creditor_" + supplier.getErpIdQad() +"_"+supplier.getBusinessUnitCode()+ "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId, supplier))
                 .creditor(buildCreditor(supplier, tax, paymentTerms))
                 .build();
