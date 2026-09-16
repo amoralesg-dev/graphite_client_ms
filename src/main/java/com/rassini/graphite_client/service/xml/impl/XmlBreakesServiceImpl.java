@@ -20,6 +20,9 @@ import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Optional;
+import com.rassini.graphite_client.entity.XmlStatus;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -36,10 +39,6 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
         if (dto == null || dto.getErpRecords() == null) {
             return;
         }
-        if (supplierParameter != null
-            && ProviderState.ERRORMAPPING.equals(supplierParameter.getStatus())) {
-                return;
-        }
 
         //  Breakes usa exactamente el MISMO factory que Frenos pero ya tiene su propio archivo
         BreakesXmlFactory factory = new BreakesXmlFactory(catalogService);
@@ -49,67 +48,97 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
             .forEach(erp -> {
 
                 final String erpId = XMLConstants.BREAKES;
+                log.info("[XML-PROCESS] supplier={} businessUnit={} generator=BREAKES eligible=true", dto.getEntityPublicId(), erpId);
 
-                SuppliersRowEntity supplier =
+                Optional<SuppliersRowEntity> supplierOpt =
                         suppliersRowRepository
                                 .findBySupplierCodeAndBusinessUnitCode(
                                         dto.getEntityPublicId(),
                                         erpId
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalStateException(
-                                                "No existe supplier en BD para BREAKES "
-                                                + dto.getEntityPublicId() + " / " + erpId
-                                        )
                                 );
 
-                // =========================
-                // BUSREL (BREAKES)
-                // =========================
-                XmlContext busrelCtx =
-                        factory.buildBusrelContext(
-                                supplier,
-                                erpId,
-                                erp.getRassiniErpTaxClass(),
-                                erp.getRassiniErpTaxZone()
-                        );
+                if (supplierOpt.isEmpty()) {
+                    log.error("[XML-PROCESS] supplier={} businessUnit={} generator=BREAKES result=ERROR reason=NO_ROW_IN_DB",
+                            dto.getEntityPublicId(), erpId);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(ProviderState.ERRORMAPBREAKES);
+                    }
+                    return;
+                }
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_BREAKES_DIR,
-                        busrelCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateBusinessRelationXml(
-                                XmlConstants.TEMPLATE_BREAKES_BUSREL,
-                                XmlConstants.OUTPUT_BREAKES_DIR,
-                                busrelCtx
-                        )
-                );
+                SuppliersRowEntity supplier = supplierOpt.get();
 
-                // =========================
-                // CREDITOR (BREAKES)
-                // =========================
-                CreditorXmlContext creditorCtx =
-                        factory.buildCreditorContext(
-                                supplier,
-                                erpId,
-                                erp.getRassiniErpTaxClass(),
-                                erp.getRassiniErpTaxZone(),
-                                erp.getRassiniErpPaymentTerms()
-                        );
+                if (XmlStatus.ERROR.equals(supplier.getXmlStatus())) {
+                    log.warn("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=ERROR", dto.getEntityPublicId(), erpId);
+                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=SKIPPED reason=CATALOG_MAPPING_MISSING", dto.getEntityPublicId(), erpId);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(ProviderState.ERRORMAPBREAKES);
+                    }
+                    return;
+                }
 
-                xmlGenerationHelper.generateIfFileNotExists(
-                        supplier,
-                        XmlConstants.OUTPUT_BREAKES_DIR,
-                        creditorCtx.getOutputFileName(),
-                        log,
-                        () -> xmlTemplateEngine.generateCreditorXml(
-                                XmlConstants.TEMPLATE_BREAKES_CREDITOR,
-                                XmlConstants.OUTPUT_BREAKES_DIR,
-                                creditorCtx
-                        )
-                );
+                log.info("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=OK", dto.getEntityPublicId(), erpId);
+
+                try {
+                    // =========================
+                    // BUSREL (BREAKES)
+                    // =========================
+                    XmlContext busrelCtx =
+                            factory.buildBusrelContext(
+                                    supplier,
+                                    erpId,
+                                    erp.getRassiniErpTaxClass(),
+                                    erp.getRassiniErpTaxZone()
+                            );
+
+                    xmlGenerationHelper.generateIfFileNotExists(
+                            supplier,
+                            XmlConstants.OUTPUT_BREAKES_DIR,
+                            busrelCtx.getOutputFileName(),
+                            log,
+                            () -> xmlTemplateEngine.generateBusinessRelationXml(
+                                    XmlConstants.TEMPLATE_BREAKES_BUSREL,
+                                    XmlConstants.OUTPUT_BREAKES_DIR,
+                                    busrelCtx
+                            )
+                    );
+
+                    // =========================
+                    // CREDITOR (BREAKES)
+                    // =========================
+                    CreditorXmlContext creditorCtx =
+                            factory.buildCreditorContext(
+                                    supplier,
+                                    erpId,
+                                    erp.getRassiniErpTaxClass(),
+                                    erp.getRassiniErpTaxZone(),
+                                    erp.getRassiniErpPaymentTerms()
+                            );
+
+                    xmlGenerationHelper.generateIfFileNotExists(
+                            supplier,
+                            XmlConstants.OUTPUT_BREAKES_DIR,
+                            creditorCtx.getOutputFileName(),
+                            log,
+                            () -> xmlTemplateEngine.generateCreditorXml(
+                                    XmlConstants.TEMPLATE_BREAKES_CREDITOR,
+                                    XmlConstants.OUTPUT_BREAKES_DIR,
+                                    creditorCtx
+                            )
+                    );
+
+                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=GENERATED files=[{}, {}]",
+                            dto.getEntityPublicId(), erpId, busrelCtx.getOutputFileName(), creditorCtx.getOutputFileName());
+
+                } catch (Exception e) {
+                    log.error("[XML-PROCESS] supplier={} businessUnit={} generator=BREAKES result=ERROR: {}",
+                            dto.getEntityPublicId(), erpId, e.getMessage(), e);
+                    supplier.setXmlStatus(XmlStatus.ERROR);
+                    suppliersRowRepository.save(supplier);
+                    if (supplierParameter != null) {
+                        supplierParameter.setStatus(ProviderState.ERRORMAPBREAKES);
+                    }
+                }
             });
-            supplierParameter.setStatus(ProviderState.PROCESSINGXMLBRK);
     }
 }

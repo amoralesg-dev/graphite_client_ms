@@ -40,7 +40,7 @@ public class PnXmlFactory {
         TaxInfo tax = resolveTaxInfoPn(erpId, taxClassFromErp);
 
         return XmlContext.builder()
-                .outputFileName("RPIEDRAS_busrel_" + supplier.getErpIdQad() + ".xml")
+                .outputFileName("RPIEDRAS_busrel_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier))
                 .address(buildAddress(supplier, name20,name36, tax))
@@ -60,7 +60,7 @@ public class PnXmlFactory {
         TaxInfo tax = resolveTaxInfoPn(erpId, taxClassFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("RPIEDRAS_creditor_" + supplier.getErpIdQad() + ".xml")
+                .outputFileName("RPIEDRAS_creditor_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode() + "_" + erpId  + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId, supplier))
                 .creditor(buildCreditor(supplier, tax))
                 .build();

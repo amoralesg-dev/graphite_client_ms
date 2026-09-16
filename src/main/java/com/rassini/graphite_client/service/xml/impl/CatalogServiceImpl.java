@@ -31,6 +31,9 @@ public class CatalogServiceImpl implements CatalogService {
                 XMLConstants.CATALOG_COUNTRY, graphiteCountry,plantId);
 
         if(equivalencia == null) {
+            log.warn("[CATALOG-MISSING] supplier={} businessUnit={} catalog={} sourceCode={} lookupKey=({},{},{}) resolvedValue=NULL",
+                    publicId, plantId, XMLConstants.CATALOG_COUNTRY, graphiteCountry,
+                    XMLConstants.CATALOG_COUNTRY, graphiteCountry, plantId);
             catalogEquivalenciaFaltanteService.registrar(
                     publicId,
                     XMLConstants.CATALOG_COUNTRY,
@@ -38,7 +41,6 @@ public class CatalogServiceImpl implements CatalogService {
                     plantId,
                     "graphite"
             );
-            log.info("No se encontró equivalencia para country='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteCountry, plantId);
         }else {
             log.info("Equivalencia encontrada para country='{}' y plantId='{}': '{}'", graphiteCountry, plantId, equivalencia);
         }
@@ -51,6 +53,9 @@ public class CatalogServiceImpl implements CatalogService {
                 XMLConstants.CATALOG_COUNTRY_INTEGITY, graphiteCountry,plantId);
 
         if(equivalencia == null) {
+            log.warn("[CATALOG-MISSING] supplier={} businessUnit={} catalog={} sourceCode={} lookupKey=({},{},{}) resolvedValue=NULL",
+                    publicId, plantId, XMLConstants.CATALOG_COUNTRY_INTEGITY, graphiteCountry,
+                    XMLConstants.CATALOG_COUNTRY_INTEGITY, graphiteCountry, plantId);
             catalogEquivalenciaFaltanteService.registrar(
                     publicId,
                     XMLConstants.CATALOG_COUNTRY_INTEGITY,
@@ -58,7 +63,6 @@ public class CatalogServiceImpl implements CatalogService {
                     plantId,
                     "Integrity"
             );
-            log.info("No se encontró equivalencia para country='{}' y plantId='{}'. Se debe enviar correo proceso{}", graphiteCountry, plantId,"Integrity");
         }else {
             log.info("Equivalencia encontrada para country='{}' y plantId='{}': '{}'", graphiteCountry, plantId, equivalencia);
         }
@@ -128,6 +132,8 @@ public class CatalogServiceImpl implements CatalogService {
 
        if(supplier.getStatusIntegrity()==null ||XMLConstants.ALTA.equalsIgnoreCase(supplier.getStatusIntegrity())){
                 activityCode=XMLConstants.CREATE;
+        } else if (XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
+                activityCode=XMLConstants.MODIFY;
         }
         log.info("Resuelto Activity code  para supplierCode={}: '{}'", supplier.getSupplierCode(), activityCode);
         return activityCode;
@@ -164,6 +170,9 @@ public class CatalogServiceImpl implements CatalogService {
                 XMLConstants.CATALOG_STATE, graphiteState,plantId);
 
         if(equivalencia == null) {
+            log.warn("[CATALOG-MISSING] supplier={} businessUnit={} catalog={} sourceCode={} lookupKey=({},{},{}) resolvedValue=NULL",
+                    publicId, plantId, XMLConstants.CATALOG_STATE, graphiteState,
+                    XMLConstants.CATALOG_STATE, graphiteState, plantId);
             catalogEquivalenciaFaltanteService.registrar(
                     publicId,
                     XMLConstants.CATALOG_STATE,
@@ -171,7 +180,6 @@ public class CatalogServiceImpl implements CatalogService {
                     plantId,
                     "graphite"
             );
-            log.info("No se encontró equivalencia para state='{}' y plantId='{}'. Se debe enviar correo pero aun no implementado", graphiteState, plantId);
         }else {
             log.info("Equivalencia encontrada para state='{}' y plantId='{}': '{}'", graphiteState, plantId, equivalencia);
         }
@@ -228,6 +236,8 @@ public class CatalogServiceImpl implements CatalogService {
         
         if(supplier.getStatusIntegrity() == null || XMLConstants.ALTA.equalsIgnoreCase(supplier.getStatusIntegrity())) {
            action = XMLConstants.SAVE;
+        } else if (XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
+           action = XMLConstants.MODIFY;
         }
         log.info("Resuelto Action  para supplierCode={}: '{}'", supplier.getSupplierCode(), action);
         return action;

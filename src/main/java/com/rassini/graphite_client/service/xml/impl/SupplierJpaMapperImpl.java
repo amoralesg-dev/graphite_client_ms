@@ -6,7 +6,10 @@ import org.springframework.stereotype.Service;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
+import com.rassini.graphite_client.entity.XmlStatus;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
+import com.rassini.graphite_client.service.address.ResolvedAddress;
+import com.rassini.graphite_client.service.address.SupplierAddressResolver;
 import com.rassini.graphite_client.service.mapper.SupplierRowMapper;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
@@ -35,7 +38,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
         String statusErpGraphite = dto.getStatusERPGraphite();
 
 
-        if (statusErpGraphite != null) {
+        if (statusErpGraphite != null && !statusErpGraphite.isEmpty()) {
             if (row.getId() != null && statusErpGraphite.equals(row.getErpIdQad())){
                 statusFromDto = XMLConstants.MOD;
             }else{
@@ -67,7 +70,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
             if (erp.getErpBankList() != null) {
                 log.info(
-                        "Supplier {} BU {} tiene {} cuentas bancarias",
+                        "[FLOW-PHASE-2][BANK-PARSE] supplier={} businessUnit={} Cuentas bancarias encontradas={}",
                         creditor,
                         bu,
                         erp.getErpBankList().size()
@@ -75,30 +78,35 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
             }
 
             if (erp.getErpBankList() == null || erp.getErpBankList().isEmpty()) {
+                log.warn("[FLOW-PHASE-2][BANK-PARSE] supplier={} businessUnit={} Sin cuentas bancarias en DTO", creditor, bu);
                 continue;
             }
 
             for (GraphiteSupplierDto.Bank bank : erp.getErpBankList()) {
 
+                String accountRaw = bank.getBankAccountNumber();
+                String maskedAccount = maskAccountNumber(accountRaw);
+
                 SuppliersRowEntity row = suppliersRowRepository
                 .findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
                         creditor,
                         bu,
-                        bank.getBankAccountNumber()
+                        accountRaw
                 )
                 .orElseGet(SuppliersRowEntity::new);
 
                 log.info(
-                    "REPROCESS BU={} ACCOUNT={} ID={} CURRENT_CODE={}",
+                    "[FLOW-PHASE-2][UPSERT-ROW] supplier={} businessUnit={} account={} id={} currentCode={}",
+                    creditor,
                     bu,
-                    row.getAccountNumber(),
+                    maskedAccount,
                     row.getId(),
                     row.getSupplierCodeDisIntegrity()
                 );
 
                 String statusIntegrity = statusIntegrity(row, dto);
 
-                log.info("Status integrity resuelto: {} para supplierCode={} y businessUnitCode={}", statusIntegrity, creditor, bu);
+                log.info("[FLOW-PHASE-2][INTEGRITY-STATUS] supplier={} businessUnit={} statusIntegrity={}", creditor, bu, statusIntegrity);
                 row.setStatusIntegrity(statusIntegrity);   
 
 
@@ -106,6 +114,9 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
                 SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
 
+                if (dto.getStatusERPGraphite() != null && !dto.getStatusERPGraphite().isEmpty()){
+                    row.setErpIdQad(dto.getStatusERPGraphite());
+                }
 
                 row.setSupplierCodeDisIntegrity(
                         resolveSupplierCodeDisIntegrity(
@@ -113,11 +124,23 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                                 row
                         )
                 );
-                
 
+                // Validar si faltó alguna equivalencia de catálogo requerida (ej. estado)
+                ResolvedAddress address = SupplierAddressResolver.resolve(dto, hq, erp);
+                if (address != null && address.getRegion() != null && !address.getRegion().isBlank()
+                        && (row.getStateCode() == null || row.getStateCode().isBlank())) {
+                    row.setXmlStatus(XmlStatus.ERROR);
+                    log.warn("[FLOW-PHASE-2][CATALOG-CHECK] supplier={} businessUnit={} catalogStatus=ERROR catalog=state code={}",
+                            creditor, bu, address.getRegion());
+                } else if (row.getXmlStatus() == null || XmlStatus.ERROR.equals(row.getXmlStatus())) {
+                    // Si antes tenía error y ahora el estado resolvió correctamente, restaurar a PENDING
+                    row.setXmlStatus(XmlStatus.PENDING);
+                }
 
                 //  guardar: si row ya tenía id -> UPDATE; si no -> INSERT
-                suppliersRowRepository.save(row);
+                SuppliersRowEntity savedRow = suppliersRowRepository.save(row);
+                log.info("[FLOW-PHASE-2][PERSIST-ROW] supplier={} businessUnit={} account={} id={} xmlStatus={}",
+                        creditor, bu, maskedAccount, savedRow.getId(), savedRow.getXmlStatus());
             }
         }
     }
@@ -151,5 +174,9 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
         return row.getErpIdQad() + "_" + distinctAccounts;
     }
 
-
+    private String maskAccountNumber(String account) {
+        if (account == null || account.isBlank()) return "N/A";
+        if (account.length() <= 4) return "****";
+        return "****" + account.substring(account.length() - 4);
+    }
 }

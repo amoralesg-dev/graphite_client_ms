@@ -28,11 +28,22 @@ public interface SuppliersRowRepository
            ")")
         List<SuppliersRowEntity> findDistinctAccountsBySupplierCode(@Param("supplierCode") String supplierCode);
 
+        @Query("SELECT s " +
+           "FROM SuppliersRowEntity s " +
+           "WHERE s.id IN (" +
+           "   SELECT MIN(CASE WHEN sr.xmlStatus != com.rassini.graphite_client.entity.XmlStatus.ERROR THEN sr.id ELSE 2147483647L END) " +
+           "   FROM SuppliersRowEntity sr " +
+           "   WHERE sr.supplierCode = :supplierCode " +
+           "   GROUP BY sr.accountNumber" +
+           ")")
+        List<SuppliersRowEntity> findDistinctAccountsBySupplierCodeExact(@Param("supplierCode") String supplierCode);
+
+        List<SuppliersRowEntity> findBySupplierCodeOrderByBusinessUnitCodeAsc(String supplierCode);
 
         @Query("SELECT s " +
            "FROM SuppliersRowEntity s " +
            "WHERE s.id IN (" +
-           "   SELECT MIN(sr.id) " +
+           "   SELECT MIN(CASE WHEN sr.xmlStatus != com.rassini.graphite_client.entity.XmlStatus.ERROR THEN sr.id ELSE 2147483647L END) " +
            "   FROM SuppliersRowEntity sr " +
            "   WHERE sr.erpIdQad = :erpIdQad " +
            "   GROUP BY sr.accountNumber" +

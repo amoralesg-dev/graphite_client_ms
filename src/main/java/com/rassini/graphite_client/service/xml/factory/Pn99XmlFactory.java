@@ -41,7 +41,7 @@ public class Pn99XmlFactory {
         TaxInfo tax = resolveTaxInfoPn99(erpId, taxClassFromErp, taxZoneFromErp);
 
         return XmlContext.builder()
-                .outputFileName("PN99_busrel_" + supplier.getErpIdQad() + ".xml")
+                .outputFileName("PN99_busrel_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode() + ".xml")
                 .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier))
                 .address(buildAddress(supplier, name20,name36, tax))
@@ -62,7 +62,7 @@ public class Pn99XmlFactory {
         TaxInfo tax = resolveTaxInfoPn99(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("PN99_creditor_" + supplier.getErpIdQad() + ".xml")
+                .outputFileName("PN99_creditor_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode() + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId, supplier))
                 .creditor(buildCreditor(supplier, tax))
                 .build();

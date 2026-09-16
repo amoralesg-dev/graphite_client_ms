@@ -17,6 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import com.rassini.graphite_client.entity.XmlStatus;
+import com.rassini.graphite_client.repository.SuppliersRowRepository;
+
 import java.time.LocalDateTime;
 
 @Slf4j
@@ -28,18 +31,27 @@ public class CatalogEquivalenciaFaltanteServiceImpl
     private final CatalogEquivalenciaFaltanteRepository repository;
     private final CorreoPendienteRepository correoRepository;
     private final SupplierRepository supplierRepository;
-
+    private final SuppliersRowRepository suppliersRowRepository;
 
     @Value("${mail.notification.to}")
     private String destinatariosConfig;
 
-    
     @Value("${spring.profiles.active:local}")
     private String environment;
 
-
     @Transactional
     public void setStatusError(String publicId, String businessUnit) {
+
+        // Marcar error a nivel planta en SuppliersRowEntity
+        if (suppliersRowRepository != null) {
+            suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, businessUnit)
+                    .ifPresent(row -> {
+                        row.setXmlStatus(XmlStatus.ERROR);
+                        suppliersRowRepository.save(row);
+                        log.warn("[CATALOG-ERROR] supplier={} businessUnit={} xmlStatus=ERROR",
+                                publicId, businessUnit);
+                    });
+        }
 
         SupplierEntity supplier = supplierRepository
                 .findByPublicId(publicId)
@@ -57,18 +69,17 @@ public class CatalogEquivalenciaFaltanteServiceImpl
             supplier.setStatus(ProviderState.ERRORMAPBYPASA);
         } else if (XMLConstants.OC.equals(businessUnit)) {
             supplier.setStatus(ProviderState.ERRORMAPOC);
-        } else if (XMLConstants.PN.equals(businessUnit)) {
+        } else if (XMLConstants.PN.equals(businessUnit) || XMLConstants.PN99.equals(businessUnit)) {
             supplier.setStatus(ProviderState.ERRORMAPPN);
         } else {
             supplier.setStatus(ProviderState.ERRORMAPPING);
         }
         SupplierEntity saved = supplierRepository.save(supplier);
 
-        log.info(
-            "Guardado proveedor {} con status {}",
-            saved.getPublicId(),
-            saved.getStatus()
-        );
+        log.warn("[CATALOG-ERROR] supplier={} businessUnit={} providerState={} xmlStatus=ERROR",
+                saved.getPublicId(),
+                businessUnit,
+                saved.getStatus());
     }
 
     public void registrar(String publicId, String idCatalogo, String code, String businessUnit, String proceso) {
