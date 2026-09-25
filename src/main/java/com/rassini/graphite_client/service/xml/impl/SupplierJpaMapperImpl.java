@@ -11,6 +11,8 @@ import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.address.ResolvedAddress;
 import com.rassini.graphite_client.service.address.SupplierAddressResolver;
 import com.rassini.graphite_client.service.mapper.SupplierRowMapper;
+import com.rassini.graphite_client.service.resolver.SupplierErpResolver;
+import com.rassini.graphite_client.service.resolver.ErpResolutionResult;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
@@ -25,6 +27,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
+    private final SupplierErpResolver supplierErpResolver;
 
   
 
@@ -114,14 +117,37 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
                 SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
 
-                if (dto.getStatusERPGraphite() != null && !dto.getStatusERPGraphite().isEmpty()){
-                    row.setErpIdQad(dto.getStatusERPGraphite());
+                // Obtener persistedErpIdQad existente en base de datos si ya fue persistido
+                String persistedErpIdQad = null;
+                if (row.getId() != null && row.getErpIdQad() != null && !row.getErpIdQad().isBlank()) {
+                    persistedErpIdQad = row.getErpIdQad();
+                } else if (creditor != null && !creditor.isBlank()) {
+                    persistedErpIdQad = suppliersRowRepository
+                            .findBySupplierCodeOrderByBusinessUnitCodeAsc(creditor)
+                            .stream()
+                            .filter(r -> r.getErpIdQad() != null && !r.getErpIdQad().isBlank())
+                            .map(SuppliersRowEntity::getErpIdQad)
+                            .findFirst()
+                            .orElse(null);
                 }
+
+                // Resolver el ERP efectivo usando el componente compartido obligatorio
+                ErpResolutionResult resolution = supplierErpResolver.resolveEffectiveErpId(
+                        creditor,
+                        dto.getStatusERPGraphite(),
+                        persistedErpIdQad,
+                        dto.getErpIdQad(),
+                        "SUPPLIER_CODE_DIS_INTEGRITY"
+                );
+                String effectiveErpId = resolution.getResolvedErpId();
+
+                row.setErpIdQad(effectiveErpId);
 
                 row.setSupplierCodeDisIntegrity(
                         resolveSupplierCodeDisIntegrity(
                                 creditor,
-                                row
+                                row,
+                                effectiveErpId
                         )
                 );
 
@@ -148,7 +174,8 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
     private String resolveSupplierCodeDisIntegrity(
         String creditor,
-        SuppliersRowEntity row) {
+        SuppliersRowEntity row,
+        String effectiveErpId) {
 
         Optional<SuppliersRowEntity> existingAccount =
                 suppliersRowRepository
@@ -168,10 +195,10 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                                 creditor);
 
         if (distinctAccounts == 0) {
-            return row.getErpIdQad();
+            return effectiveErpId;
         }
 
-        return row.getErpIdQad() + "_" + distinctAccounts;
+        return effectiveErpId + "_" + distinctAccounts;
     }
 
     private String maskAccountNumber(String account) {

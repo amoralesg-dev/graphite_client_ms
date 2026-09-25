@@ -5,6 +5,9 @@ import org.springframework.stereotype.Service;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.entity.XmlStatus;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
+import com.rassini.graphite_client.service.resolver.SupplierErpResolver;
+import com.rassini.graphite_client.service.resolver.ErpResolutionResult;
+import com.rassini.graphite_client.service.resolver.ErpResolutionStrategy;
 import com.rassini.graphite_client.service.sync.IntegrityService;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.XmlConstants;
@@ -38,6 +41,7 @@ public class IntegrityServiceImpl implements IntegrityService {
 
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
+    private final SupplierErpResolver supplierErpResolver;
 
     
     @Override
@@ -74,18 +78,15 @@ public class IntegrityServiceImpl implements IntegrityService {
             }
         }
 
-        // Selección de llave de búsqueda:
-        // 1. statusERPGraphite si no es vacío (proveedor legacy homologado)
-        // 2. persistedErpIdQad si existe en base de datos
-        // 3. dtoErpIdQad como valor por defecto (proveedor nuevo sin statusERPGraphite)
-        String selectedLookupKey;
-        if (statusERPGraphite != null && !statusERPGraphite.isBlank()) {
-            selectedLookupKey = statusERPGraphite;
-        } else if (persistedErpIdQad != null && !persistedErpIdQad.isBlank()) {
-            selectedLookupKey = persistedErpIdQad;
-        } else {
-            selectedLookupKey = dtoErpIdQad;
-        }
+        // Selección de llave de búsqueda compartida
+        ErpResolutionResult resolution = supplierErpResolver.resolveEffectiveErpId(
+                supplierCode,
+                statusERPGraphite,
+                persistedErpIdQad,
+                dtoErpIdQad,
+                "INTEGRITY_SERVICE"
+        );
+        String selectedLookupKey = resolution.getResolvedErpId();
 
         // Trazabilidad requerida
         log.info("[INTEGRITY-KEY-RESOLUTION]");
@@ -98,7 +99,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         // Antes de consultar
         log.info("[INTEGRITY-QUERY]");
         log.info("lookupKey={}", selectedLookupKey);
-        log.info("strategy=STATUS_ERP_GRAPHITE");
+        log.info("strategy={}", resolution.getStrategy());
 
         List<SuppliersRowEntity> suppliersRows = Collections.emptyList();
         if (selectedLookupKey != null && !selectedLookupKey.isBlank()) {
