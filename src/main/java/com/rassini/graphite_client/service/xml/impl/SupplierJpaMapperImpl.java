@@ -113,23 +113,18 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                 row.setStatusIntegrity(statusIntegrity);   
 
 
+                // Capturar el erpIdQad y id de la fila persistida correspondiente ANTES de fill
+                String persistedErpIdQad = (row.getId() != null && row.getErpIdQad() != null && !row.getErpIdQad().isBlank())
+                        ? row.getErpIdQad()
+                        : null;
+                Long rowId = row.getId();
+
                 //  llenar el MISMO objeto (no crear otro)
 
                 SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
 
-                // Obtener persistedErpIdQad existente en base de datos si ya fue persistido
-                String persistedErpIdQad = null;
-                if (row.getId() != null && row.getErpIdQad() != null && !row.getErpIdQad().isBlank()) {
-                    persistedErpIdQad = row.getErpIdQad();
-                } else if (creditor != null && !creditor.isBlank()) {
-                    persistedErpIdQad = suppliersRowRepository
-                            .findBySupplierCodeOrderByBusinessUnitCodeAsc(creditor)
-                            .stream()
-                            .filter(r -> r.getErpIdQad() != null && !r.getErpIdQad().isBlank())
-                            .map(SuppliersRowEntity::getErpIdQad)
-                            .findFirst()
-                            .orElse(null);
-                }
+                log.info("[ERP-PERSISTED-SOURCE] supplier={} businessUnit={} accountMasked={} rowId={} persistedErpIdQad={}",
+                        creditor, bu, maskedAccount, rowId != null ? rowId : "NEW", persistedErpIdQad != null ? persistedErpIdQad : "null");
 
                 // Resolver el ERP efectivo usando el componente compartido obligatorio
                 ErpResolutionResult resolution = supplierErpResolver.resolveEffectiveErpId(

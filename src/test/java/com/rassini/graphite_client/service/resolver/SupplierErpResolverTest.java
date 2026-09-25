@@ -20,9 +20,9 @@ public class SupplierErpResolverTest {
     @Test
     @DisplayName("Caso 1: Proveedor Legacy homologado -> Gana statusERPGraphite sobre BD y DTO")
     void testLegacySupplierPrioritizesStatusErpGraphite() {
-        String supplierCode = "LEGACY_SUPP_1";
+        String supplierCode = "NN732811";
         String statusErpGraphite = "10002497";
-        String persistedErpIdQad = "NN732811";
+        String persistedErpIdQad = "10002497";
         String dtoErpIdQad = "60003094";
 
         ErpResolutionResult result = resolver.resolveEffectiveErpId(
@@ -41,9 +41,9 @@ public class SupplierErpResolverTest {
     @Test
     @DisplayName("Caso 2: Proveedor existente en BD sin statusERPGraphite -> Gana persistedErpIdQad sobre DTO")
     void testPersistedSupplierWithoutStatusErpPrioritizesPersistedErp() {
-        String supplierCode = "EXISTING_SUPP_2";
+        String supplierCode = "NN732811";
         String statusErpGraphite = null;
-        String persistedErpIdQad = "NN732811";
+        String persistedErpIdQad = "10002497";
         String dtoErpIdQad = "60003094";
 
         ErpResolutionResult result = resolver.resolveEffectiveErpId(
@@ -55,7 +55,7 @@ public class SupplierErpResolverTest {
         );
 
         assertNotNull(result);
-        assertEquals("NN732811", result.getResolvedErpId());
+        assertEquals("10002497", result.getResolvedErpId());
         assertEquals(ErpResolutionStrategy.PERSISTED_ERP_ID_QAD, result.getStrategy());
     }
 
