@@ -51,7 +51,7 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
 
                 Optional<SuppliersRowEntity> supplierOpt =
                         suppliersRowRepository
-                                .findBySupplierCodeAndBusinessUnitCode(
+                                .findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(
                                         dto.getEntityPublicId(),
                                         erpId
                                 );
@@ -66,6 +66,8 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                 }
 
                 SuppliersRowEntity supplier = supplierOpt.get();
+                log.info("[XML-PROCESS-SELECTED-ROW] supplierCode={} businessUnit={} id={} accountNumber={} xmlStatus={}",
+                        supplier.getSupplierCode(), erpId, supplier.getId(), supplier.getAccountNumber(), supplier.getXmlStatus());
 
                 if (XmlStatus.ERROR.equals(supplier.getXmlStatus())) {
                     log.warn("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=ERROR", dto.getEntityPublicId(), erpId);

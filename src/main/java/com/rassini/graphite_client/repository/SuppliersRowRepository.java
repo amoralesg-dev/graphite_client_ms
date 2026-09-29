@@ -56,6 +56,22 @@ public interface SuppliersRowRepository
                 String businessUnitCode
         );
 
+        Optional<SuppliersRowEntity> findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(
+                String supplierCode,
+                String businessUnitCode
+        );
+
+        boolean existsBySupplierCodeAndBusinessUnitCodeAndXmlStatusIn(
+                String supplierCode,
+                String businessUnitCode,
+                java.util.Collection<com.rassini.graphite_client.entity.XmlStatus> statuses
+        );
+
+        List<SuppliersRowEntity> findAllBySupplierCodeAndBusinessUnitCode(
+                String supplierCode,
+                String businessUnitCode
+        );
+
         Optional<SuppliersRowEntity> findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
                String supplierCode,
                String businessUnitCode,
