@@ -22,6 +22,7 @@ public class CatalogServiceImpl implements CatalogService {
 
     private final CatalogManagerCacheService catalogManagerCacheService;
     private final CatalogEquivalenciaFaltanteService catalogEquivalenciaFaltanteService;
+    private final com.rassini.graphite_client.repository.SuppliersRowRepository suppliersRowRepository;
 
 
     @Override
@@ -72,50 +73,19 @@ public class CatalogServiceImpl implements CatalogService {
     public UpdateInfo resolveUpdateInfo(SuppliersRowEntity supplier) {
 
         String businessUnit = supplier.getBusinessUnitCode();
-        String statusIntegrity = supplier.getStatusIntegrity();
+        String supplierCode = supplier.getSupplierCode();
 
-        String partialUpdate = XMLConstants.FALSE;
-        String activityCode = XMLConstants.CREATE;
-
-        log.info(
-                "Evaluando update info supplierCode={}, businessUnit={}, statusIntegrity={}",
-                supplier.getSupplierCode(),
+        boolean existsInQad = suppliersRowRepository.existsBySupplierCodeAndBusinessUnitCodeAndXmlStatusIn(
+                supplierCode,
                 businessUnit,
-                statusIntegrity);
+                java.util.List.of(com.rassini.graphite_client.entity.XmlStatus.GENERATED, com.rassini.graphite_client.entity.XmlStatus.GENERATED_PREV)
+        );
 
-        // Alta o registro nuevo
-        if (statusIntegrity == null
-                || XMLConstants.ALTA.equalsIgnoreCase(statusIntegrity)) {
+        String partialUpdate = existsInQad ? XMLConstants.TRUE : XMLConstants.FALSE;
+        String activityCode = existsInQad ? XMLConstants.MODIFY : XMLConstants.CREATE;
 
-            activityCode = XMLConstants.CREATE;
-            partialUpdate = XMLConstants.FALSE;
-        }
-
-        // Modificación
-        else if (XMLConstants.MOD.equalsIgnoreCase(statusIntegrity)) {
-
-            partialUpdate = XMLConstants.TRUE;
-
-            // Corpo
-            if (XMLConstants.OC.equals(businessUnit)) {
-                activityCode = XMLConstants.MODIFY; // Activity Code
-            }
-
-            // Frenos, BREAKES, Suspensiones 09, Suspensiones 99
-            else if (XMLConstants.FRENOS.equals(businessUnit)
-                    || XMLConstants.BREAKES.equals(businessUnit)
-                    || XMLConstants.PN.equals(businessUnit)
-                    || XMLConstants.PN99.equals(businessUnit)) {
-
-                activityCode = XMLConstants.MODIFY;
-            }
-        }
-
-        log.info(
-                "Resuelto supplierCode={} partialUpdate={} activityCode={}",
-                supplier.getSupplierCode(),
-                partialUpdate,
-                activityCode);
+        log.info("[QAD-EVAL] supplier={} businessUnit={} rowId={} existsInQad={} tcActivityCode={} tlPartialUpdate={}",
+                supplierCode, businessUnit, supplier.getId(), existsInQad, activityCode, partialUpdate);
 
         return UpdateInfo.builder()
                 .partialUpdate(partialUpdate)
@@ -126,16 +96,20 @@ public class CatalogServiceImpl implements CatalogService {
 
     @Override
     public String getActivityCode(SuppliersRowEntity supplier) {
-        String activityCode = null;
+        String businessUnit = supplier.getBusinessUnitCode();
+        String supplierCode = supplier.getSupplierCode();
 
-        log.info("Evaluando activity code para supplierCode={} con statusIntegrity={}", supplier.getSupplierCode(), supplier.getStatusIntegrity());
+        boolean existsInQad = suppliersRowRepository.existsBySupplierCodeAndBusinessUnitCodeAndXmlStatusIn(
+                supplierCode,
+                businessUnit,
+                java.util.List.of(com.rassini.graphite_client.entity.XmlStatus.GENERATED, com.rassini.graphite_client.entity.XmlStatus.GENERATED_PREV)
+        );
 
-       if(supplier.getStatusIntegrity()==null ||XMLConstants.ALTA.equalsIgnoreCase(supplier.getStatusIntegrity())){
-                activityCode=XMLConstants.CREATE;
-        } else if (XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
-                activityCode=XMLConstants.MODIFY;
-        }
-        log.info("Resuelto Activity code  para supplierCode={}: '{}'", supplier.getSupplierCode(), activityCode);
+        String activityCode = existsInQad ? XMLConstants.MODIFY : XMLConstants.CREATE;
+
+        log.info("[QAD-EVAL] getActivityCode supplier={} businessUnit={} rowId={} existsInQad={} tcActivityCode={}",
+                supplierCode, businessUnit, supplier.getId(), existsInQad, activityCode);
+
         return activityCode;
     }
 
@@ -230,16 +204,20 @@ public class CatalogServiceImpl implements CatalogService {
     }
     @Override
     public String getAction(SuppliersRowEntity supplier) {
-        String action = null;
+        String businessUnit = supplier.getBusinessUnitCode();
+        String supplierCode = supplier.getSupplierCode();
 
-        log.info("Evaluando acción para supplierCode={} con statusIntegrity={}", supplier.getSupplierCode(), supplier.getStatusIntegrity());
-        
-        if(supplier.getStatusIntegrity() == null || XMLConstants.ALTA.equalsIgnoreCase(supplier.getStatusIntegrity())) {
-           action = XMLConstants.SAVE;
-        } else if (XMLConstants.MOD.equalsIgnoreCase(supplier.getStatusIntegrity())) {
-           action = XMLConstants.MODIFY;
-        }
-        log.info("Resuelto Action  para supplierCode={}: '{}'", supplier.getSupplierCode(), action);
+        boolean existsInQad = suppliersRowRepository.existsBySupplierCodeAndBusinessUnitCodeAndXmlStatusIn(
+                supplierCode,
+                businessUnit,
+                java.util.List.of(com.rassini.graphite_client.entity.XmlStatus.GENERATED, com.rassini.graphite_client.entity.XmlStatus.GENERATED_PREV)
+        );
+
+        String action = existsInQad ? XMLConstants.MODIFY : XMLConstants.SAVE;
+
+        log.info("[QAD-EVAL] getAction supplier={} businessUnit={} rowId={} existsInQad={} tcAction={}",
+                supplierCode, businessUnit, supplier.getId(), existsInQad, action);
+
         return action;
     }
     

@@ -127,9 +127,9 @@ public class SupplierProcessingServiceTest {
         row0111.setBusinessUnitCode("0111");
         row0111.setXmlStatus(XmlStatus.GENERATED);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         // Execute
@@ -156,7 +156,7 @@ public class SupplierProcessingServiceTest {
         row0111.setBusinessUnitCode("0111");
         row0111.setXmlStatus(XmlStatus.GENERATED);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");
@@ -179,9 +179,9 @@ public class SupplierProcessingServiceTest {
         row0111.setBusinessUnitCode("0111");
         row0111.setXmlStatus(XmlStatus.GENERATED);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");
@@ -215,9 +215,9 @@ public class SupplierProcessingServiceTest {
         row0111.setBusinessUnitCode("0111");
         row0111.setXmlStatus(XmlStatus.ERROR);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");
@@ -240,9 +240,9 @@ public class SupplierProcessingServiceTest {
         row0111.setBusinessUnitCode("0111");
         row0111.setXmlStatus(XmlStatus.GENERATED);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");
@@ -267,9 +267,9 @@ public class SupplierProcessingServiceTest {
         row0111.setStatusIntegrity("M");
         row0111.setXmlStatus(XmlStatus.GENERATED);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");
@@ -291,9 +291,9 @@ public class SupplierProcessingServiceTest {
         row0111.setBusinessUnitCode("0111");
         row0111.setXmlStatus(XmlStatus.GENERATED);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");
@@ -318,9 +318,9 @@ public class SupplierProcessingServiceTest {
         row0111.setBusinessUnitCode("0111");
         row0111.setXmlStatus(XmlStatus.ERROR);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");
@@ -358,11 +358,11 @@ public class SupplierProcessingServiceTest {
         row1850.setBusinessUnitCode("1850");
         row1850.setXmlStatus(XmlStatus.ERROR);
 
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "99"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
                 .thenReturn(Optional.of(row99));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "0111"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
                 .thenReturn(Optional.of(row0111));
-        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, "1850"))
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "1850"))
                 .thenReturn(Optional.of(row1850));
 
         supplierProcessingService.processSupplier(publicId, "MANUAL");

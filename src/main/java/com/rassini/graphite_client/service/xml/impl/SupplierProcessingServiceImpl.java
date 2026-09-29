@@ -313,7 +313,7 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
         for (GraphiteSupplierDto.ErpRecord erp : dto.getErpRecords()) {
             String bu = erp.getRassiniErpEntityId();
             SuppliersRowEntity row = suppliersRowRepository
-                    .findBySupplierCodeAndBusinessUnitCode(dto.getEntityPublicId(), bu)
+                    .findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(dto.getEntityPublicId(), bu)
                     .orElse(null);
 
             if (row == null) {
