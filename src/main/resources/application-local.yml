@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:pagos_db}?allowPublicKeyRetrieval=true&useSSL=false
+    username: ${DB_USER:user}
+    password: ${DB_PASSWORD:user123}
+
+  jpa:
+    show-sql: false
+
+graphite:
+  sync:
+    # Deshabilitado temporalmente para pruebas manuales (31 de febrero)
+    cron: "-"
