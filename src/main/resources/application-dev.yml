@@ -6,3 +6,8 @@ spring:
 
   jpa:
     show-sql: false
+
+graphite:
+  sync:
+    # Deshabilitado temporalmente para pruebas manuales (31 de febrero)
+    cron: "-"

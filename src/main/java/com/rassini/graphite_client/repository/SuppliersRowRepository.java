@@ -62,6 +62,12 @@ public interface SuppliersRowRepository
                String accountNumber
          );
 
+        Optional<SuppliersRowEntity> findByErpIdQadAndBusinessUnitCodeAndAccountNumber(
+               String erpIdQad,
+               String businessUnitCode,
+               String accountNumber
+        );
+
 
 
         int countByErpIdQadAndAccountNumber(String erpIdQad, String accountNumber);
@@ -89,6 +95,10 @@ public interface SuppliersRowRepository
 
       Optional<SuppliersRowEntity> findFirstBySupplierCodeAndAccountNumber(
                String supplierCode,
+               String accountNumber);
+
+      Optional<SuppliersRowEntity> findFirstByErpIdQadAndAccountNumber(
+               String erpIdQad,
                String accountNumber);
 
       @Query("""

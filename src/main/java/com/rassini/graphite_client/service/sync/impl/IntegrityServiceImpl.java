@@ -61,7 +61,7 @@ public class IntegrityServiceImpl implements IntegrityService {
     public void createFileSupplierSync(GraphiteSupplierDto dto) {
         String supplierCode = dto != null && dto.getEntityPublicId() != null ? dto.getEntityPublicId() : "";
         String dtoErpIdQad = dto != null && dto.getErpIdQad() != null ? dto.getErpIdQad() : "";
-        String statusERPGraphite = dto != null && dto.getStatusERPGraphite() != null ? dto.getStatusERPGraphite() : "";
+        String legacyMappedErpId = dto != null && dto.getLegacyMappedErpId() != null ? dto.getLegacyMappedErpId() : "";
 
         log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplier={} Iniciando generacion de archivo de sincronizacion de integridad", supplierCode);
 
@@ -69,6 +69,11 @@ public class IntegrityServiceImpl implements IntegrityService {
         List<SuppliersRowEntity> persistedSupplierRows = (!supplierCode.isBlank())
                 ? suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(supplierCode)
                 : Collections.emptyList();
+
+        // Si no se encontraron por supplierCode y tiene legacyMappedErpId, consultar por legacyMappedErpId
+        if (persistedSupplierRows.isEmpty() && !legacyMappedErpId.isBlank() && !legacyMappedErpId.equals(supplierCode)) {
+            persistedSupplierRows = suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(legacyMappedErpId);
+        }
 
         String persistedErpIdQad = null;
         for (SuppliersRowEntity r : persistedSupplierRows) {
@@ -81,7 +86,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         // Selección de llave de búsqueda compartida
         ErpResolutionResult resolution = supplierErpResolver.resolveEffectiveErpId(
                 supplierCode,
-                statusERPGraphite,
+                legacyMappedErpId,
                 persistedErpIdQad,
                 dtoErpIdQad,
                 "INTEGRITY_SERVICE"
@@ -92,7 +97,7 @@ public class IntegrityServiceImpl implements IntegrityService {
         log.info("[INTEGRITY-KEY-RESOLUTION]");
         log.info("supplier={}", supplierCode);
         log.info("dtoErpIdQad={}", dtoErpIdQad);
-        log.info("statusERPGraphite={}", statusERPGraphite);
+        log.info("legacyMappedErpId={}", legacyMappedErpId);
         log.info("persistedErpIdQad={}", persistedErpIdQad != null ? persistedErpIdQad : "");
         log.info("selectedLookupKey={}", selectedLookupKey);
 
@@ -106,6 +111,10 @@ public class IntegrityServiceImpl implements IntegrityService {
             // Si el proveedor tiene supplierCode específico, filtrar las cuentas por supplierCode exacto
             if (!supplierCode.isBlank() && !persistedSupplierRows.isEmpty()) {
                 suppliersRows = suppliersRowRepository.findDistinctAccountsBySupplierCodeExact(supplierCode);
+                // Si la consulta por supplierCode exacto no arroja cuentas y tiene legacyMappedErpId
+                if ((suppliersRows == null || suppliersRows.isEmpty()) && !legacyMappedErpId.isBlank() && !legacyMappedErpId.equals(supplierCode)) {
+                    suppliersRows = suppliersRowRepository.findDistinctAccountsBySupplierCodeExact(legacyMappedErpId);
+                }
             }
             if (suppliersRows == null || suppliersRows.isEmpty()) {
                 suppliersRows = suppliersRowRepository.findDistinctAccountsByErpIdQad(selectedLookupKey);
