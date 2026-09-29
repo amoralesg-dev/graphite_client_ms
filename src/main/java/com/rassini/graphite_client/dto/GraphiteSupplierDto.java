@@ -58,8 +58,15 @@ public class GraphiteSupplierDto {
     @JsonProperty("Loc_Sales_Contact_Alternate_Contact_Calc")
     private List<SalesContactCalc> locSalesContactAlternateContactCalc;
 
+    @JsonProperty("Supplier_Is_Legacy")
+    private String supplierIsLegacy;
+
     @JsonProperty("RASSINI_Legacy_QAD_ID")
-    private String statusERPGraphite;
+    private String legacyMappedErpId;
+
+    public boolean isLegacy() {
+        return supplierIsLegacy != null && "y".equalsIgnoreCase(supplierIsLegacy.trim());
+    }
 
     // =========================
     // Locations

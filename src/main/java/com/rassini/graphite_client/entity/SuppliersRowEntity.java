@@ -10,7 +10,7 @@ import lombok.Data;
     uniqueConstraints = {
         @UniqueConstraint(
             name = "uk_suppliers_creditor_erp",
-            columnNames = {"supplier_code", "business_unit_code"}
+            columnNames = {"erp_id_qad", "business_unit_code", "account_number"}
         )
     }
 )
