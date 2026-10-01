@@ -32,6 +32,9 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
     private final XmlTemplateEngine xmlTemplateEngine;
     private final SuppliersRowRepository suppliersRowRepository;
     private final XmlGenerationHelper xmlGenerationHelper;
+    private final com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService;
+    private final com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver;
+    private final com.rassini.graphite_client.service.validation.collector.MissingDataCollector missingDataCollector;
 
     @Override
     public void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter) {
@@ -46,7 +49,6 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
         dto.getErpRecords().stream()
             .filter(erp -> XMLConstants.BREAKES.equals(erp.getRassiniErpEntityId()))
             .forEach(erp -> {
-
                 final String erpId = XMLConstants.BREAKES;
                 log.info("[XML-PROCESS] supplier={} businessUnit={} generator=BREAKES eligible=true", dto.getEntityPublicId(), erpId);
 
@@ -60,6 +62,7 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
                 if (supplierOpt.isEmpty()) {
                     log.error("[XML-PROCESS] supplier={} businessUnit={} generator=BREAKES result=ERROR reason=NO_ROW_IN_DB",
                             dto.getEntityPublicId(), erpId);
+                    outputValidationService.validateBusrel(null, erpId);
                     if (supplierParameter != null) {
                         supplierParameter.setStatus(ProviderState.ERRORMAPBREAKES);
                     }
@@ -70,16 +73,25 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
                 log.info("[XML-PROCESS-SELECTED-ROW] supplierCode={} businessUnit={} id={} accountNumber={} xmlStatus={}",
                         supplier.getSupplierCode(), erpId, supplier.getId(), supplier.getAccountNumber(), supplier.getXmlStatus());
 
-                if (XmlStatus.ERROR.equals(supplier.getXmlStatus())) {
-                    log.warn("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=ERROR", dto.getEntityPublicId(), erpId);
-                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=SKIPPED reason=CATALOG_MAPPING_MISSING", dto.getEntityPublicId(), erpId);
+                // Validación centralizada de datos
+                boolean busrelValid = outputValidationService.validateBusrel(supplier, erpId);
+                boolean creditorValid = outputValidationService.validateCreditor(supplier, erpId);
+
+                boolean hasBlocking = missingDataCollector.hasBlockingIssues(dto.getEntityPublicId(), erpId, null);
+                boolean hasWarning = missingDataCollector.hasWarningIssues(dto.getEntityPublicId(), erpId, null);
+
+                if (hasBlocking) {
+                    log.warn("[XML-PROCESS] supplier={} businessUnit={} result=NOT_GENERATED reason=BLOCKING_DATA_MISSING", dto.getEntityPublicId(), erpId);
+                    supplier.setXmlStatus(XmlStatus.ERROR);
+                    suppliersRowRepository.save(supplier);
                     if (supplierParameter != null) {
                         supplierParameter.setStatus(ProviderState.ERRORMAPBREAKES);
                     }
                     return;
                 }
 
-                log.info("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=OK", dto.getEntityPublicId(), erpId);
+                String targetDir = manualOutputPathResolver.resolveXmlOutputDir(erpId, hasWarning);
+                log.info("[XML-PROCESS] supplier={} businessUnit={} targetDir={} hasWarning={}", dto.getEntityPublicId(), erpId, targetDir, hasWarning);
 
                 try {
                     // =========================
@@ -95,12 +107,12 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
 
                     xmlGenerationHelper.generateIfFileNotExists(
                             supplier,
-                            XmlConstants.OUTPUT_BREAKES_DIR,
+                            targetDir,
                             busrelCtx.getOutputFileName(),
                             log,
                             () -> xmlTemplateEngine.generateBusinessRelationXml(
                                     XmlConstants.TEMPLATE_BREAKES_BUSREL,
-                                    XmlConstants.OUTPUT_BREAKES_DIR,
+                                    targetDir,
                                     busrelCtx
                             )
                     );
@@ -119,22 +131,35 @@ public class XmlBreakesServiceImpl implements XmlBreakesService {
 
                     xmlGenerationHelper.generateIfFileNotExists(
                             supplier,
-                            XmlConstants.OUTPUT_BREAKES_DIR,
+                            targetDir,
                             creditorCtx.getOutputFileName(),
                             log,
                             () -> xmlTemplateEngine.generateCreditorXml(
                                     XmlConstants.TEMPLATE_BREAKES_CREDITOR,
-                                    XmlConstants.OUTPUT_BREAKES_DIR,
+                                    targetDir,
                                     creditorCtx
                             )
                     );
 
-                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=GENERATED files=[{}, {}]",
-                            dto.getEntityPublicId(), erpId, busrelCtx.getOutputFileName(), creditorCtx.getOutputFileName());
+                    log.info("[XML-PROCESS] supplier={} businessUnit={} result=GENERATED dir={} files=[{}, {}]",
+                            dto.getEntityPublicId(), erpId, targetDir, busrelCtx.getOutputFileName(), creditorCtx.getOutputFileName());
 
                 } catch (Exception e) {
                     log.error("[XML-PROCESS] supplier={} businessUnit={} generator=BREAKES result=ERROR: {}",
                             dto.getEntityPublicId(), erpId, e.getMessage(), e);
+                    missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
+                            .supplierCode(dto.getEntityPublicId())
+                            .erpIdQad(supplier.getErpIdQad())
+                            .businessUnitCode(erpId)
+                            .outputType(com.rassini.graphite_client.service.validation.model.OutputType.XML)
+                            .subType("xml_generation")
+                            .issueType(com.rassini.graphite_client.service.validation.model.IssueType.GENERATION_EXCEPTION)
+                            .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING)
+                            .result(com.rassini.graphite_client.service.validation.model.OutputResult.NOT_GENERATED)
+                            .technicalMessage("Excepción durante generación XML BREAKES: " + e.getMessage())
+                            .rootCauseException(e.getClass().getName())
+                            .build());
+
                     supplier.setXmlStatus(XmlStatus.ERROR);
                     suppliersRowRepository.save(supplier);
                     if (supplierParameter != null) {
