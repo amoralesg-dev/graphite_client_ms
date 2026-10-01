@@ -60,6 +60,10 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
     private final GraphiteProfileRefreshService graphiteProfileRefreshService;
 
+    private final com.rassini.graphite_client.service.validation.collector.MissingDataCollector missingDataCollector;
+    private final com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService;
+    private final com.rassini.graphite_client.service.validation.service.MissingDataNotificationService missingDataNotificationService;
+
 
     
     @Override
@@ -83,6 +87,7 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
         }
 
         try {
+            missingDataCollector.clear();
 
             boolean proveedorRecienDescargado = ProviderState.DESCARGA.equals(supplier.getStatus());
             updateStatus(supplier, ProviderState.PROCESSINGJPA);
@@ -107,6 +112,9 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             log.info("[FLOW-PHASE-1][DESERIALIZE] supplier={} Deserialización exitosa. ERPs detectados={}: {}",
                     dto.getEntityPublicId(), erpIds.size(), erpIds);
 
+            // Validación de nodos alternos de datos bancarios
+            outputValidationService.validateAlternateBankNodes(dto);
+
             log.info("[FLOW-PHASE-2][JPA-MAPPING] supplier={} Iniciando mapeo y persistencia relacional en tabla suppliers para ERPs={}",
                     dto.getEntityPublicId(), erpIds);
             supplierJpaMapper.upsertSuppliersRows(dto);
@@ -120,7 +128,6 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                         environment
                 );
             }
-
 
             xmlOcService.generate(dto, supplier);
             if (!isErrorState(supplier.getStatus())) {
@@ -159,6 +166,9 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                 // Still create integrity sync if at least one plant succeeded or records exist
                 integrityService.createFileSupplierSync(dto);
             }
+
+            // Procesar y registrar notificación consolidada si hubieron faltantes
+            missingDataNotificationService.processAndNotify(missingDataCollector, 1);
 
                 
 
