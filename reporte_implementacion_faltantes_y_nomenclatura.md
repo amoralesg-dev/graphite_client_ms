@@ -101,3 +101,10 @@ Tests verificados:
 5. `SupplierErpResolverTest` (10 pruebas).
 6. `IntegrityMigrationByErpIdTest` (1 prueba).
 7. `GraphiteClientApplicationTests` (1 prueba).
+
+---
+
+## 6. Riesgos Residuales de Integración
+
+Los riesgos residuales están controlados por pruebas automatizadas, pero permanecen pendientes de validación en DEV los permisos de escritura, creación de nuevas carpetas, compatibilidad del consumidor automático, ejecución del scheduler, volumen del correo consolidado y comportamiento con datos reales de Graphite.
+
