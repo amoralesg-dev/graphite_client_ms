@@ -69,6 +69,15 @@ public class SupplierProcessingServiceTest {
     @Mock
     private GraphiteProfileRefreshService graphiteProfileRefreshService;
 
+    @Mock
+    private com.rassini.graphite_client.service.validation.collector.MissingDataCollector missingDataCollector;
+
+    @Mock
+    private com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService;
+
+    @Mock
+    private com.rassini.graphite_client.service.validation.service.MissingDataNotificationService missingDataNotificationService;
+
     @InjectMocks
     private SupplierProcessingServiceImpl supplierProcessingService;
 
