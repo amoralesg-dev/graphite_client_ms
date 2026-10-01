@@ -75,9 +75,10 @@ public class XmlGenerationHelper {
         try {
             Path filePath = Paths.get(outputDir).resolve(outputFileName);
 
+            // 1. Verificar si ya existe con el nombre corregido
             if (Files.exists(filePath)) {
                 log.info(
-                    "XML ya existe. Se omite. file={} Supplier={}, ERP={}, ERP QAD={}",
+                    "XML ya existe con nombre corregido. Se omite. file={} Supplier={}, ERP={}, ERP QAD={}",
                     filePath.toAbsolutePath(),
                     supplier.getSupplierCode(),
                     supplier.getBusinessUnitCode(),
@@ -86,6 +87,24 @@ public class XmlGenerationHelper {
                 supplier.setXmlStatus(XmlStatus.GENERATED_PREV);
                 repository.save(supplier);
                 return;
+            }
+
+            // 2. Compatibilidad histórica: verificar si existe el nombre legacy duplicado equivalente
+            String legacyDuplicateFileName = deriveLegacyDuplicateFileName(outputFileName, supplier.getBusinessUnitCode());
+            if (legacyDuplicateFileName != null) {
+                Path legacyFilePath = Paths.get(outputDir).resolve(legacyDuplicateFileName);
+                if (Files.exists(legacyFilePath)) {
+                    log.info(
+                        "XML histórico con nombre duplicado ya existe. Se respeta idempotencia. legacyFile={} Supplier={}, ERP={}, ERP QAD={}",
+                        legacyFilePath.toAbsolutePath(),
+                        supplier.getSupplierCode(),
+                        supplier.getBusinessUnitCode(),
+                        supplier.getErpIdQad()
+                    );
+                    supplier.setXmlStatus(XmlStatus.GENERATED_PREV);
+                    repository.save(supplier);
+                    return;
+                }
             }
 
             xmlGenerationLogic.run();
@@ -116,5 +135,15 @@ public class XmlGenerationHelper {
 
             throw ex;
         }
+    }
+
+    private String deriveLegacyDuplicateFileName(String fileName, String bu) {
+        if (fileName == null || bu == null || bu.isBlank()) return null;
+        String suffix = "_" + bu + ".xml";
+        if (fileName.endsWith(suffix)) {
+            String base = fileName.substring(0, fileName.length() - 4); // quita .xml
+            return base + "_" + bu + ".xml";
+        }
+        return null;
     }
 }
