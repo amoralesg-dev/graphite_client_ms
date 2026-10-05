@@ -21,6 +21,8 @@ import com.rassini.graphite_client.entity.XmlStatus;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import com.rassini.graphite_client.entity.SuppliersRowEntity;
 
 @Slf4j
 @Service
@@ -44,13 +46,15 @@ public class CatalogEquivalenciaFaltanteServiceImpl
 
         // Marcar error a nivel planta en SuppliersRowEntity
         if (suppliersRowRepository != null) {
-            suppliersRowRepository.findBySupplierCodeAndBusinessUnitCode(publicId, businessUnit)
-                    .ifPresent(row -> {
-                        row.setXmlStatus(XmlStatus.ERROR);
-                        suppliersRowRepository.save(row);
-                        log.warn("[CATALOG-ERROR] supplier={} businessUnit={} xmlStatus=ERROR",
-                                publicId, businessUnit);
-                    });
+            List<SuppliersRowEntity> rows = suppliersRowRepository.findAllBySupplierCodeAndBusinessUnitCode(publicId, businessUnit);
+            for (SuppliersRowEntity row : rows) {
+                row.setXmlStatus(XmlStatus.ERROR);
+                suppliersRowRepository.save(row);
+            }
+            if (!rows.isEmpty()) {
+                log.warn("[CATALOG-ERROR] supplier={} businessUnit={} xmlStatus=ERROR affectedRows={}",
+                        publicId, businessUnit, rows.size());
+            }
         }
 
         SupplierEntity supplier = supplierRepository

@@ -11,6 +11,8 @@ import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.address.ResolvedAddress;
 import com.rassini.graphite_client.service.address.SupplierAddressResolver;
 import com.rassini.graphite_client.service.mapper.SupplierRowMapper;
+import com.rassini.graphite_client.service.resolver.SupplierErpResolver;
+import com.rassini.graphite_client.service.resolver.ErpResolutionResult;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
@@ -25,30 +27,22 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
+    private final SupplierErpResolver supplierErpResolver;
 
   
 
     private String statusIntegrity(SuppliersRowEntity row, GraphiteSupplierDto dto) {
 
-        String statusFromRow = (row.getId() == null) ? XMLConstants.ALTA : XMLConstants.MOD;
-        String statusFromDto = null;
+        String status = (row.getId() == null)
+                ? XMLConstants.ALTA
+                : XMLConstants.MOD;
 
-        
-
-        String statusErpGraphite = dto.getStatusERPGraphite();
-
-
-        if (statusErpGraphite != null && !statusErpGraphite.isEmpty()) {
-            if (row.getId() != null && statusErpGraphite.equals(row.getErpIdQad())){
-                statusFromDto = XMLConstants.MOD;
-            }else{
-                statusFromDto = XMLConstants.ALTA;
-            }
-        }
-
-        
-        String status = statusFromDto != null ? statusFromDto : statusFromRow;
-        log.info("Estatus  {} resuelto para supplier{}",status, row.getSupplierCode());
+        log.info(
+            "[STATUS-INTEGRITY] supplier={} rowId={} statusIntegrity={}",
+            dto.getEntityPublicId(),
+            row.getId(),
+            status
+        );
 
         return status;
     }
@@ -86,14 +80,40 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
                 String accountRaw = bank.getBankAccountNumber();
                 String maskedAccount = maskAccountNumber(accountRaw);
+                String legacyMappedErpId = dto.getLegacyMappedErpId();
 
-                SuppliersRowEntity row = suppliersRowRepository
-                .findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
-                        creditor,
+                log.info("[LEGACY-LOOKUP] graphiteSupplierId={} legacySupplierCode={} businessUnit={} accountNumber={}",
+                        creditor, legacyMappedErpId, bu, maskedAccount);
+
+                Optional<SuppliersRowEntity> existingRowOpt = suppliersRowRepository
+                        .findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
+                                creditor,
+                                bu,
+                                accountRaw
+                        );
+
+                // Fallback exacto para proveedores legacy: buscar por erp_id_qad histórico exacto (con BU y cuenta bancaria)
+                if (existingRowOpt.isEmpty()
+                        && dto.isLegacy()
+                        && legacyMappedErpId != null
+                        && !legacyMappedErpId.isBlank()) {
+                    existingRowOpt = suppliersRowRepository
+                            .findByErpIdQadAndBusinessUnitCodeAndAccountNumber(
+                                    legacyMappedErpId,
+                                    bu,
+                                    accountRaw
+                            );
+                }
+
+                log.info("[LEGACY-LOOKUP-RESULT] found={} rowId={} supplierCode={} erpIdQad={} businessUnit={} accountNumber={}",
+                        existingRowOpt.isPresent(),
+                        existingRowOpt.map(SuppliersRowEntity::getId).orElse(null),
+                        existingRowOpt.map(SuppliersRowEntity::getSupplierCode).orElse(null),
+                        existingRowOpt.map(SuppliersRowEntity::getErpIdQad).orElse(null),
                         bu,
-                        accountRaw
-                )
-                .orElseGet(SuppliersRowEntity::new);
+                        maskedAccount);
+
+                SuppliersRowEntity row = existingRowOpt.orElseGet(SuppliersRowEntity::new);
 
                 log.info(
                     "[FLOW-PHASE-2][UPSERT-ROW] supplier={} businessUnit={} account={} id={} currentCode={}",
@@ -110,20 +130,61 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                 row.setStatusIntegrity(statusIntegrity);   
 
 
-                //  llenar el MISMO objeto (no crear otro)
+                // Capturar el erpIdQad, supplierCodeDisIntegrity e id de la fila persistida ANTES de fill
+                String persistedErpIdQad = (row.getId() != null && row.getErpIdQad() != null && !row.getErpIdQad().isBlank())
+                        ? row.getErpIdQad()
+                        : null;
+                String persistedDisIntegrity = (row.getId() != null && row.getSupplierCodeDisIntegrity() != null && !row.getSupplierCodeDisIntegrity().isBlank())
+                        ? row.getSupplierCodeDisIntegrity()
+                        : null;
+                Long rowId = row.getId();
 
+                // llenar el MISMO objeto (no crear otro)
                 SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
 
-                if (dto.getStatusERPGraphite() != null && !dto.getStatusERPGraphite().isEmpty()){
-                    row.setErpIdQad(dto.getStatusERPGraphite());
+                log.info("[ERP-PERSISTED-SOURCE] supplier={} businessUnit={} accountMasked={} rowId={} persistedErpIdQad={}",
+                        creditor, bu, maskedAccount, rowId != null ? rowId : "NEW", persistedErpIdQad != null ? persistedErpIdQad : "null");
+
+                // Resolver el ERP efectivo usando el componente compartido obligatorio
+                ErpResolutionResult resolution = supplierErpResolver.resolveEffectiveErpId(
+                        creditor,
+                        legacyMappedErpId,
+                        persistedErpIdQad,
+                        dto.getErpIdQad(),
+                        "SUPPLIER_CODE_DIS_INTEGRITY"
+                );
+                String effectiveErpId = resolution.getResolvedErpId();
+
+                // Regla Oficial:
+                // CASO 1: Supplier_Is_Legacy = y -> erp_id_qad = RASSINI_Legacy_QAD_ID (legacyMappedErpId)
+                // CASO 2: Supplier_Is_Legacy = n -> erp_id_qad = RASSINI_ERP_ID (dto.getErpIdQad() o resuelto)
+                if (dto.isLegacy() && legacyMappedErpId != null && !legacyMappedErpId.isBlank()) {
+                    row.setErpIdQad(legacyMappedErpId);
+                } else {
+                    row.setErpIdQad(effectiveErpId);
                 }
 
-                row.setSupplierCodeDisIntegrity(
-                        resolveSupplierCodeDisIntegrity(
-                                creditor,
-                                row
-                        )
-                );
+                // Base para supplier_code_dis_integrity:
+                // Supplier_Is_Legacy = y -> base = RASSINI_Legacy_QAD_ID
+                // Supplier_Is_Legacy = n -> base = RASSINI_ERP_ID (effectiveErpId)
+                String baseDisIntegrity = (dto.isLegacy() && legacyMappedErpId != null && !legacyMappedErpId.isBlank())
+                        ? legacyMappedErpId
+                        : effectiveErpId;
+
+                // Si la cuenta bancaria ya existía en la entidad recuperada, conservar su supplierCodeDisIntegrity histórico
+                if (persistedDisIntegrity != null) {
+                    row.setSupplierCodeDisIntegrity(persistedDisIntegrity);
+                } else {
+                    row.setSupplierCodeDisIntegrity(
+                            resolveSupplierCodeDisIntegrity(
+                                    creditor,
+                                    legacyMappedErpId,
+                                    row,
+                                    baseDisIntegrity,
+                                    dto.isLegacy()
+                            )
+                    );
+                }
 
                 // Validar si faltó alguna equivalencia de catálogo requerida (ej. estado)
                 ResolvedAddress address = SupplierAddressResolver.resolve(dto, hq, erp);
@@ -137,7 +198,11 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                     row.setXmlStatus(XmlStatus.PENDING);
                 }
 
-                //  guardar: si row ya tenía id -> UPDATE; si no -> INSERT
+                // guardar: si row ya tenía id -> UPDATE; si no -> INSERT
+                String operation = (row.getId() != null) ? "UPDATE" : "INSERT";
+                log.info("[JPA-SAVE] rowId={} supplierCode={} businessUnit={} accountNumber={} operation={}",
+                        row.getId(), row.getSupplierCode(), bu, maskedAccount, operation);
+
                 SuppliersRowEntity savedRow = suppliersRowRepository.save(row);
                 log.info("[FLOW-PHASE-2][PERSIST-ROW] supplier={} businessUnit={} account={} id={} xmlStatus={}",
                         creditor, bu, maskedAccount, savedRow.getId(), savedRow.getXmlStatus());
@@ -148,7 +213,10 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
     private String resolveSupplierCodeDisIntegrity(
         String creditor,
-        SuppliersRowEntity row) {
+        String legacyMappedErpId,
+        SuppliersRowEntity row,
+        String baseDisIntegrity,
+        boolean isLegacy) {
 
         Optional<SuppliersRowEntity> existingAccount =
                 suppliersRowRepository
@@ -156,22 +224,80 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                                 creditor,
                                 row.getAccountNumber());
 
+        if (existingAccount.isEmpty()
+                && legacyMappedErpId != null
+                && !legacyMappedErpId.isBlank()
+                && !legacyMappedErpId.equals(creditor)) {
+            existingAccount = suppliersRowRepository
+                    .findFirstBySupplierCodeAndAccountNumber(
+                            legacyMappedErpId,
+                            row.getAccountNumber());
+        }
+
+        // Búsqueda histórica por erp_id_qad en la cuenta bancaria (proveedores legacy)
+        if (existingAccount.isEmpty()
+                && legacyMappedErpId != null
+                && !legacyMappedErpId.isBlank()) {
+            existingAccount = suppliersRowRepository
+                    .findFirstByErpIdQadAndAccountNumber(
+                            legacyMappedErpId,
+                            row.getAccountNumber());
+        }
+
         if (existingAccount.isPresent()) {
-
-            return existingAccount.get()
-                    .getSupplierCodeDisIntegrity();
+            String existingCode = existingAccount.get().getSupplierCodeDisIntegrity();
+            log.info(
+                "[SUPPLIER-CODE-DIS-INTEGRITY] supplier={} account={} isLegacy={} existingCodeDisIntegrity={}",
+                creditor,
+                maskAccountNumber(row.getAccountNumber()),
+                isLegacy,
+                existingCode
+            );
+            return existingCode;
         }
 
-        long distinctAccounts =
-                suppliersRowRepository
-                        .countDistinctAccountsBySupplierCode(
-                                creditor);
-
-        if (distinctAccounts == 0) {
-            return row.getErpIdQad();
+        long distinctAccounts;
+        if (isLegacy) {
+            String lookupErpId = (legacyMappedErpId != null && !legacyMappedErpId.isBlank())
+                    ? legacyMappedErpId
+                    : baseDisIntegrity;
+            distinctAccounts = suppliersRowRepository.countDistinctAccountsByErpIdQad(lookupErpId);
+            if (distinctAccounts == 0 && !lookupErpId.equals(creditor)) {
+                distinctAccounts = suppliersRowRepository.countDistinctAccountsBySupplierCode(creditor);
+            }
+        } else {
+            distinctAccounts = suppliersRowRepository.countDistinctAccountsBySupplierCode(creditor);
+            if (distinctAccounts == 0
+                    && legacyMappedErpId != null
+                    && !legacyMappedErpId.isBlank()
+                    && !legacyMappedErpId.equals(creditor)) {
+                distinctAccounts = suppliersRowRepository.countDistinctAccountsBySupplierCode(legacyMappedErpId);
+            }
         }
 
-        return row.getErpIdQad() + "_" + distinctAccounts;
+        String resolvedCode;
+        // Si es legacy y ya existen cuentas históricas (por ejemplo COCHGMER o 60000736),
+        // la nueva cuenta incremental se numera a partir del total de cuentas existentes + 1
+        if (isLegacy) {
+            long nextIndex = distinctAccounts + 1;
+            resolvedCode = baseDisIntegrity + "_" + nextIndex;
+        } else if (distinctAccounts == 0) {
+            resolvedCode = baseDisIntegrity;
+        } else {
+            resolvedCode = baseDisIntegrity + "_" + distinctAccounts;
+        }
+
+        log.info(
+            "[SUPPLIER-CODE-DIS-INTEGRITY] supplier={} account={} isLegacy={} baseDisIntegrity={} distinctAccounts={} resolvedCode={}",
+            creditor,
+            maskAccountNumber(row.getAccountNumber()),
+            isLegacy,
+            baseDisIntegrity,
+            distinctAccounts,
+            resolvedCode
+        );
+
+        return resolvedCode;
     }
 
     private String maskAccountNumber(String account) {

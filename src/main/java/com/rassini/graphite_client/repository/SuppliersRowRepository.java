@@ -56,11 +56,33 @@ public interface SuppliersRowRepository
                 String businessUnitCode
         );
 
+        Optional<SuppliersRowEntity> findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(
+                String supplierCode,
+                String businessUnitCode
+        );
+
+        boolean existsBySupplierCodeAndBusinessUnitCodeAndXmlStatusIn(
+                String supplierCode,
+                String businessUnitCode,
+                java.util.Collection<com.rassini.graphite_client.entity.XmlStatus> statuses
+        );
+
+        List<SuppliersRowEntity> findAllBySupplierCodeAndBusinessUnitCode(
+                String supplierCode,
+                String businessUnitCode
+        );
+
         Optional<SuppliersRowEntity> findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
                String supplierCode,
                String businessUnitCode,
                String accountNumber
          );
+
+        Optional<SuppliersRowEntity> findByErpIdQadAndBusinessUnitCodeAndAccountNumber(
+               String erpIdQad,
+               String businessUnitCode,
+               String accountNumber
+        );
 
 
 
@@ -91,6 +113,10 @@ public interface SuppliersRowRepository
                String supplierCode,
                String accountNumber);
 
+      Optional<SuppliersRowEntity> findFirstByErpIdQadAndAccountNumber(
+               String erpIdQad,
+               String accountNumber);
+
       @Query("""
          select count(distinct s.accountNumber)
          from SuppliersRowEntity s
@@ -98,6 +124,14 @@ public interface SuppliersRowRepository
       """)
       long countDistinctAccountsBySupplierCode(
             @Param("supplierCode") String supplierCode);
+
+      @Query("""
+         select count(distinct s.accountNumber)
+         from SuppliersRowEntity s
+         where s.erpIdQad = :erpIdQad
+      """)
+      long countDistinctAccountsByErpIdQad(
+            @Param("erpIdQad") String erpIdQad);
 
       List<SuppliersRowEntity> findByErpIdQadIn(List<String> erpIds);
 

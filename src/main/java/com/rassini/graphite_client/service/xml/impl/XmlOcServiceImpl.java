@@ -56,7 +56,7 @@ public class XmlOcServiceImpl implements XmlOcService {
                 log.info("[XML-PROCESS] supplier={} businessUnit={} generator=OC eligible=true", dto.getEntityPublicId(), erpId);
 
                 Optional<SuppliersRowEntity> supplierOpt = suppliersRowRepository
-                        .findBySupplierCodeAndBusinessUnitCode(
+                        .findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(
                                 dto.getEntityPublicId(),
                                 erpId
                         );
@@ -71,6 +71,8 @@ public class XmlOcServiceImpl implements XmlOcService {
                 }
 
                 SuppliersRowEntity supplier = supplierOpt.get();
+                log.info("[XML-PROCESS-SELECTED-ROW] supplierCode={} businessUnit={} id={} accountNumber={} xmlStatus={}",
+                        supplier.getSupplierCode(), erpId, supplier.getId(), supplier.getAccountNumber(), supplier.getXmlStatus());
 
                 if (XmlStatus.ERROR.equals(supplier.getXmlStatus())) {
                     log.warn("[XML-PROCESS] supplier={} businessUnit={} catalogStatus=ERROR", dto.getEntityPublicId(), erpId);
