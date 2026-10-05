@@ -192,6 +192,20 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                 );
             }
 
+            missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
+                    .supplierCode(supplier.getPublicId())
+                    .outputType(com.rassini.graphite_client.service.validation.model.OutputType.XML)
+                    .fieldName("JSON_DESERIALIZATION")
+                    .expectedNode(e.getPathReference())
+                    .issueType(com.rassini.graphite_client.service.validation.model.IssueType.TRANSFORMATION_ERROR)
+                    .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING)
+                    .result(com.rassini.graphite_client.service.validation.model.OutputResult.NOT_GENERATED)
+                    .technicalMessage("Error de deserialización JSON de Graphite: " + e.getOriginalMessage())
+                    .build());
+
+            updateStatus(supplier, ProviderState.ERRORMAPPING);
+            missingDataNotificationService.processAndNotify(missingDataCollector, 1);
+
             throw new IllegalStateException(
                     "Error procesando proveedor " + supplier.getPublicId(),
                     e
@@ -204,6 +218,19 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                     supplier.getPublicId(),
                     e
             );
+
+            missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
+                    .supplierCode(supplier.getPublicId())
+                    .outputType(com.rassini.graphite_client.service.validation.model.OutputType.XML)
+                    .fieldName("PROCESSING_EXCEPTION")
+                    .issueType(com.rassini.graphite_client.service.validation.model.IssueType.GENERATION_EXCEPTION)
+                    .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING)
+                    .result(com.rassini.graphite_client.service.validation.model.OutputResult.NOT_GENERATED)
+                    .technicalMessage("Excepción durante procesamiento: " + e.getMessage())
+                    .build());
+
+            updateStatus(supplier, ProviderState.ERRORMAPPING);
+            missingDataNotificationService.processAndNotify(missingDataCollector, 1);
 
             throw new IllegalStateException(
                     "Error procesando proveedor " + supplier.getPublicId(),
@@ -242,13 +269,33 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                         && bankNumberNode.isTextual()
                         && bankNumberNode.asText().isBlank()) {
 
+                    String account = bank.path("Bank_Account_Number").asText();
                     log.warn(
                             "[GRAPHITE_CONTRACT] supplier={} bu={} account={} Bank_Number llegó como string vacío",
                             supplierCode,
                             bu,
-                            bank.path("Bank_Account_Number").asText(),
+                            account,
                             bankNumberNode.asText()
                     );
+
+                    String masked = (account != null && account.length() > 4)
+                            ? "****" + account.substring(account.length() - 4)
+                            : (account != null && !account.isBlank() ? "****" : "N/A");
+
+                    missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
+                            .supplierCode(supplierCode)
+                            .businessUnitCode(bu)
+                            .maskedAccountNumber(masked)
+                            .outputType(com.rassini.graphite_client.service.validation.model.OutputType.INTEGRITY)
+                            .subType("sync_file")
+                            .fieldName("Bank_Number")
+                            .expectedNode("ERP_Record[].ERP_Bank_List[].Bank_Number")
+                            .receivedValue(bankNumberNode.asText())
+                            .issueType(com.rassini.graphite_client.service.validation.model.IssueType.BANK_INFO_INCOMPLETE)
+                            .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING)
+                            .result(com.rassini.graphite_client.service.validation.model.OutputResult.GENERATED_MANUAL)
+                            .technicalMessage("Bank_Number llegó como string vacío desde Graphite")
+                            .build());
                 }
             }
         }

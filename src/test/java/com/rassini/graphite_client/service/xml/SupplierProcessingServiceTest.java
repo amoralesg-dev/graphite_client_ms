@@ -382,4 +382,30 @@ public class SupplierProcessingServiceTest {
         verify(integrityService, times(1)).createFileSupplierSync(any(GraphiteSupplierDto.class));
         assertEquals(ProviderState.ERRORMAPFRENOS, supplierEntity.getStatus());
     }
+
+    @Test
+    @DisplayName("Caso 10: Error de deserialización en Jackson registra incidencia, notifica y actualiza a ERRORMAPPING")
+    void testCase10_JsonDeserializationExceptionGracefullyHandled() throws Exception {
+        when(graphiteProfileRefreshService.processAndSaveInternal(eq(publicId), any())).thenReturn(true);
+        when(supplierRepository.findByPublicIdAndStatus(publicId, ProviderState.DESCARGA))
+                .thenReturn(Optional.of(supplierEntity));
+        when(objectMapper.readTree(supplierEntity.getFullJson()))
+                .thenReturn(new ObjectMapper().readTree(supplierEntity.getFullJson()));
+
+        com.fasterxml.jackson.core.JsonParser parser = mock(com.fasterxml.jackson.core.JsonParser.class);
+        com.fasterxml.jackson.databind.exc.InvalidFormatException ex =
+                new com.fasterxml.jackson.databind.exc.InvalidFormatException(
+                        parser, "Cannot coerce empty String to BankNumber", "", GraphiteSupplierDto.BankNumber.class);
+
+        when(objectMapper.readValue(supplierEntity.getFullJson(), GraphiteSupplierDto.class)).thenThrow(ex);
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> {
+            supplierProcessingService.processSupplier(publicId, "MANUAL");
+        });
+
+        assertTrue(thrown.getMessage().contains(publicId));
+        assertEquals(ProviderState.ERRORMAPPING, supplierEntity.getStatus());
+        verify(missingDataCollector, times(1)).recordIssue(any());
+        verify(missingDataNotificationService, times(1)).processAndNotify(eq(missingDataCollector), eq(1));
+    }
 }

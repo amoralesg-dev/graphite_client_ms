@@ -29,6 +29,7 @@ public class MissingDataNotificationService {
     @Value("${spring.profiles.active:local}")
     private String environment;
 
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void processAndNotify(MissingDataCollector collector, int totalProcessed) {
         if (collector == null || !collector.hasIssues()) {
             return;
