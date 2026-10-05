@@ -125,6 +125,14 @@ public interface SuppliersRowRepository
       long countDistinctAccountsBySupplierCode(
             @Param("supplierCode") String supplierCode);
 
+      @Query("""
+         select count(distinct s.accountNumber)
+         from SuppliersRowEntity s
+         where s.erpIdQad = :erpIdQad
+      """)
+      long countDistinctAccountsByErpIdQad(
+            @Param("erpIdQad") String erpIdQad);
+
       List<SuppliersRowEntity> findByErpIdQadIn(List<String> erpIds);
 
 
