@@ -245,36 +245,59 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
         }
 
         if (existingAccount.isPresent()) {
-            return existingAccount.get()
-                    .getSupplierCodeDisIntegrity();
+            String existingCode = existingAccount.get().getSupplierCodeDisIntegrity();
+            log.info(
+                "[SUPPLIER-CODE-DIS-INTEGRITY] supplier={} account={} isLegacy={} existingCodeDisIntegrity={}",
+                creditor,
+                maskAccountNumber(row.getAccountNumber()),
+                isLegacy,
+                existingCode
+            );
+            return existingCode;
         }
 
-        long distinctAccounts =
-                suppliersRowRepository
-                        .countDistinctAccountsBySupplierCode(
-                                creditor);
-
-        if (distinctAccounts == 0
-                && legacyMappedErpId != null
-                && !legacyMappedErpId.isBlank()
-                && !legacyMappedErpId.equals(creditor)) {
-            distinctAccounts = suppliersRowRepository
-                    .countDistinctAccountsBySupplierCode(
-                            legacyMappedErpId);
+        long distinctAccounts;
+        if (isLegacy) {
+            String lookupErpId = (legacyMappedErpId != null && !legacyMappedErpId.isBlank())
+                    ? legacyMappedErpId
+                    : baseDisIntegrity;
+            distinctAccounts = suppliersRowRepository.countDistinctAccountsByErpIdQad(lookupErpId);
+            if (distinctAccounts == 0 && !lookupErpId.equals(creditor)) {
+                distinctAccounts = suppliersRowRepository.countDistinctAccountsBySupplierCode(creditor);
+            }
+        } else {
+            distinctAccounts = suppliersRowRepository.countDistinctAccountsBySupplierCode(creditor);
+            if (distinctAccounts == 0
+                    && legacyMappedErpId != null
+                    && !legacyMappedErpId.isBlank()
+                    && !legacyMappedErpId.equals(creditor)) {
+                distinctAccounts = suppliersRowRepository.countDistinctAccountsBySupplierCode(legacyMappedErpId);
+            }
         }
 
-        // Si es legacy y ya existen cuentas históricas (por ejemplo COCHGMER1),
+        String resolvedCode;
+        // Si es legacy y ya existen cuentas históricas (por ejemplo COCHGMER o 60000736),
         // la nueva cuenta incremental se numera a partir del total de cuentas existentes + 1
         if (isLegacy) {
             long nextIndex = distinctAccounts + 1;
-            return baseDisIntegrity + "_" + nextIndex;
+            resolvedCode = baseDisIntegrity + "_" + nextIndex;
+        } else if (distinctAccounts == 0) {
+            resolvedCode = baseDisIntegrity;
+        } else {
+            resolvedCode = baseDisIntegrity + "_" + distinctAccounts;
         }
 
-        if (distinctAccounts == 0) {
-            return baseDisIntegrity;
-        }
+        log.info(
+            "[SUPPLIER-CODE-DIS-INTEGRITY] supplier={} account={} isLegacy={} baseDisIntegrity={} distinctAccounts={} resolvedCode={}",
+            creditor,
+            maskAccountNumber(row.getAccountNumber()),
+            isLegacy,
+            baseDisIntegrity,
+            distinctAccounts,
+            resolvedCode
+        );
 
-        return baseDisIntegrity + "_" + distinctAccounts;
+        return resolvedCode;
     }
 
     private String maskAccountNumber(String account) {
