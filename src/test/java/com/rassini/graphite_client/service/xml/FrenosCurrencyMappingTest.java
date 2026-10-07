@@ -164,17 +164,17 @@ public class FrenosCurrencyMappingTest {
     }
 
     // =========================================================================
-    // 3. SupplierRowMapper, Frenos, currency MNX: Base de datos: MNX, no MN
+    // 3. SupplierRowMapper, Frenos, currency MXN: Base de datos: MXN, no MN
     // =========================================================================
     @Test
-    @DisplayName("3. SupplierRowMapper para Frenos con currency MNX -> guarda MNX en BD (no MN)")
-    void testSupplierRowMapper_Frenos_Currency_MNX() {
+    @DisplayName("3. SupplierRowMapper para Frenos con currency MXN -> guarda MXN en BD (no MN)")
+    void testSupplierRowMapper_Frenos_Currency_MXN() {
         SuppliersRowEntity row = new SuppliersRowEntity();
-        GraphiteSupplierDto.Bank bank = createBankWithCurrency("MNX");
+        GraphiteSupplierDto.Bank bank = createBankWithCurrency("MXN");
 
         SupplierRowMapper.fill(row, dto, hq, frenosErp, bank, catalogService);
 
-        assertEquals("MNX", row.getSupplierCurrency(), "La base de datos debe conservar MNX, no MN");
+        assertEquals("MXN", row.getSupplierCurrency(), "La base de datos debe conservar MXN, no MN");
         assertNotEquals("MN", row.getSupplierCurrency(), "SupplierRowMapper no debe convertir a MN");
     }
 
@@ -216,7 +216,7 @@ public class FrenosCurrencyMappingTest {
         supplier.setContactEmail("contacto@frenos.com");
         supplier.setSupplierCodeDisIntegrity("60001000");
 
-        // 5.1 Validar formato de línea real (buildSupplierLine) para MX, MEX, MNX, USD
+        // 5.1 Validar formato de línea real (buildSupplierLine) para MX, MEX, MXN, USD
         supplier.setSupplierCurrency("MX");
         String lineMx = invokeBuildSupplierLine(supplier);
         String[] fieldsMx = lineMx.split("\\|", -1);
@@ -227,10 +227,10 @@ public class FrenosCurrencyMappingTest {
         String[] fieldsMex = lineMex.split("\\|", -1);
         assertEquals("MEX", fieldsMex[13], "Integrity TXT debe contener exactamente MEX para Frenos");
 
-        supplier.setSupplierCurrency("MNX");
+        supplier.setSupplierCurrency("MXN");
         String lineMnx = invokeBuildSupplierLine(supplier);
         String[] fieldsMnx = lineMnx.split("\\|", -1);
-        assertEquals("MNX", fieldsMnx[13], "Integrity TXT debe contener exactamente MNX para Frenos");
+        assertEquals("MXN", fieldsMnx[13], "Integrity TXT debe contener exactamente MXN para Frenos");
 
         supplier.setSupplierCurrency("USD");
         String lineUsd = invokeBuildSupplierLine(supplier);
@@ -261,10 +261,10 @@ public class FrenosCurrencyMappingTest {
     }
 
     // =========================================================================
-    // 6. XML de Frenos: MX -> MN, MEX -> MN, MNX -> MN, USD -> US, otro -> igual
+    // 6. XML de Frenos: MX -> MN, MEX -> MN, MXN -> MN, USD -> US, otro -> igual
     // =========================================================================
     @Test
-    @DisplayName("6. XML de Frenos: MX/MEX/MNX -> MN, USD -> US, otro valor -> conserva original en tcCurrencyCode")
+    @DisplayName("6. XML de Frenos: MX/MEX/MXN -> MN, USD -> US, otro valor -> conserva original en tcCurrencyCode")
     void testFrenosXml_CurrencyMapping() {
         SuppliersRowEntity supplier = new SuppliersRowEntity();
         supplier.setBusinessUnitCode(XMLConstants.FRENOS);
@@ -281,10 +281,10 @@ public class FrenosCurrencyMappingTest {
         CreditorXmlContext ctxMex = frenosFactory.buildCreditorContext(supplier, XMLConstants.FRENOS, "DEFAULT", List.of("MEX"), "30");
         assertEquals("MN", ctxMex.getCreditor().getTcCurrencyCode(), "XML Frenos debe tener MN para entrada MEX");
 
-        // Caso MNX -> MN
-        supplier.setSupplierCurrency("MNX");
+        // Caso MXN -> MN
+        supplier.setSupplierCurrency("MXN");
         CreditorXmlContext ctxMnx = frenosFactory.buildCreditorContext(supplier, XMLConstants.FRENOS, "DEFAULT", List.of("MEX"), "30");
-        assertEquals("MN", ctxMnx.getCreditor().getTcCurrencyCode(), "XML Frenos debe tener MN para entrada MNX");
+        assertEquals("MN", ctxMnx.getCreditor().getTcCurrencyCode(), "XML Frenos debe tener MN para entrada MXN");
 
         // Caso USD -> US
         supplier.setSupplierCurrency("USD");
@@ -306,9 +306,9 @@ public class FrenosCurrencyMappingTest {
     // 7. XML de plantas diferentes de Frenos: Ejecutar generadores reales
     // =========================================================================
     @Test
-    @DisplayName("7. XML de plantas diferentes de Frenos: generadores reales conservan moneda original (MX, MEX, MNX, USD, EUR)")
+    @DisplayName("7. XML de plantas diferentes de Frenos: generadores reales conservan moneda original (MX, MEX, MXN, USD, EUR)")
     void testOtherPlantsXml_PreservesOriginalCurrency() {
-        String[] currenciesToTest = { "MX", "MEX", "MNX", "USD", "EUR" };
+        String[] currenciesToTest = { "MX", "MEX", "MXN", "USD", "EUR" };
 
         // 7.1 Planta OC (0111) mediante OcXmlFactory real
         SuppliersRowEntity supplierOc = new SuppliersRowEntity();

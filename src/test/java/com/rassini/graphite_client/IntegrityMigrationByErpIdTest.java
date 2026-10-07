@@ -55,23 +55,34 @@ public class IntegrityMigrationByErpIdTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private CatalogService catalogService;
+
+    @Autowired
+    private SupplierErpResolver supplierErpResolver;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @TempDir
+    Path tempDir;
+
+    private Path integrityOutputDir;
+
+    // Servicio con directorio de salida aislado; el bean Spring (integrityService) se conserva para el endpoint
+    private IntegrityServiceImpl isolatedIntegrityService;
+
     @BeforeEach
     public void setup() {
         suppliersRowRepository.deleteAll();
-        
-        // Clean test output directory
-        try {
-            Path testOutputDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
-            if (Files.exists(testOutputDir)) {
-                // Delete files starting with EM to clean test output
-                Files.walk(testOutputDir)
-                     .filter(p -> p.getFileName().toString().startsWith("EM"))
-                     .map(Path::toFile)
-                     .forEach(File::delete);
-            }
-        } catch (Exception e) {
-            // Ignore
-        }
+
+        integrityOutputDir = tempDir.resolve("integrity");
+        isolatedIntegrityService = new IntegrityServiceImpl(
+                suppliersRowRepository,
+                catalogService,
+                supplierErpResolver,
+                integrityOutputDir.toString()
+        );
     }
 
     @Test
