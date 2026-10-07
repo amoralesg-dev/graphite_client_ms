@@ -2,7 +2,10 @@ package com.rassini.graphite_client.service.xml;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.dto.UpdateInfo;
+import com.rassini.graphite_client.entity.ProviderState;
+import com.rassini.graphite_client.entity.SupplierEntity;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
+import com.rassini.graphite_client.entity.XmlStatus;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.mapper.SupplierRowMapper;
 import com.rassini.graphite_client.service.resolver.SupplierErpResolver;
@@ -13,6 +16,8 @@ import com.rassini.graphite_client.service.xml.factory.FrenosXmlFactory;
 import com.rassini.graphite_client.service.xml.factory.OcXmlFactory;
 import com.rassini.graphite_client.service.xml.factory.Pn99XmlFactory;
 import com.rassini.graphite_client.service.xml.factory.PnXmlFactory;
+import com.rassini.graphite_client.service.xml.helper.XmlGenerationHelper;
+import com.rassini.graphite_client.service.xml.impl.XmlFrenosServiceImpl;
 import com.rassini.graphite_client.service.xml.impl.util.XMLConstants;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +25,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -31,11 +37,13 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class FrenosCurrencyMappingTest {
@@ -52,7 +60,14 @@ public class FrenosCurrencyMappingTest {
     @Mock
     private SupplierErpResolver supplierErpResolver;
 
+    @Mock
+    private XmlTemplateEngine xmlTemplateEngine;
+
+    @Mock
+    private XmlGenerationHelper xmlGenerationHelper;
+
     private IntegrityServiceImpl integrityService;
+    private XmlFrenosServiceImpl xmlFrenosService;
     private FrenosXmlFactory frenosFactory;
     private OcXmlFactory ocFactory;
     private PnXmlFactory pnFactory;
@@ -70,6 +85,12 @@ public class FrenosCurrencyMappingTest {
                 catalogService,
                 supplierErpResolver,
                 tempDir.resolve("integrity").toString()
+        );
+        xmlFrenosService = new XmlFrenosServiceImpl(
+                catalogService,
+                xmlTemplateEngine,
+                suppliersRowRepository,
+                xmlGenerationHelper
         );
         frenosFactory = new FrenosXmlFactory(catalogService);
         ocFactory = new OcXmlFactory(catalogService);
@@ -384,5 +405,113 @@ public class FrenosCurrencyMappingTest {
         String lineNull = invokeBuildSupplierLine(supplier);
         String[] fieldsNull = lineNull.split("\\|", -1);
         assertEquals("", fieldsNull[13], "Campo 14 de Integrity TXT debe ser cadena vacía si supplierCurrency es null");
+    }
+
+    // =========================================================================
+    // 9. XmlFrenosServiceImpl: Orquestación real con FrenosXmlFactory (MX -> MN)
+    // =========================================================================
+    @Test
+    @DisplayName("9. XmlFrenosServiceImpl invoca FrenosXmlFactory con firma real y genera Creditor XML con MN para MX")
+    void testXmlFrenosServiceImpl_OrchestrationWithRealFactory_CurrencyMxToMn() {
+        SuppliersRowEntity row = new SuppliersRowEntity();
+        row.setId(1L);
+        row.setSupplierCode("SUP-FRENOS-01");
+        row.setBusinessUnitCode(XMLConstants.FRENOS);
+        row.setSupplierCurrency("MX");
+        row.setCountryCode("MX");
+        row.setErpIdQad("60001000");
+        row.setXmlStatus(XmlStatus.PENDING);
+
+        SupplierEntity supplierEntity = new SupplierEntity();
+
+        frenosErp.setRassiniErpTaxClass("DEFAULT");
+        frenosErp.setRassiniErpTaxZone(List.of("MEX"));
+        frenosErp.setRassiniErpPaymentTerms("30");
+        dto.setErpRecords(List.of(frenosErp));
+
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(
+                "SUP-FRENOS-01", XMLConstants.FRENOS
+        )).thenReturn(Optional.of(row));
+
+        ArgumentCaptor<CreditorXmlContext> creditorCaptor = ArgumentCaptor.forClass(CreditorXmlContext.class);
+
+        doAnswer(invocation -> {
+            Runnable action = invocation.getArgument(4);
+            if (action != null) {
+                action.run();
+            }
+            return null;
+        }).when(xmlGenerationHelper).generateIfFileNotExists(
+                any(), any(), any(), any(), any()
+        );
+
+        xmlFrenosService.generate(dto, supplierEntity);
+
+        verify(xmlTemplateEngine).generateCreditorXml(
+                eq(XmlConstants.TEMPLATE_FRENOS_CREDITOR),
+                eq(XmlConstants.OUTPUT_FRENOS_DIR),
+                creditorCaptor.capture()
+        );
+
+        CreditorXmlContext capturedCtx = creditorCaptor.getValue();
+        assertNotNull(capturedCtx, "CreditorXmlContext debe ser construido por FrenosXmlFactory dentro del orquestador");
+        assertEquals("MN", capturedCtx.getCreditor().getTcCurrencyCode(),
+                "tcCurrencyCode debe ser transformado a MN para entrada persistida MX");
+        assertNotEquals(ProviderState.ERRORMAPFRENOS, supplierEntity.getStatus(),
+                "El estado del proveedor no debe marcar error en orquestación de Frenos");
+    }
+
+    // =========================================================================
+    // 10. XmlFrenosServiceImpl: Orquestación real con FrenosXmlFactory (USD -> US)
+    // =========================================================================
+    @Test
+    @DisplayName("10. XmlFrenosServiceImpl invoca FrenosXmlFactory con firma real y genera Creditor XML con US para USD")
+    void testXmlFrenosServiceImpl_OrchestrationWithRealFactory_CurrencyUsdToUs() {
+        SuppliersRowEntity row = new SuppliersRowEntity();
+        row.setId(2L);
+        row.setSupplierCode("SUP-FRENOS-01");
+        row.setBusinessUnitCode(XMLConstants.FRENOS);
+        row.setSupplierCurrency("USD");
+        row.setCountryCode("MX");
+        row.setErpIdQad("60001000");
+        row.setXmlStatus(XmlStatus.PENDING);
+
+        SupplierEntity supplierEntity = new SupplierEntity();
+
+        frenosErp.setRassiniErpTaxClass("DEFAULT");
+        frenosErp.setRassiniErpTaxZone(List.of("MEX"));
+        frenosErp.setRassiniErpPaymentTerms("30");
+        dto.setErpRecords(List.of(frenosErp));
+
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(
+                "SUP-FRENOS-01", XMLConstants.FRENOS
+        )).thenReturn(Optional.of(row));
+
+        ArgumentCaptor<CreditorXmlContext> creditorCaptor = ArgumentCaptor.forClass(CreditorXmlContext.class);
+
+        doAnswer(invocation -> {
+            Runnable action = invocation.getArgument(4);
+            if (action != null) {
+                action.run();
+            }
+            return null;
+        }).when(xmlGenerationHelper).generateIfFileNotExists(
+                any(), any(), any(), any(), any()
+        );
+
+        xmlFrenosService.generate(dto, supplierEntity);
+
+        verify(xmlTemplateEngine).generateCreditorXml(
+                eq(XmlConstants.TEMPLATE_FRENOS_CREDITOR),
+                eq(XmlConstants.OUTPUT_FRENOS_DIR),
+                creditorCaptor.capture()
+        );
+
+        CreditorXmlContext capturedCtx = creditorCaptor.getValue();
+        assertNotNull(capturedCtx);
+        assertEquals("US", capturedCtx.getCreditor().getTcCurrencyCode(),
+                "tcCurrencyCode debe ser transformado a US para entrada persistida USD");
+        assertNotEquals(ProviderState.ERRORMAPFRENOS, supplierEntity.getStatus(),
+                "El estado del proveedor no debe marcar error en orquestación de Frenos");
     }
 }
