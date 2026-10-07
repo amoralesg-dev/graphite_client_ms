@@ -310,7 +310,7 @@ public class FrenosXmlFactory {
         if (XMLConstants.FRENOS.equalsIgnoreCase(plantId)
                 && ("MX".equalsIgnoreCase(graphiteCurrency)
                 || "MEX".equalsIgnoreCase(graphiteCurrency)
-                || "MNX".equalsIgnoreCase(graphiteCurrency))) {
+                || "MXN".equalsIgnoreCase(graphiteCurrency))) {
             return "MN";
         } else if (XMLConstants.FRENOS.equalsIgnoreCase(plantId)
                 && "USD".equalsIgnoreCase(graphiteCurrency)) {
