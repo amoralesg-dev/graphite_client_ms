@@ -66,7 +66,7 @@ public class FrenosXmlFactory {
         return CreditorXmlContext.builder()
                 .outputFileName("creditor_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode()  + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId, supplier))
-                .creditor(buildCreditor(supplier, tax, paymentTermsFromErp))
+                .creditor(buildCreditor(supplier, erpId, tax, paymentTermsFromErp))
                 .build();
     }
 
@@ -194,6 +194,7 @@ public class FrenosXmlFactory {
 
     private CreditorNodoXML buildCreditor(
             SuppliersRowEntity supplier,
+            String erpId,
             TaxInfo tax,
             String paymentTermsFromErp
     ) {
@@ -202,7 +203,11 @@ public class FrenosXmlFactory {
                 supplier.getCountryCode() != null &&
                 !"MX".equalsIgnoreCase(supplier.getCountryCode());
 
-        String currency = supplier.getSupplierCurrency();
+        String plantId = (erpId != null && !erpId.isBlank())
+                ? erpId
+                : supplier.getBusinessUnitCode();
+        String rawCurrency = supplier.getSupplierCurrency();
+        String currency = mapCurrencyForXml(rawCurrency, plantId);
 
         CesarQadRules.GlProfiles gl =
                 CesarQadRules.resolveGlProfiles(
@@ -301,6 +306,20 @@ public class FrenosXmlFactory {
     // =====================================================
     // Helpers
     // =====================================================
+    private String mapCurrencyForXml(String graphiteCurrency, String plantId) {
+        if (XMLConstants.FRENOS.equalsIgnoreCase(plantId)
+                && ("MX".equalsIgnoreCase(graphiteCurrency)
+                || "MEX".equalsIgnoreCase(graphiteCurrency)
+                || "MNX".equalsIgnoreCase(graphiteCurrency))) {
+            return "MN";
+        } else if (XMLConstants.FRENOS.equalsIgnoreCase(plantId)
+                && "USD".equalsIgnoreCase(graphiteCurrency)) {
+            return "US";
+        } else {
+            return graphiteCurrency;
+        }
+    }
+
     private String left(String s, int len) {
         if (s == null) return "";
         return s.length() <= len ? s : s.substring(0, len);
