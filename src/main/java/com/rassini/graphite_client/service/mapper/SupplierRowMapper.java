@@ -108,7 +108,7 @@ public class SupplierRowMapper {
             contactName = contactEmail.split("@")[0].toUpperCase();
         }
 
-        row.setContactName(contactName);
+        row.setContactName(truncateWithLog(contactName, 24, "contactName", dto.getEntityPublicId(), erp.getRassiniErpEntityId()));
         row.setContactEmail(contactEmail);
 
         // ===============================
@@ -120,11 +120,11 @@ public class SupplierRowMapper {
 
             row.setStreetName(left(address.getStreetName(),36));
             row.setStreetName2(left(address.getStreetName2(),36));
-            row.setStreetName3(left(address.getStreetName3(),36));
+            row.setStreetName3(truncateWithLog(address.getStreetName3(), 36, "streetName3", dto.getEntityPublicId(), erp.getRassiniErpEntityId()));
             row.setStreetNumber(address.getStreetNumber());
 
             row.setZipCode(address.getPostalCode());
-            row.setCityCode(left(address.getCity(), 20));
+            row.setCityCode(truncateWithLog(address.getCity(), 20, "cityCode", dto.getEntityPublicId(), erp.getRassiniErpEntityId()));
 
             row.setStateCode(catalogService.getEquivalenciaState(
                     dto.getEntityPublicId(),
@@ -156,9 +156,7 @@ public class SupplierRowMapper {
                             ? bank.getBankCurrencyList().get(0)
                             : null;
 
-            row.setSupplierCurrency(
-                    catalogService.mapCurrency(currency, erp.getRassiniErpEntityId())
-            );
+            row.setSupplierCurrency(currency);
 
             // ✅ ACCOUNT NAME
             String account = null;
@@ -250,6 +248,17 @@ public class SupplierRowMapper {
     private static String left(String value, int length) {
         if (value == null) return null;
         return value.length() <= length ? value : value.substring(0, length);
+    }
+
+    private static String truncateWithLog(String value, int length, String fieldName, String supplierCode, String bu) {
+        if (value == null) return null;
+        if (value.length() > length) {
+            String truncated = value.substring(0, length);
+            log.warn("[DATA-TRUNCATION] supplierCode='{}' bu='{}' field='{}' origLength={} maxLength={} origValue='{}' truncatedValue='{}'",
+                    supplierCode, bu, fieldName, value.length(), length, value, truncated);
+            return truncated;
+        }
+        return value;
     }
 
     private static boolean isBlank(String value) {

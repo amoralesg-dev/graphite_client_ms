@@ -66,7 +66,7 @@ public class FrenosXmlFactory {
         return CreditorXmlContext.builder()
                 .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
                 .contextInfo(buildContextInfoCreditor(erpId, supplier))
-                .creditor(buildCreditor(supplier, tax, paymentTermsFromErp))
+                .creditor(buildCreditor(supplier, erpId, tax, paymentTermsFromErp))
                 .build();
     }
 
@@ -139,10 +139,10 @@ public class FrenosXmlFactory {
         return AddressXml.builder()
                 .addressStreet1(streetName36)
                 .addressStreet2(supplier.getStreetName2())
-                .addressStreet3(supplier.getStreetName3())
+                .addressStreet3(left(supplier.getStreetName3(), 36))
                 .addressZip(supplier.getZipCode())
-                .addressCity(supplier.getCityCode())
-                .addressCityCode(supplier.getCityCode())
+                .addressCity(left(supplier.getCityCode(), 20))
+                .addressCityCode(left(supplier.getCityCode(), 20))
                 .addressName(streetName36)
                 .addressSearchName(name20)
                 .addressTelephone("")
@@ -178,7 +178,7 @@ public class FrenosXmlFactory {
     private ContactXml buildContact(SuppliersRowEntity supplier) {
         return ContactXml.builder()
                 .contactFunction("")
-                .contactName(supplier.getContactName())
+                .contactName(left(supplier.getContactName(), 24))
                 .contactGender(XMLConstants.CONTACT_MALE)
                 .contactEmail(supplier.getContactEmail())
                 .contactIsPrimary(XMLConstants.TRUE)
@@ -194,6 +194,7 @@ public class FrenosXmlFactory {
 
     private CreditorNodoXML buildCreditor(
             SuppliersRowEntity supplier,
+            String erpId,
             TaxInfo tax,
             String paymentTermsFromErp
     ) {
@@ -202,7 +203,11 @@ public class FrenosXmlFactory {
                 supplier.getCountryCode() != null &&
                 !"MX".equalsIgnoreCase(supplier.getCountryCode());
 
-        String currency = supplier.getSupplierCurrency();
+        String plantId = (erpId != null && !erpId.isBlank())
+                ? erpId
+                : supplier.getBusinessUnitCode();
+        String rawCurrency = supplier.getSupplierCurrency();
+        String currency = mapCurrencyForXml(rawCurrency, plantId);
 
         CesarQadRules.GlProfiles gl =
                 CesarQadRules.resolveGlProfiles(
@@ -301,6 +306,20 @@ public class FrenosXmlFactory {
     // =====================================================
     // Helpers
     // =====================================================
+    private String mapCurrencyForXml(String graphiteCurrency, String plantId) {
+        if (XMLConstants.FRENOS.equalsIgnoreCase(plantId)
+                && ("MX".equalsIgnoreCase(graphiteCurrency)
+                || "MEX".equalsIgnoreCase(graphiteCurrency)
+                || "MXN".equalsIgnoreCase(graphiteCurrency))) {
+            return "MN";
+        } else if (XMLConstants.FRENOS.equalsIgnoreCase(plantId)
+                && "USD".equalsIgnoreCase(graphiteCurrency)) {
+            return "US";
+        } else {
+            return graphiteCurrency;
+        }
+    }
+
     private String left(String s, int len) {
         if (s == null) return "";
         return s.length() <= len ? s : s.substring(0, len);

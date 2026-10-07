@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,8 +34,13 @@ import com.rassini.graphite_client.service.sync.impl.IntegrityServiceImpl;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.impl.SupplierJpaMapperImpl;
 
+import java.nio.file.Path;
+
 @ExtendWith(MockitoExtension.class)
 public class ErpResolutionConsistencyTest {
+
+    @TempDir
+    Path tempDir;
 
     @Mock
     private SuppliersRowRepository suppliersRowRepository;
@@ -57,10 +63,19 @@ public class ErpResolutionConsistencyTest {
     @InjectMocks
     private SupplierJpaMapperImpl supplierJpaMapper;
 
-    @InjectMocks
     private IntegrityServiceImpl integrityService;
 
     private final String supplierCode = "SUPP_TEST_100";
+
+    @BeforeEach
+    void setUp() {
+        integrityService = new IntegrityServiceImpl(
+                suppliersRowRepository,
+                catalogService,
+                supplierErpResolver,
+                tempDir.resolve("integrity").toString()
+        );
+    }
 
     @Test
     @DisplayName("Garantiza consistencia absoluta: Legacy Supplier resuelve exactamente el mismo ERP en IntegrityService y en supplier_code_dis_integrity")
@@ -481,7 +496,7 @@ public class ErpResolutionConsistencyTest {
 
         when(suppliersRowRepository.findFirstBySupplierCodeAndAccountNumber(eq(supplierId), eq(newAccount)))
                 .thenReturn(Optional.empty());
-        when(suppliersRowRepository.countDistinctAccountsBySupplierCode(eq(supplierId)))
+        when(suppliersRowRepository.countDistinctAccountsByErpIdQad(eq(legacyCode)))
                 .thenReturn(1L);
 
         when(suppliersRowRepository.save(any(SuppliersRowEntity.class)))
@@ -552,6 +567,64 @@ public class ErpResolutionConsistencyTest {
         assertEquals("A", savedRow.getStatusIntegrity(), "Cuenta nueva debe ser 'A' (Alta)");
         assertEquals(dtoErp, savedRow.getErpIdQad(), "Para Supplier_Is_Legacy = n, erp_id_qad debe ser 60003031");
         assertEquals("60003031_1", savedRow.getSupplierCodeDisIntegrity(), "Cuenta nueva no legacy debe ser 60003031_1");
+    }
+
+    @Test
+    @DisplayName("Caso Proveedor Legacy 60000736 (COCASH): Cuenta nueva genera supplier_code_dis_integrity = 60000736_2 y statusIntegrity = A")
+    void testLegacySupplier60000736WithNewBankAccountProduces60000736_2AndStatusA() {
+        String supplierId = "MX199108";
+        String legacyErpId = "60000736";
+        String bu = "0111";
+        String historicalAccount = "002650000136585012";
+        String newAccount = "012180009999999999";
+        String dtoErp = "60003144";
+
+        GraphiteSupplierDto dto = new GraphiteSupplierDto();
+        dto.setEntityPublicId(supplierId);
+        dto.setLegacyMappedErpId(legacyErpId);
+        dto.setErpIdQad(dtoErp);
+        dto.setSupplierIsLegacy("y");
+
+        List<GraphiteSupplierDto.ErpRecord> erpRecords = new ArrayList<>();
+        GraphiteSupplierDto.ErpRecord erp = new GraphiteSupplierDto.ErpRecord();
+        erp.setRassiniErpEntityId(bu);
+        List<GraphiteSupplierDto.Bank> banks = new ArrayList<>();
+
+        GraphiteSupplierDto.Bank bank = new GraphiteSupplierDto.Bank();
+        bank.setBankAccountNumber(newAccount);
+        banks.add(bank);
+
+        erp.setErpBankList(banks);
+        erpRecords.add(erp);
+        dto.setErpRecords(erpRecords);
+
+        // Cuenta nueva NO existe en BD para esa BU ni globalmente
+        when(suppliersRowRepository.findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(eq(supplierId), eq(bu), eq(newAccount)))
+                .thenReturn(Optional.empty());
+        when(suppliersRowRepository.findByErpIdQadAndBusinessUnitCodeAndAccountNumber(eq(legacyErpId), eq(bu), eq(newAccount)))
+                .thenReturn(Optional.empty());
+        when(suppliersRowRepository.findFirstBySupplierCodeAndAccountNumber(eq(supplierId), eq(newAccount)))
+                .thenReturn(Optional.empty());
+        when(suppliersRowRepository.findFirstByErpIdQadAndAccountNumber(eq(legacyErpId), eq(newAccount)))
+                .thenReturn(Optional.empty());
+
+        // Conteo por erpIdQad devuelve 1 (la cuenta histórica 002650000136585012)
+        when(suppliersRowRepository.countDistinctAccountsByErpIdQad(eq(legacyErpId)))
+                .thenReturn(1L);
+
+        when(suppliersRowRepository.save(any(SuppliersRowEntity.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        supplierJpaMapper.upsertSuppliersRows(dto);
+
+        ArgumentCaptor<SuppliersRowEntity> savedCaptor = ArgumentCaptor.forClass(SuppliersRowEntity.class);
+        verify(suppliersRowRepository).save(savedCaptor.capture());
+        SuppliersRowEntity savedRow = savedCaptor.getValue();
+
+        assertNull(savedRow.getId(), "Cuenta nueva debe tener id=null (INSERT)");
+        assertEquals("A", savedRow.getStatusIntegrity(), "Cuenta nueva debe ser 'A' (Alta)");
+        assertEquals(legacyErpId, savedRow.getErpIdQad(), "erp_id_qad debe ser 60000736");
+        assertEquals("60000736_2", savedRow.getSupplierCodeDisIntegrity(), "Cuenta nueva legacy debe ser 60000736_2");
     }
 }
 

@@ -1,5 +1,6 @@
 package com.rassini.graphite_client.service.sync.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
@@ -17,7 +18,6 @@ import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.dto.SupplierMigrationResponse;
 import com.rassini.graphite_client.dto.MultiRecordDto;
 import com.rassini.graphite_client.dto.TruncatedListDto;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class IntegrityServiceImpl implements IntegrityService {
 
@@ -44,6 +43,53 @@ public class IntegrityServiceImpl implements IntegrityService {
     private final SupplierErpResolver supplierErpResolver;
     private final com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService;
     private final com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver;
+    private final String outputBaseIntegrity;
+
+    @Autowired
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver,
+            @Autowired(required = false) com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService,
+            @Autowired(required = false) com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver
+    ) {
+        this(suppliersRowRepository, catalogService, supplierErpResolver, outputValidationService, manualOutputPathResolver, XmlConstants.OUTPUT_BASE_INTEGRITY);
+    }
+
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver,
+            String outputBaseIntegrity
+    ) {
+        this(suppliersRowRepository, catalogService, supplierErpResolver, null, null, outputBaseIntegrity);
+    }
+
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver
+    ) {
+        this(suppliersRowRepository, catalogService, supplierErpResolver, null, null, XmlConstants.OUTPUT_BASE_INTEGRITY);
+    }
+
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver,
+            com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService,
+            com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver,
+            String outputBaseIntegrity
+    ) {
+        this.suppliersRowRepository = suppliersRowRepository;
+        this.catalogService = catalogService;
+        this.supplierErpResolver = supplierErpResolver;
+        this.outputValidationService = outputValidationService;
+        this.manualOutputPathResolver = manualOutputPathResolver;
+        this.outputBaseIntegrity = (outputBaseIntegrity != null && !outputBaseIntegrity.isBlank())
+                ? outputBaseIntegrity
+                : XmlConstants.OUTPUT_BASE_INTEGRITY;
+    }
 
     
     @Override
@@ -153,12 +199,14 @@ public class IntegrityServiceImpl implements IntegrityService {
             boolean hasBlocking = false;
             boolean hasWarning = false;
 
-            for (SuppliersRowEntity s : buSuppliers) {
-                com.rassini.graphite_client.service.validation.model.IssueSeverity sev = outputValidationService.evaluateIntegrityRow(s, bu);
-                if (sev == com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING) {
-                    hasBlocking = true;
-                } else if (sev == com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING) {
-                    hasWarning = true;
+            if (outputValidationService != null) {
+                for (SuppliersRowEntity s : buSuppliers) {
+                    com.rassini.graphite_client.service.validation.model.IssueSeverity sev = outputValidationService.evaluateIntegrityRow(s, bu);
+                    if (sev == com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING) {
+                        hasBlocking = true;
+                    } else if (sev == com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING) {
+                        hasWarning = true;
+                    }
                 }
             }
 
@@ -168,7 +216,9 @@ public class IntegrityServiceImpl implements IntegrityService {
             }
 
             boolean isManual = hasWarning;
-            Path outDir = manualOutputPathResolver.resolveIntegrityOutputDir(bu, isManual);
+            Path outDir = (manualOutputPathResolver != null)
+                    ? manualOutputPathResolver.resolveIntegrityOutputDir(bu, isManual)
+                    : Paths.get(this.outputBaseIntegrity);
             String fileName = supplierID + "_" + currentDateTime + ".txt";
             Path filePath = outDir.resolve(fileName);
 
@@ -659,7 +709,7 @@ public class IntegrityServiceImpl implements IntegrityService {
                 LocalDateTime.now()
                         .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
-        Path outDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
+        Path outDir = Paths.get(this.outputBaseIntegrity);
 
         String fileName =supplierCode + "_" + currentDateTime + ".txt";
 

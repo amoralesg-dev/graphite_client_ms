@@ -119,6 +119,7 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                     // =========================
                     // CREDITOR FRENOS
                     // =========================
+                    // Invocación alineada con FrenosXmlFactory (5 argumentos; ErpRecord no requerido)
                     CreditorXmlContext creditorCtx =
                             factory.buildCreditorContext(
                                     supplier,

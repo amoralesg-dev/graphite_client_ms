@@ -143,9 +143,9 @@ public class OcXmlFactory {
         return AddressXml.builder()
                 .addressStreet1(streetName36)
                 .addressStreet2(supplier.getStreetName2())
-                .addressStreet3(supplier.getStreetName3())
+                .addressStreet3(left(supplier.getStreetName3(), 36))
                 .addressZip(supplier.getZipCode())
-                .addressCity(supplier.getCityCode())
+                .addressCity(left(supplier.getCityCode(), 20))
                 .addressCityCode("") // OC va vacío
                 .addressName(streetName36)
                 .addressSearchName(name20)
@@ -185,7 +185,7 @@ public class OcXmlFactory {
     private ContactXml buildContact(SuppliersRowEntity supplier) {
         return ContactXml.builder()
                 .contactFunction("")
-                .contactName(supplier.getContactName())
+                .contactName(left(supplier.getContactName(), 24))
                 .contactGender(XMLConstants.CONTACT_MALE)
                 .contactEmail(supplier.getContactEmail())
                 .contactIsPrimary(XMLConstants.TRUE)
