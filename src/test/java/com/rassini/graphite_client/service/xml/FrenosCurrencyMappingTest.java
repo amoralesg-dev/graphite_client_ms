@@ -66,6 +66,15 @@ public class FrenosCurrencyMappingTest {
     @Mock
     private XmlGenerationHelper xmlGenerationHelper;
 
+    @Mock
+    private com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService;
+
+    @org.mockito.Spy
+    private com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver = new com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver();
+
+    @Mock
+    private com.rassini.graphite_client.service.validation.collector.MissingDataCollector missingDataCollector;
+
     private IntegrityServiceImpl integrityService;
     private XmlFrenosServiceImpl xmlFrenosService;
     private FrenosXmlFactory frenosFactory;
@@ -90,7 +99,10 @@ public class FrenosCurrencyMappingTest {
                 catalogService,
                 xmlTemplateEngine,
                 suppliersRowRepository,
-                xmlGenerationHelper
+                xmlGenerationHelper,
+                outputValidationService,
+                manualOutputPathResolver,
+                missingDataCollector
         );
         frenosFactory = new FrenosXmlFactory(catalogService);
         ocFactory = new OcXmlFactory(catalogService);
