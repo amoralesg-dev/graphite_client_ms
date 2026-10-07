@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -33,8 +34,13 @@ import com.rassini.graphite_client.service.sync.impl.IntegrityServiceImpl;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.impl.SupplierJpaMapperImpl;
 
+import java.nio.file.Path;
+
 @ExtendWith(MockitoExtension.class)
 public class ErpResolutionConsistencyTest {
+
+    @TempDir
+    Path tempDir;
 
     @Mock
     private SuppliersRowRepository suppliersRowRepository;
@@ -48,10 +54,19 @@ public class ErpResolutionConsistencyTest {
     @InjectMocks
     private SupplierJpaMapperImpl supplierJpaMapper;
 
-    @InjectMocks
     private IntegrityServiceImpl integrityService;
 
     private final String supplierCode = "SUPP_TEST_100";
+
+    @BeforeEach
+    void setUp() {
+        integrityService = new IntegrityServiceImpl(
+                suppliersRowRepository,
+                catalogService,
+                supplierErpResolver,
+                tempDir.resolve("integrity").toString()
+        );
+    }
 
     @Test
     @DisplayName("Garantiza consistencia absoluta: Legacy Supplier resuelve exactamente el mismo ERP en IntegrityService y en supplier_code_dis_integrity")
