@@ -156,9 +156,7 @@ public class SupplierRowMapper {
                             ? bank.getBankCurrencyList().get(0)
                             : null;
 
-            row.setSupplierCurrency(
-                    catalogService.mapCurrency(currency, erp.getRassiniErpEntityId())
-            );
+            row.setSupplierCurrency(currency);
 
             // ✅ ACCOUNT NAME
             String account = null;

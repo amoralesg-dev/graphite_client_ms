@@ -1,5 +1,6 @@
 package com.rassini.graphite_client.service.sync.impl;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
@@ -17,7 +18,6 @@ import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.dto.SupplierMigrationResponse;
 import com.rassini.graphite_client.dto.MultiRecordDto;
 import com.rassini.graphite_client.dto.TruncatedListDto;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedWriter;
@@ -35,13 +35,36 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class IntegrityServiceImpl implements IntegrityService {
 
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
     private final SupplierErpResolver supplierErpResolver;
+    private final String outputBaseIntegrity;
+
+    @Autowired
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver
+    ) {
+        this(suppliersRowRepository, catalogService, supplierErpResolver, XmlConstants.OUTPUT_BASE_INTEGRITY);
+    }
+
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver,
+            String outputBaseIntegrity
+    ) {
+        this.suppliersRowRepository = suppliersRowRepository;
+        this.catalogService = catalogService;
+        this.supplierErpResolver = supplierErpResolver;
+        this.outputBaseIntegrity = (outputBaseIntegrity != null && !outputBaseIntegrity.isBlank())
+                ? outputBaseIntegrity
+                : XmlConstants.OUTPUT_BASE_INTEGRITY;
+    }
 
     
     @Override
@@ -135,7 +158,7 @@ public class IntegrityServiceImpl implements IntegrityService {
 
         String currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
         
-        Path outDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
+        Path outDir = Paths.get(this.outputBaseIntegrity);
         String fileName = supplierID + "_"+currentDateTime+".txt";
         Path filePath = outDir.resolve(fileName);
 
@@ -627,7 +650,7 @@ public class IntegrityServiceImpl implements IntegrityService {
                 LocalDateTime.now()
                         .format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
 
-        Path outDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
+        Path outDir = Paths.get(this.outputBaseIntegrity);
 
         String fileName =supplierCode + "_" + currentDateTime + ".txt";
 

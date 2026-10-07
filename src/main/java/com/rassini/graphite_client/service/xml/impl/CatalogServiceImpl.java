@@ -113,18 +113,6 @@ public class CatalogServiceImpl implements CatalogService {
         return activityCode;
     }
 
-    @Override
-    public String mapCurrency(String graphiteCurrency, String plantId) {
-
-        if (XMLConstants.FRENOS.equalsIgnoreCase(plantId) && ("MX".equalsIgnoreCase(graphiteCurrency) || "MEX".equalsIgnoreCase(graphiteCurrency))) {
-            return "MN";
-        }else if (XMLConstants.FRENOS.equalsIgnoreCase(plantId) && "USD".equalsIgnoreCase(graphiteCurrency)) {
-            return "US";   
-        }else{
-            return graphiteCurrency;
-        }
-        
-    }
 
     @Override
     public GlProfile resolveGlProfile(String plantId, String currency, boolean foreign) {
