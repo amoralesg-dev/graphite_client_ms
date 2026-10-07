@@ -10,17 +10,23 @@ import com.rassini.graphite_client.dto.ErpIdMigrationRequest;
 import com.rassini.graphite_client.dto.SupplierMigrationResponse;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
+import com.rassini.graphite_client.service.resolver.SupplierErpResolver;
 import com.rassini.graphite_client.service.sync.IntegrityService;
+import com.rassini.graphite_client.service.sync.impl.IntegrityServiceImpl;
+import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.XmlConstants;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -130,8 +136,10 @@ public class IntegrityMigrationByErpIdTest {
 
         // Act
         // Pass duplicate entries ("EM20651", " EM20651 ") and spaced IDs to test normalization and deduplication
-        SupplierMigrationResponse response = integrityService.createFileSupplierMigrationByErpIds(
-                Arrays.asList("EM20651", " EM2069 ", "EM2083", "EM99999", "EM20651"));
+        // La transacción se aplica manualmente porque la instancia aislada no es un proxy de Spring
+        SupplierMigrationResponse response = new TransactionTemplate(transactionManager).execute(status ->
+                isolatedIntegrityService.createFileSupplierMigrationByErpIds(
+                        Arrays.asList("EM20651", " EM2069 ", "EM2083", "EM99999", "EM20651")));
 
         // Assert response object
         assertNotNull(response);
@@ -178,7 +186,7 @@ public class IntegrityMigrationByErpIdTest {
         assertEquals("M", updatedS3.getStatusIntegrity(), "EM2083 should be updated to M (not excluded anymore)");
 
         // Assert file generation
-        Path testOutputDir = Paths.get(XmlConstants.OUTPUT_BASE_INTEGRITY);
+        Path testOutputDir = integrityOutputDir;
         assertTrue(Files.exists(testOutputDir), "Output directory should exist");
         
         File[] files = testOutputDir.toFile().listFiles((dir, name) -> name.startsWith("EM"));
