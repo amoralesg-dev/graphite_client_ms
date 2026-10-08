@@ -121,27 +121,51 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             log.info("[FLOW-PHASE-2][JPA-MAPPING] supplier={} Mapeo y persistencia en tabla suppliers concluido exitosamente",
                     dto.getEntityPublicId());
 
-            xmlOcService.generate(dto, supplier);
+            boolean overwriteIfExists = detonante != null && detonante.toUpperCase().contains("REPROCESSO MANUAL");
+            log.info("[FLOW-PHASE-3][XML-GEN] supplier={} detonante='{}' overwriteIfExists={}",
+                    supplier.getPublicId(), detonante, overwriteIfExists);
+
+            if (overwriteIfExists) {
+                xmlOcService.generate(dto, supplier, true);
+            } else {
+                xmlOcService.generate(dto, supplier);
+            }
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
             }
 
-            xmlPnService.generate(dto, supplier);
+            if (overwriteIfExists) {
+                xmlPnService.generate(dto, supplier, true);
+            } else {
+                xmlPnService.generate(dto, supplier);
+            }
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
             }
 
-            xmlPn99Service.generate(dto, supplier);
+            if (overwriteIfExists) {
+                xmlPn99Service.generate(dto, supplier, true);
+            } else {
+                xmlPn99Service.generate(dto, supplier);
+            }
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
             }
 
-            xmlFrenosService.generate(dto, supplier);
+            if (overwriteIfExists) {
+                xmlFrenosService.generate(dto, supplier, true);
+            } else {
+                xmlFrenosService.generate(dto, supplier);
+            }
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
             }
 
-            xmlBreakesService.generate(dto, supplier);
+            if (overwriteIfExists) {
+                xmlBreakesService.generate(dto, supplier, true);
+            } else {
+                xmlBreakesService.generate(dto, supplier);
+            }
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
             }

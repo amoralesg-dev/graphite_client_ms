@@ -525,6 +525,213 @@ public class MissingDataAndNomenclatureIntegrationTest {
         assertTrue(normalIntegrityFiles == null || normalIntegrityFiles.length == 0, "Archivo Integrity NO debe existir en ruta normal 1000");
     }
 
+    // =====================================================================
+    // Consistencia Create/Modify entre BUSREL y CREDITOR (decisión única previa)
+    // =====================================================================
+
+    private void generateByBu(String bu, GraphiteSupplierDto dto) {
+        switch (bu) {
+            case "09" -> xmlPnService.generate(dto, null);
+            case "99" -> xmlPn99Service.generate(dto, null);
+            case "1000" -> xmlFrenosService.generate(dto, null);
+            case "1850" -> xmlBreakesService.generate(dto, null);
+            default -> xmlOcService.generate(dto, null);
+        }
+    }
+
+    private String readGenerated(String kind, String erpId, String bu) throws IOException {
+        String suffix = kind + "_" + erpId + "_" + bu + ".xml";
+        try (java.util.stream.Stream<Path> walk = Files.walk(Paths.get(getOutputBase(), "xml"))) {
+            Path found = walk
+                    .filter(p -> p.getFileName().toString().endsWith(suffix))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("No se generó " + suffix));
+            return Files.readString(found);
+        }
+    }
+
+    private String tag(String xml, String tagName) {
+        java.util.regex.Matcher m = java.util.regex.Pattern
+                .compile("<" + tagName + ">([^<]*)</" + tagName + ">").matcher(xml);
+        return m.find() ? m.group(1).trim() : "";
+    }
+
+    private void assertSameDecision(String bu, String erpId, String expectedActivity, String expectedAction) throws IOException {
+        String busrel = readGenerated("busrel", erpId, bu);
+        String creditor = readGenerated("creditor", erpId, bu);
+
+        assertEquals(expectedActivity, tag(busrel, "tcActivityCode"), "BUSREL tcActivityCode BU " + bu);
+        assertEquals(expectedActivity, tag(creditor, "tcActivityCode"), "CREDITOR tcActivityCode BU " + bu);
+        assertEquals(tag(busrel, "tcActivityCode"), tag(creditor, "tcActivityCode"),
+                "BUSREL y CREDITOR deben compartir la decisión BU " + bu);
+        assertEquals(expectedAction, tag(creditor, "tcAction"), "CREDITOR tcAction BU " + bu);
+        String busrelAction = tag(busrel, "tcAction");
+        if (!busrelAction.isEmpty()) {
+            assertEquals(expectedAction, busrelAction, "BUSREL tcAction BU " + bu);
+        }
+    }
+
+    @Test
+    @DisplayName("Caso A/D: fila nueva (PENDING) -> BUSREL y CREDITOR Create/SAVE en todas las familias (PN, PN99, OC, FRENOS, BREAKES)")
+    public void testNewRowBusrelAndCreditorBothCreate() throws IOException {
+        String[][] cases = {
+                {"09", "60003201", "PRV_NEW_09", "012180001322930301"},
+                {"99", "60003202", "PRV_NEW_99", "012180001322930302"},
+                {"0111", "60003203", "PRV_NEW_0111", "012180001322930303"},
+                {"0301", "60003204", "PRV_NEW_0301", "012180001322930304"},
+                {"1000", "60003205", "PRV_NEW_1000", "012180001322930305"},
+                {"1850", "60003206", "PRV_NEW_1850", "012180001322930306"}
+        };
+        for (String[] c : cases) {
+            SuppliersRowEntity row = createValidRow(c[2], c[0], c[1], c[3]);
+            row.setXmlStatus(XmlStatus.PENDING);
+            suppliersRowRepository.save(row);
+
+            generateByBu(c[0], createDto(c[2], c[1], c[0]));
+
+            assertSameDecision(c[0], c[1], "Create", "SAVE");
+        }
+    }
+
+    @Test
+    @DisplayName("Caso B/D: fila previamente GENERATED o GENERATED_PREV -> BUSREL y CREDITOR Modify en todas las familias (PN, PN99, OC, FRENOS, BREAKES)")
+    public void testPreviouslyGeneratedRowBusrelAndCreditorBothModify() throws IOException {
+        String[][] cases = {
+                {"09", "60003211", "PRV_OLD_09", "012180001322930311"},
+                {"99", "60003212", "PRV_OLD_99", "012180001322930312"},
+                {"0111", "60003213", "PRV_OLD_0111", "012180001322930313"},
+                {"0301", "60003214", "PRV_OLD_0301", "012180001322930314"},
+                {"1000", "60003215", "PRV_OLD_1000", "012180001322930315"},
+                {"1850", "60003216", "PRV_OLD_1850", "012180001322930316"}
+        };
+        XmlStatus[] previous = {
+                XmlStatus.GENERATED, XmlStatus.GENERATED_PREV, XmlStatus.GENERATED,
+                XmlStatus.GENERATED_PREV, XmlStatus.GENERATED, XmlStatus.GENERATED_PREV
+        };
+        for (int i = 0; i < cases.length; i++) {
+            String[] c = cases[i];
+            SuppliersRowEntity row = createValidRow(c[2], c[0], c[1], c[3]);
+            row.setXmlStatus(previous[i]);
+            suppliersRowRepository.save(row);
+
+            generateByBu(c[0], createDto(c[2], c[1], c[0]));
+
+            assertSameDecision(c[0], c[1], "Modify", "Modify");
+        }
+    }
+
+    @Test
+    @DisplayName("Caso C: legacy multi-cuenta MX197497 (60000778) -> misma decisión Create/SAVE, dis_integrity _2/_3 e Integrity con 2 registros")
+    public void testLegacyMultiAccountMx197497SharesDecisionAndKeepsIntegrity() throws IOException {
+        String supplierCode = "MX197497";
+        String legacyErp = "60000778";
+        String bu = "0301";
+
+        SuppliersRowEntity acc2 = createValidRow(supplierCode, bu, legacyErp, "012180001322930402");
+        acc2.setSupplierCodeDisIntegrity("60000778_2");
+        acc2.setStatusIntegrity("A");
+        SuppliersRowEntity acc3 = createValidRow(supplierCode, bu, legacyErp, "012180001322930403");
+        acc3.setSupplierCodeDisIntegrity("60000778_3");
+        acc3.setStatusIntegrity("A");
+        suppliersRowRepository.save(acc2);
+        suppliersRowRepository.save(acc3);
+
+        GraphiteSupplierDto dto = createDto(supplierCode, legacyErp, bu);
+        dto.setLegacyMappedErpId(legacyErp);
+
+        xmlOcService.generate(dto, null);
+        assertSameDecision(bu, legacyErp, "Create", "SAVE");
+
+        integrityService.createFileSupplierSync(dto);
+
+        List<SuppliersRowEntity> rows = suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(supplierCode);
+        assertTrue(rows.stream().anyMatch(r -> "60000778_2".equals(r.getSupplierCodeDisIntegrity())));
+        assertTrue(rows.stream().anyMatch(r -> "60000778_3".equals(r.getSupplierCodeDisIntegrity())));
+
+        long integrityLines;
+        try (java.util.stream.Stream<Path> walk = Files.walk(Paths.get(getOutputBase(), "integrity"))) {
+            Path file = walk.filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().startsWith(legacyErp))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("No se generó el archivo Integrity " + legacyErp));
+            integrityLines = Files.readAllLines(file).stream().filter(l -> !l.isBlank()).count();
+        }
+        assertEquals(2, integrityLines, "Integrity debe conservar los 2 registros");
+    }
+
+    @Test
+    @DisplayName("Sobrescritura controlada: Modo AUTOMÁTICO omite archivo existente y marca GENERATED_PREV")
+    public void testAutomaticModeSkipsExistingXmlFile() throws IOException {
+        String bu = "0301";
+        String erp = "60000778";
+        String supplierCode = "MX197497";
+
+        SuppliersRowEntity row = createValidRow(supplierCode, bu, erp, "012180001322930402");
+        suppliersRowRepository.save(row);
+
+        Path targetDir = Paths.get(manualOutputPathResolver.resolveXmlOutputDir(bu, false));
+        Files.createDirectories(targetDir);
+        Path busrelFile = targetDir.resolve("busrel_" + erp + "_" + bu + ".xml");
+        Path creditorFile = targetDir.resolve("creditor_" + erp + "_" + bu + ".xml");
+
+        String originalContent = "<!-- ORIGINAL PRE-EXISTING CONTENT -->";
+        Files.writeString(busrelFile, originalContent);
+        Files.writeString(creditorFile, originalContent);
+
+        GraphiteSupplierDto dto = createDto(supplierCode, erp, bu);
+
+        // Modo automático (overwriteIfExists = false)
+        xmlOcService.generate(dto, null, false);
+
+        // Verificar que no se sobrescribieron
+        assertEquals(originalContent, Files.readString(busrelFile));
+        assertEquals(originalContent, Files.readString(creditorFile));
+
+        SuppliersRowEntity updated = suppliersRowRepository.findById(row.getId()).orElseThrow();
+        assertEquals(XmlStatus.GENERATED_PREV, updated.getXmlStatus());
+    }
+
+    @Test
+    @DisplayName("Sobrescritura controlada: Modo REPROCESSO MANUAL reemplaza archivos existentes de forma segura con contenido consistente")
+    public void testManualReprocessOverwritesExistingXmlSafely() throws IOException {
+        String bu = "0301";
+        String erp = "60000778";
+        String supplierCode = "MX197497";
+
+        // Simulamos caso histórico previo: proveedor existente en QAD (catalog_manager)
+        seedCatalog("supplier", erp, bu, erp);
+
+        SuppliersRowEntity row = createValidRow(supplierCode, bu, erp, "012180001322930402");
+        row.setXmlStatus(XmlStatus.GENERATED);
+        suppliersRowRepository.save(row);
+
+        Path targetDir = Paths.get(manualOutputPathResolver.resolveXmlOutputDir(bu, false));
+        Files.createDirectories(targetDir);
+        Path busrelFile = targetDir.resolve("busrel_" + erp + "_" + bu + ".xml");
+        Path creditorFile = targetDir.resolve("creditor_" + erp + "_" + bu + ".xml");
+
+        // Archivos viejos e inconsistentes creados con la lógica anterior (Create en busrel, Modify en creditor)
+        Files.writeString(busrelFile, "<BBusinessRelation><tcAction>SAVE</tcAction><tcActivityCode>Create</tcActivityCode></BBusinessRelation>");
+        Files.writeString(creditorFile, "<BCreditor><tcAction>Modify</tcAction><tcActivityCode>Modify</tcActivityCode></BCreditor>");
+
+        GraphiteSupplierDto dto = createDto(supplierCode, erp, bu);
+
+        // Reproceso manual: overwriteIfExists = true
+        xmlOcService.generate(dto, null, true);
+
+        // Confirmar que ambos archivos fueron regenerados y reemplazados con la decisión coherente única (Modify/Modify)
+        String newBusrel = Files.readString(busrelFile);
+        String newCreditor = Files.readString(creditorFile);
+
+        assertTrue(newBusrel.contains("<tcAction>Modify</tcAction>"), "BUSREL debe haber sido actualizado a Modify");
+        assertTrue(newBusrel.contains("<tcActivityCode>Modify</tcActivityCode>"), "BUSREL tcActivityCode debe ser Modify");
+        assertTrue(newCreditor.contains("<tcAction>Modify</tcAction>"), "CREDITOR debe ser Modify");
+        assertTrue(newCreditor.contains("<tcActivityCode>Modify</tcActivityCode>"), "CREDITOR tcActivityCode debe ser Modify");
+
+        SuppliersRowEntity updated = suppliersRowRepository.findById(row.getId()).orElseThrow();
+        assertEquals(XmlStatus.GENERATED, updated.getXmlStatus());
+    }
+
     private SuppliersRowEntity createValidRow(String supplierCode, String bu, String erpId, String account) {
         SuppliersRowEntity row = new SuppliersRowEntity();
         row.setSupplierCode(supplierCode);

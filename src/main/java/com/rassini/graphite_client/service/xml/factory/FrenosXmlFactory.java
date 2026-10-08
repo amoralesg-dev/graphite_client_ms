@@ -36,6 +36,16 @@ public class FrenosXmlFactory {
             String taxClassFromErp,
             List<String> taxZoneFromErp
     ) {
+        return buildBusrelContext(supplier, erpId, taxClassFromErp, taxZoneFromErp, catalogService.resolveUpdateInfo(supplier));
+    }
+
+    public XmlContext buildBusrelContext(
+            SuppliersRowEntity supplier,
+            String erpId,
+            String taxClassFromErp,
+            List<String> taxZoneFromErp,
+            UpdateInfo updateInfo
+    ) {
 
         TaxInfo tax = resolveTaxInfoFrenos(erpId, taxClassFromErp, taxZoneFromErp);
         String name20 = left(supplier.getSupplierName(), 20);
@@ -43,7 +53,7 @@ public class FrenosXmlFactory {
 
         return XmlContext.builder()
                 .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
-                .contextInfo(buildContextInfoBusrel(supplier))
+                .contextInfo(buildContextInfoBusrel(supplier, updateInfo))
                 .businessRelation(buildBusinessRelation(supplier, name20, name36))
                 .address(buildAddress(supplier, name20,name36, tax))
                 .contact(buildContact(supplier))
@@ -60,12 +70,23 @@ public class FrenosXmlFactory {
             List<String> taxZoneFromErp,
             String paymentTermsFromErp
     ) {
+        return buildCreditorContext(supplier, erpId, taxClassFromErp, taxZoneFromErp, paymentTermsFromErp, catalogService.resolveUpdateInfo(supplier));
+    }
+
+    public CreditorXmlContext buildCreditorContext(
+            SuppliersRowEntity supplier,
+            String erpId,
+            String taxClassFromErp,
+            List<String> taxZoneFromErp,
+            String paymentTermsFromErp,
+            UpdateInfo updateInfo
+    ) {
 
         TaxInfo tax = resolveTaxInfoFrenos(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
                 .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
-                .contextInfo(buildContextInfoCreditor(erpId, supplier))
+                .contextInfo(buildContextInfoCreditor(erpId, updateInfo))
                 .creditor(buildCreditor(supplier, erpId, tax, paymentTermsFromErp))
                 .build();
     }
@@ -73,11 +94,10 @@ public class FrenosXmlFactory {
     // =====================================================
     // CONTEXT INFO
     // =====================================================
-    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
-        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
+    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier, UpdateInfo updateInfo) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
-                .tcAction(catalogService.getAction(supplier))
+                .tcAction(updateInfo.resolveAction())
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
@@ -86,12 +106,10 @@ public class FrenosXmlFactory {
                 .build();
     }
 
-    private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
-
-        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
+    private ContextInfoXml buildContextInfoCreditor(String erpId, UpdateInfo updateInfo) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
-                .tcAction(catalogService.getAction(supplier))
+                .tcAction(updateInfo.resolveAction())
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)

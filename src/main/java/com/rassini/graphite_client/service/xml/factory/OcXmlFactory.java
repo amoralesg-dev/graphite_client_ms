@@ -30,6 +30,17 @@ public class OcXmlFactory {
             String taxClassFromErp,
             List<String> taxZoneFromErp
     ) {
+        return buildBusrelContext(supplier, erpId, taxClassFromErp, taxZoneFromErp,
+                catalogService.resolveUpdateInfo(supplier));
+    }
+
+    public XmlContext buildBusrelContext(
+            SuppliersRowEntity supplier,
+            String erpId,
+            String taxClassFromErp,
+            List<String> taxZoneFromErp,
+            UpdateInfo updateInfo
+    ) {
 
         TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
         String name20 = left(supplier.getSupplierName(), 20);
@@ -37,7 +48,7 @@ public class OcXmlFactory {
 
         return XmlContext.builder()
                 .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
-                .contextInfo(buildContextInfoBusrel(supplier))
+                .contextInfo(buildContextInfoBusrel(supplier, updateInfo))
                 .businessRelation(buildBusinessRelation(supplier, name20, name36))
                 .address(buildAddress(supplier, name20, name36, tax))
                 .contact(buildContact(supplier))
@@ -55,11 +66,23 @@ public class OcXmlFactory {
             List<String> taxZoneFromErp,
             String paymentTerms
     ) {
+        return buildCreditorContext(supplier, erpId, taxClassFromErp, taxZoneFromErp, paymentTerms,
+                catalogService.resolveUpdateInfo(supplier));
+    }
+
+    public CreditorXmlContext buildCreditorContext(
+            SuppliersRowEntity supplier,
+            String erpId,
+            String taxClassFromErp,
+            List<String> taxZoneFromErp,
+            String paymentTerms,
+            UpdateInfo updateInfo
+    ) {
         TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
                 .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
-                .contextInfo(buildContextInfoCreditor(erpId, supplier))
+                .contextInfo(buildContextInfoCreditor(erpId, updateInfo))
                 .creditor(buildCreditor(supplier, tax, paymentTerms))
                 .build();
     }
@@ -68,11 +91,10 @@ public class OcXmlFactory {
     // CONTEXT INFO
     // =====================================================
 
-    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
-        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
+    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier, UpdateInfo updateInfo) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
-                .tcAction(catalogService.getAction(supplier))
+                .tcAction(updateInfo.resolveAction())
                 .tiPriority(XMLConstants.CERO)
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
@@ -85,15 +107,15 @@ public class OcXmlFactory {
                 .build();
     }
 
-    private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
+    private ContextInfoXml buildContextInfoCreditor(String erpId, UpdateInfo updateInfo) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
-                .tcAction(catalogService.getAction(supplier))
+                .tcAction(updateInfo.resolveAction())
                 .tiPriority(XMLConstants.CERO)
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(catalogService.getActivityCode(supplier))
+                .tcActivityCode(updateInfo.getActivityCode())
                 .tlPartialUpdate(XMLConstants.FALSE)
                 .build();
     }

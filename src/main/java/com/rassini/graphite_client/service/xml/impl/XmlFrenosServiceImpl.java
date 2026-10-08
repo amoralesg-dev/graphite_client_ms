@@ -38,6 +38,11 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
 
     @Override
     public void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter) {
+        generate(dto, supplierParameter, false);
+    }
+
+    @Override
+    public void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter, boolean overwriteIfExists) {
 
         if (dto == null || dto.getErpRecords() == null) {
             return;
@@ -96,25 +101,44 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                     // =========================
                     // BUSREL FRENOS
                     // =========================
+                    // Decisión Create/Modify única, calculada ANTES de generar cualquier archivo
+                    com.rassini.graphite_client.dto.UpdateInfo updateInfo = catalogService.resolveUpdateInfo(supplier);
+
                     XmlContext busrelCtx =
                             factory.buildBusrelContext(
                                     supplier,
                                     erpId,
                                     erp.getRassiniErpTaxClass(),
-                                    erp.getRassiniErpTaxZone()
+                                    erp.getRassiniErpTaxZone(),
+                                    updateInfo
                             );
 
-                    xmlGenerationHelper.generateIfFileNotExists(
-                            supplier,
-                            targetDir,
-                            busrelCtx.getOutputFileName(),
-                            log,
-                            () -> xmlTemplateEngine.generateBusinessRelationXml(
-                                    XmlConstants.TEMPLATE_FRENOS_BUSREL,
-                                    targetDir,
-                                    busrelCtx
-                            )
-                    );
+                    if (overwriteIfExists) {
+                        xmlGenerationHelper.generateIfFileNotExists(
+                                supplier,
+                                targetDir,
+                                busrelCtx.getOutputFileName(),
+                                true,
+                                log,
+                                () -> xmlTemplateEngine.generateBusinessRelationXml(
+                                        XmlConstants.TEMPLATE_FRENOS_BUSREL,
+                                        targetDir,
+                                        busrelCtx
+                                )
+                        );
+                    } else {
+                        xmlGenerationHelper.generateIfFileNotExists(
+                                supplier,
+                                targetDir,
+                                busrelCtx.getOutputFileName(),
+                                log,
+                                () -> xmlTemplateEngine.generateBusinessRelationXml(
+                                        XmlConstants.TEMPLATE_FRENOS_BUSREL,
+                                        targetDir,
+                                        busrelCtx
+                                )
+                        );
+                    }
 
                     // =========================
                     // CREDITOR FRENOS
@@ -126,20 +150,36 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
                                     erpId,
                                     erp.getRassiniErpTaxClass(),
                                     erp.getRassiniErpTaxZone(),
-                                    erp.getRassiniErpPaymentTerms()
+                                    erp.getRassiniErpPaymentTerms(),
+                                    updateInfo
                             );
 
-                    xmlGenerationHelper.generateIfFileNotExists(
-                            supplier,
-                            targetDir,
-                            creditorCtx.getOutputFileName(),
-                            log,
-                            () -> xmlTemplateEngine.generateCreditorXml(
-                                    XmlConstants.TEMPLATE_FRENOS_CREDITOR,
-                                    targetDir,
-                                    creditorCtx
-                            )
-                    );
+                    if (overwriteIfExists) {
+                        xmlGenerationHelper.generateIfFileNotExists(
+                                supplier,
+                                targetDir,
+                                creditorCtx.getOutputFileName(),
+                                true,
+                                log,
+                                () -> xmlTemplateEngine.generateCreditorXml(
+                                        XmlConstants.TEMPLATE_FRENOS_CREDITOR,
+                                        targetDir,
+                                        creditorCtx
+                                )
+                        );
+                    } else {
+                        xmlGenerationHelper.generateIfFileNotExists(
+                                supplier,
+                                targetDir,
+                                creditorCtx.getOutputFileName(),
+                                log,
+                                () -> xmlTemplateEngine.generateCreditorXml(
+                                        XmlConstants.TEMPLATE_FRENOS_CREDITOR,
+                                        targetDir,
+                                        creditorCtx
+                                )
+                        );
+                    }
 
                     log.info("[XML-PROCESS] supplier={} businessUnit={} result=GENERATED dir={} files=[{}, {}]",
                             dto.getEntityPublicId(), erpId, targetDir, busrelCtx.getOutputFileName(), creditorCtx.getOutputFileName());
