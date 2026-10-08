@@ -8,8 +8,4 @@ public interface XmlPnService
             XmlCreditorService
 {
     void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter);
-
-    default void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter, boolean overwriteIfExists) {
-        generate(dto, supplierParameter);
-    }
 }

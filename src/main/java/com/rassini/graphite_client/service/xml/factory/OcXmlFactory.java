@@ -30,25 +30,14 @@ public class OcXmlFactory {
             String taxClassFromErp,
             List<String> taxZoneFromErp
     ) {
-        return buildBusrelContext(supplier, erpId, taxClassFromErp, taxZoneFromErp,
-                catalogService.resolveUpdateInfo(supplier));
-    }
-
-    public XmlContext buildBusrelContext(
-            SuppliersRowEntity supplier,
-            String erpId,
-            String taxClassFromErp,
-            List<String> taxZoneFromErp,
-            UpdateInfo updateInfo
-    ) {
 
         TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
         String name20 = left(supplier.getSupplierName(), 20);
         String name36 = left(supplier.getSupplierName(), 36);
 
         return XmlContext.builder()
-                .outputFileName("busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
-                .contextInfo(buildContextInfoBusrel(supplier, updateInfo))
+                .outputFileName("busrel_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode()  + "_" + erpId + ".xml")
+                .contextInfo(buildContextInfoBusrel(supplier))
                 .businessRelation(buildBusinessRelation(supplier, name20, name36))
                 .address(buildAddress(supplier, name20, name36, tax))
                 .contact(buildContact(supplier))
@@ -66,23 +55,11 @@ public class OcXmlFactory {
             List<String> taxZoneFromErp,
             String paymentTerms
     ) {
-        return buildCreditorContext(supplier, erpId, taxClassFromErp, taxZoneFromErp, paymentTerms,
-                catalogService.resolveUpdateInfo(supplier));
-    }
-
-    public CreditorXmlContext buildCreditorContext(
-            SuppliersRowEntity supplier,
-            String erpId,
-            String taxClassFromErp,
-            List<String> taxZoneFromErp,
-            String paymentTerms,
-            UpdateInfo updateInfo
-    ) {
         TaxInfo tax = resolveTaxInfo(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
-                .contextInfo(buildContextInfoCreditor(erpId, updateInfo))
+                .outputFileName("creditor_" + supplier.getErpIdQad() +"_"+supplier.getBusinessUnitCode()+ "_" + erpId + ".xml")
+                .contextInfo(buildContextInfoCreditor(erpId, supplier))
                 .creditor(buildCreditor(supplier, tax, paymentTerms))
                 .build();
     }
@@ -91,10 +68,11 @@ public class OcXmlFactory {
     // CONTEXT INFO
     // =====================================================
 
-    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier, UpdateInfo updateInfo) {
+    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
+        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
-                .tcAction(updateInfo.resolveAction())
+                .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
@@ -107,15 +85,15 @@ public class OcXmlFactory {
                 .build();
     }
 
-    private ContextInfoXml buildContextInfoCreditor(String erpId, UpdateInfo updateInfo) {
+    private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
-                .tcAction(updateInfo.resolveAction())
+                .tcAction(catalogService.getAction(supplier))
                 .tiPriority(XMLConstants.CERO)
                 .ttRequestStartDate(XMLConstants.NULL)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(updateInfo.getActivityCode())
+                .tcActivityCode(catalogService.getActivityCode(supplier))
                 .tlPartialUpdate(XMLConstants.FALSE)
                 .build();
     }

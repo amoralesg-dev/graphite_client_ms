@@ -60,10 +60,6 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
 
     private final GraphiteProfileRefreshService graphiteProfileRefreshService;
 
-    private final com.rassini.graphite_client.service.validation.collector.MissingDataCollector missingDataCollector;
-    private final com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService;
-    private final com.rassini.graphite_client.service.validation.service.MissingDataNotificationService missingDataNotificationService;
-
 
     
     @Override
@@ -87,7 +83,6 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
         }
 
         try {
-            missingDataCollector.clear();
 
             boolean proveedorRecienDescargado = ProviderState.DESCARGA.equals(supplier.getStatus());
             updateStatus(supplier, ProviderState.PROCESSINGJPA);
@@ -112,60 +107,42 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             log.info("[FLOW-PHASE-1][DESERIALIZE] supplier={} Deserialización exitosa. ERPs detectados={}: {}",
                     dto.getEntityPublicId(), erpIds.size(), erpIds);
 
-            // Validación de nodos alternos de datos bancarios
-            outputValidationService.validateAlternateBankNodes(dto);
-
             log.info("[FLOW-PHASE-2][JPA-MAPPING] supplier={} Iniciando mapeo y persistencia relacional en tabla suppliers para ERPs={}",
                     dto.getEntityPublicId(), erpIds);
             supplierJpaMapper.upsertSuppliersRows(dto);
             log.info("[FLOW-PHASE-2][JPA-MAPPING] supplier={} Mapeo y persistencia en tabla suppliers concluido exitosamente",
                     dto.getEntityPublicId());
 
-            boolean overwriteIfExists = detonante != null && detonante.toUpperCase().contains("REPROCESSO MANUAL");
-            log.info("[FLOW-PHASE-3][XML-GEN] supplier={} detonante='{}' overwriteIfExists={}",
-                    supplier.getPublicId(), detonante, overwriteIfExists);
-
-            if (overwriteIfExists) {
-                xmlOcService.generate(dto, supplier, true);
-            } else {
-                xmlOcService.generate(dto, supplier);
+            if (proveedorRecienDescargado) {
+                notificarNuevoProveedor(
+                        dto,
+                        destinatariosNuevoProveedor,
+                        environment
+                );
             }
+
+
+            xmlOcService.generate(dto, supplier);
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
             }
 
-            if (overwriteIfExists) {
-                xmlPnService.generate(dto, supplier, true);
-            } else {
-                xmlPnService.generate(dto, supplier);
-            }
+            xmlPnService.generate(dto, supplier);
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
             }
 
-            if (overwriteIfExists) {
-                xmlPn99Service.generate(dto, supplier, true);
-            } else {
-                xmlPn99Service.generate(dto, supplier);
-            }
+            xmlPn99Service.generate(dto, supplier);
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLPN);
             }
 
-            if (overwriteIfExists) {
-                xmlFrenosService.generate(dto, supplier, true);
-            } else {
-                xmlFrenosService.generate(dto, supplier);
-            }
+            xmlFrenosService.generate(dto, supplier);
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLFRN);
             }
 
-            if (overwriteIfExists) {
-                xmlBreakesService.generate(dto, supplier, true);
-            } else {
-                xmlBreakesService.generate(dto, supplier);
-            }
+            xmlBreakesService.generate(dto, supplier);
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLBRK);
             }
@@ -183,17 +160,7 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                 integrityService.createFileSupplierSync(dto);
             }
 
-            // Procesar y registrar notificación consolidada si hubieron faltantes
-            missingDataNotificationService.processAndNotify(missingDataCollector, 1);
-
-            // "Nuevo proveedor" solo si el procesamiento completo fue exitoso y sin incidencias
-            if (proveedorRecienDescargado && esProcesamientoExitoso(dto, supplier)) {
-                notificarNuevoProveedor(dto, destinatariosNuevoProveedor, environment);
-            } else if (proveedorRecienDescargado) {
-                log.info("[NEW-SUPPLIER-MAIL] supplier={} omitido: procesamiento con incidencias, errores o archivos faltantes",
-                        supplier.getPublicId());
-            }
-
+                
 
         } catch (InvalidFormatException e) {
 
@@ -215,20 +182,6 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                 );
             }
 
-            missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
-                    .supplierCode(supplier.getPublicId())
-                    .outputType(com.rassini.graphite_client.service.validation.model.OutputType.XML)
-                    .fieldName("JSON_DESERIALIZATION")
-                    .expectedNode(e.getPathReference())
-                    .issueType(com.rassini.graphite_client.service.validation.model.IssueType.TRANSFORMATION_ERROR)
-                    .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING)
-                    .result(com.rassini.graphite_client.service.validation.model.OutputResult.NOT_GENERATED)
-                    .technicalMessage("Error de deserialización JSON de Graphite: " + e.getOriginalMessage())
-                    .build());
-
-            updateStatus(supplier, ProviderState.ERRORMAPPING);
-            missingDataNotificationService.processAndNotify(missingDataCollector, 1);
-
             throw new IllegalStateException(
                     "Error procesando proveedor " + supplier.getPublicId(),
                     e
@@ -241,19 +194,6 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                     supplier.getPublicId(),
                     e
             );
-
-            missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
-                    .supplierCode(supplier.getPublicId())
-                    .outputType(com.rassini.graphite_client.service.validation.model.OutputType.XML)
-                    .fieldName("PROCESSING_EXCEPTION")
-                    .issueType(com.rassini.graphite_client.service.validation.model.IssueType.GENERATION_EXCEPTION)
-                    .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING)
-                    .result(com.rassini.graphite_client.service.validation.model.OutputResult.NOT_GENERATED)
-                    .technicalMessage("Excepción durante procesamiento: " + e.getMessage())
-                    .build());
-
-            updateStatus(supplier, ProviderState.ERRORMAPPING);
-            missingDataNotificationService.processAndNotify(missingDataCollector, 1);
 
             throw new IllegalStateException(
                     "Error procesando proveedor " + supplier.getPublicId(),
@@ -292,67 +232,18 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                         && bankNumberNode.isTextual()
                         && bankNumberNode.asText().isBlank()) {
 
-                    String account = bank.path("Bank_Account_Number").asText();
                     log.warn(
                             "[GRAPHITE_CONTRACT] supplier={} bu={} account={} Bank_Number llegó como string vacío",
                             supplierCode,
                             bu,
-                            account,
+                            bank.path("Bank_Account_Number").asText(),
                             bankNumberNode.asText()
                     );
-
-                    String masked = (account != null && account.length() > 4)
-                            ? "****" + account.substring(account.length() - 4)
-                            : (account != null && !account.isBlank() ? "****" : "N/A");
-
-                    missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
-                            .supplierCode(supplierCode)
-                            .businessUnitCode(bu)
-                            .maskedAccountNumber(masked)
-                            .outputType(com.rassini.graphite_client.service.validation.model.OutputType.INTEGRITY)
-                            .subType("sync_file")
-                            .fieldName("Bank_Number")
-                            .expectedNode("ERP_Record[].ERP_Bank_List[].Bank_Number")
-                            .receivedValue(bankNumberNode.asText())
-                            .issueType(com.rassini.graphite_client.service.validation.model.IssueType.BANK_INFO_INCOMPLETE)
-                            .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING)
-                            .result(com.rassini.graphite_client.service.validation.model.OutputResult.GENERATED_MANUAL)
-                            .technicalMessage("Bank_Number llegó como string vacío desde Graphite")
-                            .build());
                 }
             }
         }
     }
 
-
-    /**
-     * Procesamiento exitoso: sin incidencias (WARNING/BLOCKING/GENERATED_MANUAL/NOT_GENERATED),
-     * sin estado ERROR*, todos los XML esperados generados y Integrity con al menos un registro exportable.
-     */
-    private boolean esProcesamientoExitoso(GraphiteSupplierDto dto, SupplierEntity supplier) {
-        if (dto == null || supplier == null || isErrorState(supplier.getStatus())) {
-            return false;
-        }
-        if (missingDataCollector != null && missingDataCollector.hasIssues()) {
-            return false;
-        }
-        if (dto.getErpRecords() == null || dto.getErpRecords().isEmpty()) {
-            return false;
-        }
-        for (GraphiteSupplierDto.ErpRecord erp : dto.getErpRecords()) {
-            SuppliersRowEntity row = suppliersRowRepository
-                    .findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(dto.getEntityPublicId(), erp.getRassiniErpEntityId())
-                    .orElse(null);
-            if (row == null
-                    || (!XmlStatus.GENERATED.equals(row.getXmlStatus())
-                    && !XmlStatus.GENERATED_PREV.equals(row.getXmlStatus()))) {
-                return false;
-            }
-        }
-        java.util.List<SuppliersRowEntity> rows =
-                suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(dto.getEntityPublicId());
-        return rows != null && rows.stream().anyMatch(r -> !XmlStatus.ERROR.equals(r.getXmlStatus()));
-    }
 
     private void notificarNuevoProveedor(
         GraphiteSupplierDto dto,

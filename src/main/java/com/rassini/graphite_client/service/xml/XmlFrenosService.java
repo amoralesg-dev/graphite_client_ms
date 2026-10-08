@@ -6,10 +6,6 @@ import com.rassini.graphite_client.entity.SupplierEntity;
 public interface XmlFrenosService 
     extends XmlBusinessRelationService,
             XmlCreditorService
-{
+ {
     void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter);
-
-    default void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter, boolean overwriteIfExists) {
-        generate(dto, supplierParameter);
-    }
 }
