@@ -378,6 +378,7 @@ public class GraphiteSupplierDto {
     // =========================
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.rassini.graphite_client.service.mapper.BankNumberDeserializer.class)
     public static class BankNumber {
 
         @JsonProperty("bank_name")
