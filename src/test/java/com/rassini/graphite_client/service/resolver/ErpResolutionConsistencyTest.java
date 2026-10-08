@@ -51,15 +51,6 @@ public class ErpResolutionConsistencyTest {
     @Spy
     private SupplierErpResolver supplierErpResolver = new SupplierErpResolver();
 
-    @Spy
-    private com.rassini.graphite_client.service.validation.collector.MissingDataCollector missingDataCollector = new com.rassini.graphite_client.service.validation.collector.MissingDataCollector();
-
-    @Spy
-    private com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService = new com.rassini.graphite_client.service.validation.service.OutputValidationService(missingDataCollector);
-
-    @Spy
-    private com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver = new com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver();
-
     @InjectMocks
     private SupplierJpaMapperImpl supplierJpaMapper;
 
