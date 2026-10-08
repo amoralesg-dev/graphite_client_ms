@@ -389,6 +389,142 @@ public class MissingDataAndNomenclatureIntegrationTest {
         assertFalse(correo.getBody().contains("012180001322930227"), "NO debe contener el número de cuenta completo en texto claro");
     }
 
+    @Test
+    @DisplayName("Aislamiento Caso A: Warning de Integrity (Bank_Number vacío) -> Integrity a Manual, pero XML a carpeta normal")
+    public void testChannelIsolation_IntegrityWarningDoesNotRouteXmlToManual() throws IOException {
+        SuppliersRowEntity row = createValidRow("PRV_CASE_A", "09", "60003091", "012180001322930230");
+        suppliersRowRepository.save(row);
+
+        // Simulamos warning exclusivo de Integrity (ej. Bank_Number vacío en contrato)
+        missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
+                .supplierCode("PRV_CASE_A")
+                .erpIdQad("60003091")
+                .businessUnitCode("09")
+                .maskedAccountNumber("****0230")
+                .outputType(com.rassini.graphite_client.service.validation.model.OutputType.INTEGRITY)
+                .subType("sync_file")
+                .fieldName("Bank_Number")
+                .expectedNode("ERP_Record[].ERP_Bank_List[].Bank_Number")
+                .issueType(com.rassini.graphite_client.service.validation.model.IssueType.BANK_INFO_INCOMPLETE)
+                .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING)
+                .result(com.rassini.graphite_client.service.validation.model.OutputResult.GENERATED_MANUAL)
+                .technicalMessage("Bank_Number llegó como string vacío desde Graphite")
+                .build());
+
+        GraphiteSupplierDto dto = createDto("PRV_CASE_A", "60003091", "09");
+        xmlPnService.generate(dto, null);
+
+        Path normalXml = Paths.get(getOutputBase(), "xml", "PN", "RPIEDRAS_busrel_60003091_09.xml");
+        Path manualXml = Paths.get(getOutputBase(), "xml", "Manual", "PN", "RPIEDRAS_busrel_60003091_09.xml");
+
+        assertTrue(Files.exists(normalXml), "XML debe generarse en la carpeta NORMAL cuando el warning es únicamente de Integrity");
+        assertFalse(Files.exists(manualXml), "XML NO debe enviarse a la carpeta Manual por un warning de Integrity");
+    }
+
+    @Test
+    @DisplayName("Aislamiento Caso B: Warning de XML (streetName vacío) -> XML a Manual, Integrity a flujo normal")
+    public void testChannelIsolation_XmlWarningDoesNotRouteIntegrityToManual() throws IOException {
+        SuppliersRowEntity row = createValidRow("PRV_CASE_B", "09", "60003092", "012180001322930231");
+        row.setStreetName(null); // Warning de XML en busrel
+        suppliersRowRepository.save(row);
+
+        GraphiteSupplierDto dto = createDto("PRV_CASE_B", "60003092", "09");
+        xmlPnService.generate(dto, null);
+        integrityService.createFileSupplierSync(dto);
+
+        Path manualXml = Paths.get(getOutputBase(), "xml", "Manual", "PN", "RPIEDRAS_busrel_60003092_09.xml");
+        Path normalXml = Paths.get(getOutputBase(), "xml", "PN", "RPIEDRAS_busrel_60003092_09.xml");
+        assertTrue(Files.exists(manualXml), "XML debe generarse en carpeta Manual por falta de streetName");
+        assertFalse(Files.exists(normalXml), "XML no debe existir en carpeta normal");
+
+        Path normalIntegrityDir = Paths.get(getOutputBase(), "integrity", "09");
+        Path manualIntegrityDir = Paths.get(getOutputBase(), "integrity", "Manual", "09");
+        File[] normalIntegrityFiles = normalIntegrityDir.toFile().listFiles((d, name) -> name.startsWith("60003092"));
+        File[] manualIntegrityFiles = manualIntegrityDir.toFile().listFiles((d, name) -> name.startsWith("60003092"));
+
+        assertNotNull(normalIntegrityFiles, "Directorio normal de Integrity debe existir");
+        assertTrue(normalIntegrityFiles.length > 0, "Integrity debe generarse en carpeta normal si no tiene warnings bancarios");
+        assertTrue(manualIntegrityFiles == null || manualIntegrityFiles.length == 0, "Integrity NO debe enviarse a Manual por advertencias de XML");
+    }
+
+    @Test
+    @DisplayName("Aislamiento Caso C: Warnings en ambos canales -> Cada canal se enruta independientemente a su carpeta Manual")
+    public void testChannelIsolation_BothChannelsRouteIndependentlyToManual() throws IOException {
+        SuppliersRowEntity row = createValidRow("PRV_CASE_C", "09", "60003093", "012180001322930232");
+        row.setStreetName(null); // Warning XML
+        row.setBeneficiaryBankName(null); // Warning Integrity
+        suppliersRowRepository.save(row);
+
+        GraphiteSupplierDto dto = createDto("PRV_CASE_C", "60003093", "09");
+        xmlPnService.generate(dto, null);
+        integrityService.createFileSupplierSync(dto);
+
+        Path manualXml = Paths.get(getOutputBase(), "xml", "Manual", "PN", "RPIEDRAS_busrel_60003093_09.xml");
+        Path normalXml = Paths.get(getOutputBase(), "xml", "PN", "RPIEDRAS_busrel_60003093_09.xml");
+        assertTrue(Files.exists(manualXml), "XML debe generarse en Manual por streetName");
+        assertFalse(Files.exists(normalXml), "XML NO debe existir en normal");
+
+        Path manualIntegrityDir = Paths.get(getOutputBase(), "integrity", "Manual", "09");
+        Path normalIntegrityDir = Paths.get(getOutputBase(), "integrity", "09");
+        File[] manualIntegrityFiles = manualIntegrityDir.toFile().listFiles((d, name) -> name.startsWith("60003093"));
+        File[] normalIntegrityFiles = normalIntegrityDir.toFile().listFiles((d, name) -> name.startsWith("60003093"));
+
+        assertNotNull(manualIntegrityFiles);
+        assertTrue(manualIntegrityFiles.length > 0, "Integrity debe generarse en Manual por falta de beneficiaryBankName");
+        assertTrue(normalIntegrityFiles == null || normalIntegrityFiles.length == 0, "Integrity no debe generarse en carpeta normal");
+    }
+
+    @Test
+    @DisplayName("Caso DE185951: Warning Bank_Number en Collector rutea Integrity a Manual y mantiene XML en Normal")
+    public void testBankNumberWarningRoutesIntegrityToManualAndXmlToNormal() throws IOException {
+        String supplierCode = "DE185951";
+        String erpId = "60003025";
+        String bu = "1000";
+
+        // Registrar en collector el warning de deserialización de Bank_Number (OutputType.INTEGRITY)
+        missingDataCollector.recordIssue(
+                com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
+                        .supplierCode(supplierCode)
+                        .businessUnitCode(bu)
+                        .outputType(com.rassini.graphite_client.service.validation.model.OutputType.INTEGRITY)
+                        .subType("sync_file")
+                        .fieldName("Bank_Number")
+                        .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING)
+                        .result(com.rassini.graphite_client.service.validation.model.OutputResult.GENERATED_MANUAL)
+                        .technicalMessage("Bank_Number llegó como string vacío")
+                        .build()
+        );
+
+        // Fila válida en BD (campos de fila sin faltantes en SuppliersRowEntity)
+        SuppliersRowEntity row = createValidRow(supplierCode, bu, erpId, "012180001322930220");
+        suppliersRowRepository.save(row);
+
+        GraphiteSupplierDto dto = createDto(supplierCode, erpId, bu);
+
+        // Generar XML Frenos (BU 1000)
+        xmlFrenosService.generate(dto, null);
+
+        // Generar Integrity
+        integrityService.createFileSupplierSync(dto);
+
+        // Validar XML: NO debe ir a Manual/FRENOS, debe ir a ruta normal FRENOS
+        Path manualXmlBusrel = Paths.get(getOutputBase(), "xml", "Manual", "FRENOS", "busrel_60003025_1000.xml");
+        Path normalXmlBusrel = Paths.get(getOutputBase(), "xml", "FRENOS", "busrel_60003025_1000.xml");
+        assertFalse(Files.exists(manualXmlBusrel), "XML NO debe enviarse a Manual por un warning de Integrity");
+        assertTrue(Files.exists(normalXmlBusrel), "XML debe generarse en la ruta normal FRENOS");
+
+        // Validar Integrity: DEBE ir a Manual/1000 y NO a normal 1000
+        Path manualIntegrityDir = Paths.get(getOutputBase(), "integrity", "Manual", bu);
+        Path normalIntegrityDir = Paths.get(getOutputBase(), "integrity", bu);
+
+        File[] manualIntegrityFiles = manualIntegrityDir.toFile().listFiles((d, name) -> name.startsWith(erpId));
+        File[] normalIntegrityFiles = normalIntegrityDir.toFile().listFiles((d, name) -> name.startsWith(erpId));
+
+        assertNotNull(manualIntegrityFiles, "Directorio Manual/1000 debe existir");
+        assertTrue(manualIntegrityFiles.length > 0, "Archivo Integrity debe generarse en Manual/1000 por Bank_Number warning");
+        assertTrue(normalIntegrityFiles == null || normalIntegrityFiles.length == 0, "Archivo Integrity NO debe existir en ruta normal 1000");
+    }
+
     private SuppliersRowEntity createValidRow(String supplierCode, String bu, String erpId, String account) {
         SuppliersRowEntity row = new SuppliersRowEntity();
         row.setSupplierCode(supplierCode);

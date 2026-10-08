@@ -207,6 +207,22 @@ public class IntegrityServiceImpl implements IntegrityService {
                     } else if (sev == com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING) {
                         hasWarning = true;
                     }
+
+                    if (s.getSupplierCode() != null) {
+                        if (outputValidationService.hasIntegrityBlocking(s.getSupplierCode(), bu)) {
+                            hasBlocking = true;
+                        }
+                        if (outputValidationService.hasIntegrityWarning(s.getSupplierCode(), bu)) {
+                            hasWarning = true;
+                        }
+                    }
+                }
+
+                if (outputValidationService.hasIntegrityBlocking(supplierID, bu)) {
+                    hasBlocking = true;
+                }
+                if (outputValidationService.hasIntegrityWarning(supplierID, bu)) {
+                    hasWarning = true;
                 }
             }
 

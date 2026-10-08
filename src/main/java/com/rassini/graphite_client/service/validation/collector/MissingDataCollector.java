@@ -43,6 +43,22 @@ public class MissingDataCollector {
         return !currentThreadIssues.get().isEmpty();
     }
 
+    public boolean hasBlockingIssues(String supplierCode, String businessUnit, com.rassini.graphite_client.service.validation.model.OutputType outputType) {
+        return currentThreadIssues.get().stream()
+                .filter(i -> supplierCode == null || supplierCode.equals(i.getSupplierCode()))
+                .filter(i -> businessUnit == null || businessUnit.equals(i.getBusinessUnitCode()))
+                .filter(i -> outputType == null || outputType == i.getOutputType())
+                .anyMatch(i -> i.getSeverity() == com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING);
+    }
+
+    public boolean hasWarningIssues(String supplierCode, String businessUnit, com.rassini.graphite_client.service.validation.model.OutputType outputType) {
+        return currentThreadIssues.get().stream()
+                .filter(i -> supplierCode == null || supplierCode.equals(i.getSupplierCode()))
+                .filter(i -> businessUnit == null || businessUnit.equals(i.getBusinessUnitCode()))
+                .filter(i -> outputType == null || outputType == i.getOutputType())
+                .anyMatch(i -> i.getSeverity() == com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING);
+    }
+
     public boolean hasBlockingIssues(String supplierCode, String businessUnit, String subType) {
         return currentThreadIssues.get().stream()
                 .filter(i -> supplierCode == null || supplierCode.equals(i.getSupplierCode()))

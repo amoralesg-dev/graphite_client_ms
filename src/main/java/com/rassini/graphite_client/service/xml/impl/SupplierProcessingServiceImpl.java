@@ -121,14 +121,6 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             log.info("[FLOW-PHASE-2][JPA-MAPPING] supplier={} Mapeo y persistencia en tabla suppliers concluido exitosamente",
                     dto.getEntityPublicId());
 
-            if (proveedorRecienDescargado) {
-                notificarNuevoProveedor(
-                        dto,
-                        destinatariosNuevoProveedor,
-                        environment
-                );
-            }
-
             xmlOcService.generate(dto, supplier);
             if (!isErrorState(supplier.getStatus())) {
                 updateStatus(supplier, ProviderState.PROCESSINGXMLOC);
@@ -170,7 +162,14 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
             // Procesar y registrar notificación consolidada si hubieron faltantes
             missingDataNotificationService.processAndNotify(missingDataCollector, 1);
 
-                
+            // "Nuevo proveedor" solo si el procesamiento completo fue exitoso y sin incidencias
+            if (proveedorRecienDescargado && esProcesamientoExitoso(dto, supplier)) {
+                notificarNuevoProveedor(dto, destinatariosNuevoProveedor, environment);
+            } else if (proveedorRecienDescargado) {
+                log.info("[NEW-SUPPLIER-MAIL] supplier={} omitido: procesamiento con incidencias, errores o archivos faltantes",
+                        supplier.getPublicId());
+            }
+
 
         } catch (InvalidFormatException e) {
 
@@ -301,6 +300,35 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
         }
     }
 
+
+    /**
+     * Procesamiento exitoso: sin incidencias (WARNING/BLOCKING/GENERATED_MANUAL/NOT_GENERATED),
+     * sin estado ERROR*, todos los XML esperados generados y Integrity con al menos un registro exportable.
+     */
+    private boolean esProcesamientoExitoso(GraphiteSupplierDto dto, SupplierEntity supplier) {
+        if (dto == null || supplier == null || isErrorState(supplier.getStatus())) {
+            return false;
+        }
+        if (missingDataCollector != null && missingDataCollector.hasIssues()) {
+            return false;
+        }
+        if (dto.getErpRecords() == null || dto.getErpRecords().isEmpty()) {
+            return false;
+        }
+        for (GraphiteSupplierDto.ErpRecord erp : dto.getErpRecords()) {
+            SuppliersRowEntity row = suppliersRowRepository
+                    .findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(dto.getEntityPublicId(), erp.getRassiniErpEntityId())
+                    .orElse(null);
+            if (row == null
+                    || (!XmlStatus.GENERATED.equals(row.getXmlStatus())
+                    && !XmlStatus.GENERATED_PREV.equals(row.getXmlStatus()))) {
+                return false;
+            }
+        }
+        java.util.List<SuppliersRowEntity> rows =
+                suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(dto.getEntityPublicId());
+        return rows != null && rows.stream().anyMatch(r -> !XmlStatus.ERROR.equals(r.getXmlStatus()));
+    }
 
     private void notificarNuevoProveedor(
         GraphiteSupplierDto dto,

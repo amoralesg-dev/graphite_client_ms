@@ -408,4 +408,92 @@ public class SupplierProcessingServiceTest {
         verify(missingDataCollector, times(1)).recordIssue(any());
         verify(missingDataNotificationService, times(1)).processAndNotify(eq(missingDataCollector), eq(1));
     }
+
+    private SuppliersRowEntity generatedRow(String bu) {
+        SuppliersRowEntity row = new SuppliersRowEntity();
+        row.setBusinessUnitCode(bu);
+        row.setXmlStatus(XmlStatus.GENERATED);
+        return row;
+    }
+
+    private void stubSuccessfulRows() {
+        SuppliersRowEntity row99 = generatedRow("99");
+        SuppliersRowEntity row0111 = generatedRow("0111");
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
+                .thenReturn(Optional.of(row99));
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
+                .thenReturn(Optional.of(row0111));
+        lenient().when(suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(publicId))
+                .thenReturn(List.of(row99, row0111));
+    }
+
+    @Test
+    @DisplayName("Correo nuevo proveedor: se envía solo si el procesamiento fue exitoso y sin incidencias")
+    void testNewSupplierMailSentOnlyOnCleanSuccess() throws Exception {
+        setupBaseMocks();
+        stubSuccessfulRows();
+        when(missingDataCollector.hasIssues()).thenReturn(false);
+
+        supplierProcessingService.processSupplier(publicId, "MANUAL");
+
+        verify(correoPendienteRepository, times(1)).save(any());
+    }
+
+    @Test
+    @DisplayName("Correo nuevo proveedor: NO se envía si existen incidencias (WARNING/BLOCKING/MANUAL/NOT_GENERATED)")
+    void testNewSupplierMailNotSentWhenIssuesExist() throws Exception {
+        setupBaseMocks();
+        stubSuccessfulRows();
+        when(missingDataCollector.hasIssues()).thenReturn(true);
+
+        supplierProcessingService.processSupplier(publicId, "MANUAL");
+
+        verify(correoPendienteRepository, never()).save(any());
+        verify(missingDataNotificationService, times(1)).processAndNotify(eq(missingDataCollector), eq(1));
+    }
+
+    @Test
+    @DisplayName("Correo nuevo proveedor: NO se envía si el proveedor termina en estado ERROR*")
+    void testNewSupplierMailNotSentOnErrorState() throws Exception {
+        setupBaseMocks();
+        stubSuccessfulRows();
+        doAnswer(invocation -> {
+            supplierEntity.setStatus(ProviderState.ERRORMAPPN);
+            return null;
+        }).when(xmlPn99Service).generate(any(), eq(supplierEntity));
+
+        supplierProcessingService.processSupplier(publicId, "MANUAL");
+
+        verify(correoPendienteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Correo nuevo proveedor: NO se envía si algún XML esperado no fue generado")
+    void testNewSupplierMailNotSentWhenXmlMissing() throws Exception {
+        setupBaseMocks();
+        SuppliersRowEntity row99 = generatedRow("99");
+        SuppliersRowEntity row0111 = generatedRow("0111");
+        row0111.setXmlStatus(XmlStatus.PENDING);
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "99"))
+                .thenReturn(Optional.of(row99));
+        when(suppliersRowRepository.findFirstBySupplierCodeAndBusinessUnitCodeOrderByIdAsc(publicId, "0111"))
+                .thenReturn(Optional.of(row0111));
+
+        supplierProcessingService.processSupplier(publicId, "MANUAL");
+
+        verify(correoPendienteRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("Correo nuevo proveedor: NO se envía si Integrity no tiene registros exportables")
+    void testNewSupplierMailNotSentWhenNoIntegrityRows() throws Exception {
+        setupBaseMocks();
+        stubSuccessfulRows();
+        when(suppliersRowRepository.findBySupplierCodeOrderByBusinessUnitCodeAsc(publicId))
+                .thenReturn(Collections.emptyList());
+
+        supplierProcessingService.processSupplier(publicId, "MANUAL");
+
+        verify(correoPendienteRepository, never()).save(any());
+    }
 }

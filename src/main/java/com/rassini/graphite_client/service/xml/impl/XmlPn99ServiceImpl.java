@@ -76,8 +76,8 @@ public class XmlPn99ServiceImpl implements XmlPn99Service {
                 boolean busrelValid = outputValidationService.validateBusrel(supplier, erpId);
                 boolean creditorValid = outputValidationService.validateCreditor(supplier, erpId);
 
-                boolean hasBlocking = missingDataCollector.hasBlockingIssues(dto.getEntityPublicId(), erpId, null);
-                boolean hasWarning = missingDataCollector.hasWarningIssues(dto.getEntityPublicId(), erpId, null);
+                boolean hasBlocking = missingDataCollector.hasBlockingIssues(dto.getEntityPublicId(), erpId, com.rassini.graphite_client.service.validation.model.OutputType.XML);
+                boolean hasWarning = missingDataCollector.hasWarningIssues(dto.getEntityPublicId(), erpId, com.rassini.graphite_client.service.validation.model.OutputType.XML);
 
                 if (hasBlocking) {
                     log.warn("[XML-PROCESS] supplier={} businessUnit={} result=NOT_GENERATED reason=BLOCKING_DATA_MISSING", dto.getEntityPublicId(), erpId);

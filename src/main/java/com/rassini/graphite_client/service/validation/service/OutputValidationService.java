@@ -21,6 +21,18 @@ public class OutputValidationService {
 
     private final MissingDataCollector collector;
 
+    public MissingDataCollector getCollector() {
+        return this.collector;
+    }
+
+    public boolean hasIntegrityWarning(String supplierCode, String bu) {
+        return collector != null && collector.hasWarningIssues(supplierCode, bu, OutputType.INTEGRITY);
+    }
+
+    public boolean hasIntegrityBlocking(String supplierCode, String bu) {
+        return collector != null && collector.hasBlockingIssues(supplierCode, bu, OutputType.INTEGRITY);
+    }
+
     public boolean validateBusrel(SuppliersRowEntity supplier, String businessUnit) {
         boolean valid = true;
         String supplierCode = supplier != null ? supplier.getSupplierCode() : null;
