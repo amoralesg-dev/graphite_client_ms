@@ -41,15 +41,19 @@ public class IntegrityServiceImpl implements IntegrityService {
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
     private final SupplierErpResolver supplierErpResolver;
+    private final com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService;
+    private final com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver;
     private final String outputBaseIntegrity;
 
     @Autowired
     public IntegrityServiceImpl(
             SuppliersRowRepository suppliersRowRepository,
             CatalogService catalogService,
-            SupplierErpResolver supplierErpResolver
+            SupplierErpResolver supplierErpResolver,
+            @Autowired(required = false) com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService,
+            @Autowired(required = false) com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver
     ) {
-        this(suppliersRowRepository, catalogService, supplierErpResolver, XmlConstants.OUTPUT_BASE_INTEGRITY);
+        this(suppliersRowRepository, catalogService, supplierErpResolver, outputValidationService, manualOutputPathResolver, XmlConstants.OUTPUT_BASE_INTEGRITY);
     }
 
     public IntegrityServiceImpl(
@@ -58,9 +62,30 @@ public class IntegrityServiceImpl implements IntegrityService {
             SupplierErpResolver supplierErpResolver,
             String outputBaseIntegrity
     ) {
+        this(suppliersRowRepository, catalogService, supplierErpResolver, null, null, outputBaseIntegrity);
+    }
+
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver
+    ) {
+        this(suppliersRowRepository, catalogService, supplierErpResolver, null, null, XmlConstants.OUTPUT_BASE_INTEGRITY);
+    }
+
+    public IntegrityServiceImpl(
+            SuppliersRowRepository suppliersRowRepository,
+            CatalogService catalogService,
+            SupplierErpResolver supplierErpResolver,
+            com.rassini.graphite_client.service.validation.service.OutputValidationService outputValidationService,
+            com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver,
+            String outputBaseIntegrity
+    ) {
         this.suppliersRowRepository = suppliersRowRepository;
         this.catalogService = catalogService;
         this.supplierErpResolver = supplierErpResolver;
+        this.outputValidationService = outputValidationService;
+        this.manualOutputPathResolver = manualOutputPathResolver;
         this.outputBaseIntegrity = (outputBaseIntegrity != null && !outputBaseIntegrity.isBlank())
                 ? outputBaseIntegrity
                 : XmlConstants.OUTPUT_BASE_INTEGRITY;
@@ -155,26 +180,76 @@ public class IntegrityServiceImpl implements IntegrityService {
     }
 
     public void generateSupplierSyncFile(List<SuppliersRowEntity> suppliers, String supplierID) {
+        if (suppliers == null || suppliers.isEmpty()) {
+            log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} No suppliers rows to export", supplierID);
+            return;
+        }
 
         String currentDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        
-        Path outDir = Paths.get(this.outputBaseIntegrity);
-        String fileName = supplierID + "_"+currentDateTime+".txt";
-        Path filePath = outDir.resolve(fileName);
 
-        try {
-            Files.createDirectories(outDir);
+        // Agrupar filas por unidad de negocio
+        Map<String, List<SuppliersRowEntity>> byBu = suppliers.stream()
+                .collect(Collectors.groupingBy(s -> (s.getBusinessUnitCode() != null && !s.getBusinessUnitCode().isBlank()) ? s.getBusinessUnitCode() : "UNKNOWN"));
 
-            log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} Generando archivo en: {}", supplierID, filePath.toAbsolutePath());
+        for (Map.Entry<String, List<SuppliersRowEntity>> entry : byBu.entrySet()) {
+            String bu = entry.getKey();
+            List<SuppliersRowEntity> buSuppliers = entry.getValue();
 
-            int count = 0;
-            try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
-                if (suppliers != null) {
-                    for (SuppliersRowEntity supplier : suppliers) {
+            // Evaluar si alguna fila de esta BU tiene severidad WARNING o BLOCKING
+            boolean hasBlocking = false;
+            boolean hasWarning = false;
+
+            if (outputValidationService != null) {
+                for (SuppliersRowEntity s : buSuppliers) {
+                    com.rassini.graphite_client.service.validation.model.IssueSeverity sev = outputValidationService.evaluateIntegrityRow(s, bu);
+                    if (sev == com.rassini.graphite_client.service.validation.model.IssueSeverity.BLOCKING) {
+                        hasBlocking = true;
+                    } else if (sev == com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING) {
+                        hasWarning = true;
+                    }
+
+                    if (s.getSupplierCode() != null) {
+                        if (outputValidationService.hasIntegrityBlocking(s.getSupplierCode(), bu)) {
+                            hasBlocking = true;
+                        }
+                        if (outputValidationService.hasIntegrityWarning(s.getSupplierCode(), bu)) {
+                            hasWarning = true;
+                        }
+                    }
+                }
+
+                if (outputValidationService.hasIntegrityBlocking(supplierID, bu)) {
+                    hasBlocking = true;
+                }
+                if (outputValidationService.hasIntegrityWarning(supplierID, bu)) {
+                    hasWarning = true;
+                }
+            }
+
+            if (hasBlocking) {
+                log.warn("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} bu={} Archivo Integrity NO generado por datos bancarios bloqueantes", supplierID, bu);
+                continue;
+            }
+
+            boolean isManual = hasWarning;
+            Path outDir = (manualOutputPathResolver != null)
+                    ? manualOutputPathResolver.resolveIntegrityOutputDir(bu, isManual)
+                    : Paths.get(this.outputBaseIntegrity);
+            String fileName = supplierID + "_" + currentDateTime + ".txt";
+            Path filePath = outDir.resolve(fileName);
+
+            try {
+                Files.createDirectories(outDir);
+
+                log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} bu={} isManual={} Generando archivo en: {}",
+                        supplierID, bu, isManual, filePath.toAbsolutePath());
+
+                int count = 0;
+                try (BufferedWriter writer = Files.newBufferedWriter(filePath)) {
+                    for (SuppliersRowEntity supplier : buSuppliers) {
                         String supplierCode = supplier.getSupplierCode() != null && !supplier.getSupplierCode().isBlank()
                                 ? supplier.getSupplierCode()
                                 : supplierID;
-                        String bu = supplier.getBusinessUnitCode();
                         String xmlStatusStr = supplier.getXmlStatus() != null ? supplier.getXmlStatus().name() : "null";
                         String statusIntegrity = supplier.getStatusIntegrity();
 
@@ -198,13 +273,13 @@ public class IntegrityServiceImpl implements IntegrityService {
                         }
                     }
                 }
-            }
 
-            log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} Archivo generado exitosamente con {} registros en {}",
-                    supplierID, count, filePath.toAbsolutePath());
-        } catch (IOException e) {
-            log.error("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} Error generando archivo {}: {}",
-                    supplierID, filePath.toAbsolutePath(), e.getMessage(), e);
+                log.info("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} bu={} isManual={} Archivo generado exitosamente con {} registros en {}",
+                        supplierID, bu, isManual, count, filePath.toAbsolutePath());
+            } catch (IOException e) {
+                log.error("[FLOW-PHASE-4][INTEGRITY-FILE] supplierCode/erpIdQad={} bu={} Error generando archivo {}: {}",
+                        supplierID, bu, filePath.toAbsolutePath(), e.getMessage(), e);
+            }
         }
     }
 
