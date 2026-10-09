@@ -33,15 +33,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(properties = {
-    "XML_OUTPUT_PATH=target/test-output-validation",
     "spring.jpa.hibernate.ddl-auto=create-drop"
 })
 @ActiveProfiles("test")
 public class MissingDataAndNomenclatureIntegrationTest {
-
-    static {
-        System.setProperty("XML_OUTPUT_PATH", "target/test-output-validation");
-    }
 
     @Autowired
     private SuppliersRowRepository suppliersRowRepository;
@@ -88,11 +83,37 @@ public class MissingDataAndNomenclatureIntegrationTest {
 
     @BeforeEach
     public void setup() throws IOException {
+        String outputBase = getOutputBase();
+        assertNotNull(outputBase, "getOutputBase() no debe ser nulo");
+
+        String normalizedOutput = outputBase.replace("\\", "/");
+        assertFalse(normalizedOutput.startsWith("/app"), "El directorio no debe iniciar con /app: " + normalizedOutput);
+        assertFalse(normalizedOutput.matches("^[A-Za-z]:/app(?:/.*)?$"), "El directorio no debe iniciar con <Drive>:/app: " + normalizedOutput);
+
+        Path outputPath = Paths.get(outputBase);
+        // Limpiar únicamente el contenido de XmlConstants.OUTPUT sin borrar target completo
+        if (Files.exists(outputPath)) {
+            File[] files = outputPath.toFile().listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    deleteDirectoryRecursively(file);
+                }
+            }
+        }
+
+        Path xmlDir = Paths.get(outputBase, "xml");
+        Path integrityDir = Paths.get(outputBase, "integrity");
+        Files.createDirectories(xmlDir);
+        Files.createDirectories(integrityDir);
+
+        assertTrue(Files.isWritable(outputPath), "La ruta de salida debe ser escribible: " + outputPath);
+        assertTrue(Files.isWritable(xmlDir), "El directorio de XML debe ser escribible: " + xmlDir);
+        assertTrue(Files.isWritable(integrityDir), "El directorio de Integrity debe ser escribible: " + integrityDir);
+
         suppliersRowRepository.deleteAll();
         catalogManagerRepository.deleteAll();
         correoPendienteRepository.deleteAll();
         missingDataCollector.clear();
-        deleteDirectoryRecursively(new File(getOutputBase()));
 
         // Pre-cargar catálogos necesarios para los tests de integración
         seedCatalog("country", "MEX", "09", "MEX");
