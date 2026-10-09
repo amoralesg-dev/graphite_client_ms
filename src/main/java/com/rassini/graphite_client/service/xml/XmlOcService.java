@@ -13,4 +13,8 @@ public interface XmlOcService
      *  - 1 XML Creditor (creditor)
      */
     void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter);
+
+    default void generate(GraphiteSupplierDto dto, SupplierEntity supplierParameter, boolean overwriteIfExists) {
+        generate(dto, supplierParameter);
+    }
 }
