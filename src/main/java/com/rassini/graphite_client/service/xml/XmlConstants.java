@@ -22,16 +22,6 @@ public final class XmlConstants {
     public static final String OUTPUT_FRENOS_DIR = buildPath(OUTPUT_BASE_XML, "FRENOS");
     public static final String OUTPUT_BREAKES_DIR = buildPath(OUTPUT_BASE_XML, "BREAKES");
 
-    // Manual base paths
-    public static final String OUTPUT_BASE_XML_MANUAL = buildPath(OUTPUT_BASE_XML, "Manual");
-    public static final String OUTPUT_PN_MANUAL_DIR = buildPath(OUTPUT_BASE_XML_MANUAL, "PN");
-    public static final String OUTPUT_PN99_MANUAL_DIR = buildPath(OUTPUT_BASE_XML_MANUAL, "PN99");
-    public static final String OUTPUT_OC_MANUAL_DIR = buildPath(OUTPUT_BASE_XML_MANUAL, "OCBYP");
-    public static final String OUTPUT_FRENOS_MANUAL_DIR = buildPath(OUTPUT_BASE_XML_MANUAL, "FRENOS");
-    public static final String OUTPUT_BREAKES_MANUAL_DIR = buildPath(OUTPUT_BASE_XML_MANUAL, "BREAKES");
-
-    public static final String OUTPUT_BASE_INTEGRITY_MANUAL = buildPath(OUTPUT_BASE_INTEGRITY, "Manual");
-
     // Templates FRENOS
     public static final String TEMPLATE_FRENOS_CREDITOR = buildPath(TEMPLATE_BASE, "frenos", "creditor.xml");
     public static final String TEMPLATE_FRENOS_BUSREL = buildPath(TEMPLATE_BASE, "frenos", "busrel.xml");
