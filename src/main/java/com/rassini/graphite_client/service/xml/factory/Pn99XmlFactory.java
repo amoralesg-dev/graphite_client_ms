@@ -33,6 +33,15 @@ public class Pn99XmlFactory {
             String taxClassFromErp, 
             String taxZoneFromErp
     ) {
+        return buildBusrelContext(supplier, taxClassFromErp, taxZoneFromErp, catalogService.resolveUpdateInfo(supplier));
+    }
+
+    public XmlContext buildBusrelContext(
+            SuppliersRowEntity supplier,
+            String taxClassFromErp, 
+            String taxZoneFromErp,
+            UpdateInfo updateInfo
+    ) {
 
         String erpId = XMLConstants.PN99;
         String name20 = left(supplier.getSupplierName(), 20);
@@ -41,8 +50,8 @@ public class Pn99XmlFactory {
         TaxInfo tax = resolveTaxInfoPn99(erpId, taxClassFromErp, taxZoneFromErp);
 
         return XmlContext.builder()
-                .outputFileName("PN99_busrel_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode() + ".xml")
-                .contextInfo(buildContextInfoBusrel(supplier))
+                .outputFileName("PN99_busrel_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
+                .contextInfo(buildContextInfoBusrel(supplier, updateInfo))
                 .businessRelation(buildBusinessRelation(supplier))
                 .address(buildAddress(supplier, name20,name36, tax))
                 .contact(buildContact(supplier))
@@ -57,13 +66,22 @@ public class Pn99XmlFactory {
             String taxClassFromErp,
              String taxZoneFromErp
     ) {
+        return buildCreditorContext(supplier, taxClassFromErp, taxZoneFromErp, catalogService.resolveUpdateInfo(supplier));
+    }
+
+    public CreditorXmlContext buildCreditorContext(
+            SuppliersRowEntity supplier,
+            String taxClassFromErp,
+            String taxZoneFromErp,
+            UpdateInfo updateInfo
+    ) {
 
         String erpId = XMLConstants.PN99;
         TaxInfo tax = resolveTaxInfoPn99(erpId, taxClassFromErp, taxZoneFromErp);
 
         return CreditorXmlContext.builder()
-                .outputFileName("PN99_creditor_" + supplier.getErpIdQad()+"_"+supplier.getBusinessUnitCode() + ".xml")
-                .contextInfo(buildContextInfoCreditor(erpId, supplier))
+                .outputFileName("PN99_creditor_" + supplier.getErpIdQad() + "_" + erpId + ".xml")
+                .contextInfo(buildContextInfoCreditor(erpId, updateInfo))
                 .creditor(buildCreditor(supplier, tax))
                 .build();
     }
@@ -71,8 +89,7 @@ public class Pn99XmlFactory {
     // =====================================================
     // CONTEXT INFO
     // =====================================================
-    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier) {
-        UpdateInfo updateInfo=catalogService.resolveUpdateInfo(supplier);
+    private ContextInfoXml buildContextInfoBusrel(SuppliersRowEntity supplier, UpdateInfo updateInfo) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(supplier.getBusinessUnitCode())
 
@@ -84,14 +101,14 @@ public class Pn99XmlFactory {
                 .build();
     }
 
-    private ContextInfoXml buildContextInfoCreditor(String erpId, SuppliersRowEntity supplier) {
+    private ContextInfoXml buildContextInfoCreditor(String erpId, UpdateInfo updateInfo) {
         return ContextInfoXml.builder()
                 .tcCompanyCode(erpId)
-                .tcAction(catalogService.getAction(supplier))
+                .tcAction(updateInfo.resolveAction())
                 .tiPriority(XMLConstants.CERO)
                 .tiRequestStartTime(XMLConstants.CERO)
                 .tcCBFVersion(XMLConstants.CONTEXT_VERSION)
-                .tcActivityCode(catalogService.getActivityCode(supplier))
+                .tcActivityCode(updateInfo.getActivityCode())
                 .tlPartialUpdate((XMLConstants.FALSE))
                 .build();
     }
