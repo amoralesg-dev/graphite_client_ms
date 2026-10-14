@@ -317,8 +317,8 @@ public class SupplierAddressResolver {
         String street1 = firstNonBlank(
                 stringValue(invoke(source.data, "getDeliveryLine1")),
                 buildUsStreet1(source),
-                stringValue(invoke(source.data, "getAddress1")),
-                stringValue(invoke(source.address, "getAddress1"))
+                stringValue(invoke(source.address, "getAddress1")),
+                stringValue(invoke(source.data, "getAddress1"))
         );
 
         String street2 = firstNonBlank(
