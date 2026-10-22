@@ -262,7 +262,7 @@ public class SupplierRowMapper {
 
         // 3. Resolución de ABA con fallback (Prioridad: Actual -> Wire -> ACH)
         String finalAba = currentAba;
-        String abaSource = "Actual";
+        String abaSource = !isBlank(currentAba) ? "Actual" : "None";
 
         if (isBlank(finalAba)) {
             if (isValidSegmentValue(wireSegment, wireSegment != null ? wireSegment.getRouting() : null)) {
@@ -276,7 +276,7 @@ public class SupplierRowMapper {
 
         // 4. Resolución de SWIFT con fallback (Prioridad: Actual -> Wire -> ACH)
         String finalSwift = currentSwift;
-        String swiftSource = "Actual";
+        String swiftSource = !isBlank(currentSwift) ? "Actual" : "None";
 
         if (isBlank(finalSwift)) {
             if (isValidSegmentValue(wireSegment, wireSegment != null ? wireSegment.getSwift() : null)) {

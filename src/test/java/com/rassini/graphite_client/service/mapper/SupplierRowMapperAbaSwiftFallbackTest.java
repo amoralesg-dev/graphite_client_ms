@@ -146,6 +146,8 @@ class SupplierRowMapperAbaSwiftFallbackTest {
         assertTrue(debugLog.contains("existsBankWireAbaRouting=true"));
         assertTrue(debugLog.contains("abaFinal='111101144'"));
         assertTrue(debugLog.contains("abaSource=Wire"));
+        assertTrue(debugLog.contains("swiftFinal='null'"));
+        assertTrue(debugLog.contains("swiftSource=None"));
     }
 
     @Test
@@ -185,6 +187,8 @@ class SupplierRowMapperAbaSwiftFallbackTest {
         assertTrue(debugLog.contains("existsBankWireAbaRouting=false"));
         assertTrue(debugLog.contains("abaFinal='111101144'"));
         assertTrue(debugLog.contains("abaSource=ACH"));
+        assertTrue(debugLog.contains("swiftFinal='null'"));
+        assertTrue(debugLog.contains("swiftSource=None"));
     }
 
     @Test
@@ -405,6 +409,46 @@ class SupplierRowMapperAbaSwiftFallbackTest {
         assertTrue(debugLog.contains("supplier=US197697"));
         assertTrue(debugLog.contains("bu=09"));
         assertTrue(debugLog.contains("abaFinal='111101144'"));
+        assertTrue(debugLog.contains("abaSource=Wire"));
+        assertTrue(debugLog.contains("swiftFinal='null'"));
+        assertTrue(debugLog.contains("swiftSource=None"));
+    }
+
+    @Test
+    @DisplayName("Escenario 6: Ninguna fuente aporta ABA ni SWIFT -> abaSource=None y swiftSource=None")
+    void testScenario6_NoSourceProvidesAbaOrSwift_SourceIsNone() throws Exception {
+        String json = """
+            {
+              "Entity_Public_Id": "MX999000",
+              "ERP_Record": [
+                {
+                  "RASSINI_ERP_Entity_ID": "09",
+                  "ERP_Bank_List": [
+                    {
+                      "Bank_Account_Number": "012180001234567890",
+                      "Bank_Name": "BBVA MEXICO",
+                      "Bank_SWIFT": ""
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        SuppliersRowEntity row = mapFirstBank(json);
+
+        assertNull(row.getRoutingCodeAba());
+        assertNull(row.getRoutingCodeSwift());
+
+        String debugLog = findRoutingLog();
+        assertTrue(debugLog.contains("abaActual='null'"));
+        assertTrue(debugLog.contains("swiftActual='null'"));
+        assertTrue(debugLog.contains("existsBankAchAbaRouting=false"));
+        assertTrue(debugLog.contains("existsBankWireAbaRouting=false"));
+        assertTrue(debugLog.contains("abaFinal='null'"));
+        assertTrue(debugLog.contains("abaSource=None"));
+        assertTrue(debugLog.contains("swiftFinal='null'"));
+        assertTrue(debugLog.contains("swiftSource=None"));
     }
 
     private SuppliersRowEntity mapFirstBank(String json) throws Exception {
