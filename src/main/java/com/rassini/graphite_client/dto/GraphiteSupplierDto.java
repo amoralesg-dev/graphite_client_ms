@@ -285,6 +285,9 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Wire_ABA_Routing")
         private BankWireAbaRouting bankWireAbaRouting;
 
+        @JsonProperty("Bank_ACH_ABA_Routing")
+        private BankWireAbaRouting bankAchAbaRouting;
+
         @JsonProperty("RASSINI_ERP_Supplier_Type")
         private String rassiniErpSupplierType;
 
@@ -338,6 +341,12 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("Bank_SWIFT")
         private BankSwift bankSwift;
+
+        @JsonProperty("Bank_ACH_ABA_Routing")
+        private BankWireAbaRouting bankAchAbaRouting;
+
+        @JsonProperty("Bank_Wire_ABA_Routing")
+        private BankWireAbaRouting bankWireAbaRouting;
 
         @JsonProperty("Bank_Account_Currency_Correspondent")
         private String bankAccountCurrencyCorrespondent;
@@ -402,6 +411,7 @@ public class GraphiteSupplierDto {
     // =========================
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.rassini.graphite_client.service.mapper.BankSwiftDeserializer.class)
     public static class BankSwift {
 
         @JsonProperty("routing")
@@ -416,6 +426,7 @@ public class GraphiteSupplierDto {
     // =========================
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.rassini.graphite_client.service.mapper.BankWireAbaRoutingDeserializer.class)
     public static class BankWireAbaRouting {
 
         @JsonProperty("bank_name")
@@ -426,6 +437,15 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("swift")
         private String swift;
+
+        @JsonProperty("valid")
+        private Boolean valid;
+
+        @JsonProperty("fromDatabase")
+        private Boolean fromDatabase;
+
+        @JsonProperty("type")
+        private String type;
     }
 
     // =========================
