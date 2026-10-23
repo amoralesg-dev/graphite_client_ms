@@ -249,11 +249,18 @@ public class SupplierAddressResolver {
                 dto != null ? dto.getEntityPublicId() : null,
                 source.sourceName);
 
+        String rawAddress1 = stringValue(invoke(source.address, "getAddress1"));
+        String dataAddress1 = stringValue(invoke(source.data, "getAddress1"));
+
         String street1 = firstNonBlank(
-                stringValue(invoke(source.data, "getAddress1")),
-                stringValue(invoke(source.address, "getAddress1")),
+                rawAddress1,
+                dataAddress1,
                 buildMxLikeStreet1(source)
         );
+
+        String street1Source = notBlank(rawAddress1)
+                ? "Address.Address_1"
+                : (notBlank(dataAddress1) ? "Address.data.address1" : (notBlank(street1) ? "components.buildMxLikeStreet1" : "None"));
 
         String street2 = firstNonBlank(
                 stringValue(invoke(source.data, "getAddress2")),
@@ -296,6 +303,17 @@ public class SupplierAddressResolver {
                 extractStreetNumber(street1)
         );
 
+        log.debug(
+                "[ADDR-RESOLUTION] provider={} shape=MX_LIKE addressSource={} Address_1='{}' data.address1='{}' streetNameFinal='{}' streetNumberFinal='{}' selectedSource={}",
+                dto != null ? dto.getEntityPublicId() : null,
+                source.sourceName,
+                rawAddress1,
+                dataAddress1,
+                street1,
+                streetNumber,
+                street1Source
+        );
+
         return ResolvedAddress.builder()
                 .streetName(street1)
                 .streetName2(street2)
@@ -314,12 +332,25 @@ public class SupplierAddressResolver {
                 dto != null ? dto.getEntityPublicId() : null,
                 source.sourceName);
 
+        String rawAddress1 = stringValue(invoke(source.address, "getAddress1"));
+        String dataAddress1 = stringValue(invoke(source.data, "getAddress1"));
+        String deliveryLine1 = stringValue(invoke(source.data, "getDeliveryLine1"));
+        String builtUsStreet1 = buildUsStreet1(source);
+
         String street1 = firstNonBlank(
-                stringValue(invoke(source.data, "getDeliveryLine1")),
-                buildUsStreet1(source),
-                stringValue(invoke(source.address, "getAddress1")),
-                stringValue(invoke(source.data, "getAddress1"))
+                rawAddress1,
+                dataAddress1,
+                deliveryLine1,
+                builtUsStreet1
         );
+
+        String street1Source = notBlank(rawAddress1)
+                ? "Address.Address_1"
+                : (notBlank(dataAddress1)
+                        ? "Address.data.address1"
+                        : (notBlank(deliveryLine1)
+                                ? "Address.data.deliveryLine1"
+                                : (notBlank(builtUsStreet1) ? "components.buildUsStreet1" : "None")));
 
         String street2 = firstNonBlank(
                 buildUsStreet2(source),
@@ -357,6 +388,17 @@ public class SupplierAddressResolver {
                 extractStreetNumber(street1)
         );
 
+        log.debug(
+                "[ADDR-RESOLUTION] provider={} shape=US_LIKE addressSource={} Address_1='{}' data.address1='{}' streetNameFinal='{}' streetNumberFinal='{}' selectedSource={}",
+                dto != null ? dto.getEntityPublicId() : null,
+                source.sourceName,
+                rawAddress1,
+                dataAddress1,
+                street1,
+                streetNumber,
+                street1Source
+        );
+
         return ResolvedAddress.builder()
                 .streetName(street1)
                 .streetName2(street2)
@@ -375,10 +417,17 @@ public class SupplierAddressResolver {
                 dto != null ? dto.getEntityPublicId() : null,
                 source.sourceName);
 
+        String rawAddress1 = stringValue(invoke(source.address, "getAddress1"));
+        String dataAddress1 = stringValue(invoke(source.data, "getAddress1"));
+
         String street1 = firstNonBlank(
-                stringValue(invoke(source.data, "getAddress1")),
-                stringValue(invoke(source.address, "getAddress1"))
+                rawAddress1,
+                dataAddress1
         );
+
+        String street1Source = notBlank(rawAddress1)
+                ? "Address.Address_1"
+                : (notBlank(dataAddress1) ? "Address.data.address1" : "None");
 
         String street2 = firstNonBlank(
                 stringValue(invoke(source.data, "getAddress2")),
@@ -415,11 +464,24 @@ public class SupplierAddressResolver {
             iso3ToIso2(stringValue(invoke(source.components, "getCountryIso3")))
         );
 
+        String streetNumber = extractStreetNumber(street1);
+
+        log.debug(
+                "[ADDR-RESOLUTION] provider={} shape=GENERIC addressSource={} Address_1='{}' data.address1='{}' streetNameFinal='{}' streetNumberFinal='{}' selectedSource={}",
+                dto != null ? dto.getEntityPublicId() : null,
+                source.sourceName,
+                rawAddress1,
+                dataAddress1,
+                street1,
+                streetNumber,
+                street1Source
+        );
+
         return ResolvedAddress.builder()
                 .streetName(street1)
                 .streetName2(street2)
                 .streetName3(street3)
-                .streetNumber(extractStreetNumber(street1))
+                .streetNumber(streetNumber)
                 .city(city)
                 .region(region)
                 .postalCode(postalCode)
