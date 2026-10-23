@@ -210,15 +210,7 @@ public class SupplierRowMapper {
             row.setBeneficiaryBankName(bankName);
 
             // routing
-            row.setRoutingCodeSwift(
-                    bank.getBankSwift() != null ? bank.getBankSwift().getRouting() : null
-            );
-
-            row.setRoutingCodeAba(
-                    erp.getBankWireAbaRouting() != null
-                            ? erp.getBankWireAbaRouting().getRouting()
-                            : null
-            );
+            resolveRoutingCodes(row, dto, erp, bank);
 
             // intermediario
             if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
@@ -228,6 +220,114 @@ public class SupplierRowMapper {
                         bank.getBankAccountCurrencyCorrespondentBank().getBankName());
             }
         }
+    }
+
+    /**
+     * Resuelve los códigos ABA y SWIFT manteniendo intacta la lógica actual como primera fuente
+     * y aplicando como FALLBACK exclusivo de cada canal:
+     * <ul>
+     *   <li><b>ABA:</b>
+     *     <ol>
+     *       <li>Lógica actual ({@code erp.getBankWireAbaRouting().getRouting()}).</li>
+     *       <li>{@code Bank_ACH_ABA_Routing.routing} (correlacionado con la cuenta procesada).</li>
+     *       <li>Si ambas fuentes están vacías, conserva {@code null} ({@code abaSource=None}).</li>
+     *     </ol>
+     *   </li>
+     *   <li><b>SWIFT:</b>
+     *     <ol>
+     *       <li>Lógica actual ({@code bank.getBankSwift().getRouting()}).</li>
+     *       <li>{@code Bank_Wire_ABA_Routing.routing} (correlacionado con la cuenta procesada).</li>
+     *       <li>Si ambas fuentes están vacías, conserva {@code null} ({@code swiftSource=None}).</li>
+     *     </ol>
+     *   </li>
+     * </ul>
+     * No se cruzan las fuentes (Wire no alimenta ABA en fallback; ACH no alimenta SWIFT).
+     */
+    private static void resolveRoutingCodes(
+            SuppliersRowEntity row,
+            GraphiteSupplierDto dto,
+            GraphiteSupplierDto.ErpRecord erp,
+            GraphiteSupplierDto.Bank bank
+    ) {
+        // 1. Lógica actual (primera fuente intacta)
+        String currentSwift = bank.getBankSwift() != null ? bank.getBankSwift().getRouting() : null;
+        String currentAba = erp.getBankWireAbaRouting() != null ? erp.getBankWireAbaRouting().getRouting() : null;
+
+        // 2. Inspección de segmentos de fallback correlacionados con la misma cuenta bancaria procesada
+        boolean isSingleErpAccount = erp.getErpBankList() == null || erp.getErpBankList().size() <= 1;
+
+        GraphiteSupplierDto.BankWireAbaRouting achSegment = bank.getBankAchAbaRouting() != null
+                ? bank.getBankAchAbaRouting()
+                : (isSingleErpAccount ? erp.getBankAchAbaRouting() : null);
+
+        GraphiteSupplierDto.BankWireAbaRouting wireSegment = bank.getBankWireAbaRouting() != null
+                ? bank.getBankWireAbaRouting()
+                : (isSingleErpAccount ? erp.getBankWireAbaRouting() : null);
+
+        boolean existsAch = achSegment != null;
+        boolean existsWire = wireSegment != null;
+
+        // 3. Resolución de ABA (Prioridad definitiva: 1. Lógica actual -> 2. Bank_ACH_ABA_Routing.routing -> 3. null)
+        String finalAba = !isBlank(currentAba) ? currentAba.trim() : null;
+        String abaSource = !isBlank(finalAba) ? "Actual" : "None";
+
+        if (isBlank(finalAba)) {
+            if (isValidSegmentValue(achSegment, achSegment != null ? achSegment.getRouting() : null)) {
+                finalAba = achSegment.getRouting().trim();
+                abaSource = "Bank_ACH_ABA_Routing.routing";
+            }
+        }
+
+        // 4. Resolución de SWIFT (Prioridad definitiva: 1. Lógica actual -> 2. Bank_Wire_ABA_Routing.routing -> 3. null)
+        String finalSwift = !isBlank(currentSwift) ? currentSwift.trim() : null;
+        String swiftSource = !isBlank(finalSwift) ? "Actual" : "None";
+
+        if (isBlank(finalSwift)) {
+            if (isValidSegmentValue(wireSegment, wireSegment != null ? wireSegment.getRouting() : null)) {
+                finalSwift = wireSegment.getRouting().trim();
+                swiftSource = "Bank_Wire_ABA_Routing.routing";
+            }
+        }
+
+        row.setRoutingCodeAba(finalAba);
+        row.setRoutingCodeSwift(finalSwift);
+
+        String maskedAccount = maskAccount(bank.getBankAccountNumber());
+
+        log.info(
+                "[ROUTING-RESOLUTION] supplier={} bu={} account={} abaActual='{}' swiftActual='{}' " +
+                "existsBankAchAbaRouting={} existsBankWireAbaRouting={} " +
+                "abaFinal='{}' abaSource={} swiftFinal='{}' swiftSource={}",
+                dto.getEntityPublicId(),
+                erp.getRassiniErpEntityId(),
+                maskedAccount,
+                currentAba,
+                currentSwift,
+                existsAch,
+                existsWire,
+                finalAba,
+                abaSource,
+                finalSwift,
+                swiftSource
+        );
+    }
+
+    private static String maskAccount(String account) {
+        if (isBlank(account)) {
+            return "N/A";
+        }
+        String trimmed = account.trim();
+        if (trimmed.length() <= 4) {
+            return "****";
+        }
+        return "****" + trimmed.substring(trimmed.length() - 4);
+    }
+
+    private static boolean isValidSegmentValue(GraphiteSupplierDto.BankWireAbaRouting segment, String value) {
+        if (segment == null || isBlank(value)) {
+            return false;
+        }
+        return !Boolean.FALSE.equals(segment.getValid());
     }
 
     // ======================================================

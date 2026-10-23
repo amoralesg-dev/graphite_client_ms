@@ -23,7 +23,7 @@ public class MissingDataNotificationService {
 
     private final CorreoPendienteRepository correoPendienteRepository;
 
-    @Value("${mail.notification.to:amoralesg@rassini.com,eguzman@rassini.com}")
+    @Value("${mail.notification.to:developerrss@rassini.com}")
     private String defaultRecipients;
 
     @Value("${spring.profiles.active:local}")

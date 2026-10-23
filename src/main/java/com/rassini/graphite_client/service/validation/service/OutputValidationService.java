@@ -281,6 +281,52 @@ public class OutputValidationService {
             worst = IssueSeverity.WARNING;
         }
 
+        // Validar routing bancario (ABA / SWIFT) DESPUÉS de la resolución completa de fuentes primarias y fallback:
+        // - En cuentas US donde ya se resolvió routingCodeAba (ej. desde Bank_Wire_ABA_Routing o Bank_ACH_ABA_Routing),
+        //   no se genera incidencia por Bank_Number vacío ni por ausencia de SWIFT si el banco doméstico US no tiene SWIFT registrado.
+        // - Si el banco NO es US ni MX y carece tanto de SWIFT como de ABA tras evaluar todas las fuentes correlacionadas,
+        //   se registra la incidencia sobre el campo específico faltante (routingCodeSwift).
+        // - Si el banco es US y carece tanto de ABA como de SWIFT tras evaluar todas las fuentes, se registra sobre routingCodeAba.
+        boolean hasAba = !isBlank(supplier.getRoutingCodeAba());
+        boolean hasSwift = !isBlank(supplier.getRoutingCodeSwift());
+        String bankCountry = supplier.getBankCountry() != null ? supplier.getBankCountry().trim().toUpperCase() : "";
+
+        if (!hasAba && !hasSwift) {
+            if ("US".equals(bankCountry) || "USA".equals(bankCountry)) {
+                collector.recordIssue(MissingDataIssue.builder()
+                        .supplierCode(supplierCode)
+                        .erpIdQad(erpIdQad)
+                        .businessUnitCode(bu)
+                        .maskedAccountNumber(maskedAccount)
+                        .outputType(OutputType.INTEGRITY)
+                        .subType("sync_file")
+                        .fieldName("routingCodeAba")
+                        .expectedNode("ERP_Record[].ERP_Bank_List[].Bank_Wire_ABA_Routing.routing / Bank_ACH_ABA_Routing.routing")
+                        .issueType(IssueType.BANK_INFO_INCOMPLETE)
+                        .severity(IssueSeverity.WARNING)
+                        .result(OutputResult.GENERATED_MANUAL)
+                        .technicalMessage("Código ABA y SWIFT vacíos tras evaluar todas las fuentes bancarias correlacionadas")
+                        .build());
+                worst = IssueSeverity.WARNING;
+            } else if (!bankCountry.isEmpty() && !"MX".equals(bankCountry) && !"MEX".equals(bankCountry)) {
+                collector.recordIssue(MissingDataIssue.builder()
+                        .supplierCode(supplierCode)
+                        .erpIdQad(erpIdQad)
+                        .businessUnitCode(bu)
+                        .maskedAccountNumber(maskedAccount)
+                        .outputType(OutputType.INTEGRITY)
+                        .subType("sync_file")
+                        .fieldName("routingCodeSwift")
+                        .expectedNode("ERP_Record[].ERP_Bank_List[].Bank_SWIFT.routing / Bank_Number.swift / Bank_Routing_Number.swift")
+                        .issueType(IssueType.BANK_INFO_INCOMPLETE)
+                        .severity(IssueSeverity.WARNING)
+                        .result(OutputResult.GENERATED_MANUAL)
+                        .technicalMessage("Código SWIFT vacío tras evaluar todas las fuentes bancarias correlacionadas")
+                        .build());
+                worst = IssueSeverity.WARNING;
+            }
+        }
+
         return worst;
     }
 
