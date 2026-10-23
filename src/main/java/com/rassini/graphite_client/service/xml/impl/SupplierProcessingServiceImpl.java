@@ -293,32 +293,12 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                         && bankNumberNode.asText().isBlank()) {
 
                     String account = bank.path("Bank_Account_Number").asText();
-                    log.warn(
-                            "[GRAPHITE_CONTRACT] supplier={} bu={} account={} Bank_Number llegó como string vacío",
+                    log.info(
+                            "[GRAPHITE_CONTRACT] supplier={} bu={} account={} Bank_Number llegó como string vacío (la validación de faltantes se ejecutará tras la resolución completa de routing ABA/SWIFT)",
                             supplierCode,
                             bu,
-                            account,
-                            bankNumberNode.asText()
+                            account
                     );
-
-                    String masked = (account != null && account.length() > 4)
-                            ? "****" + account.substring(account.length() - 4)
-                            : (account != null && !account.isBlank() ? "****" : "N/A");
-
-                    missingDataCollector.recordIssue(com.rassini.graphite_client.service.validation.model.MissingDataIssue.builder()
-                            .supplierCode(supplierCode)
-                            .businessUnitCode(bu)
-                            .maskedAccountNumber(masked)
-                            .outputType(com.rassini.graphite_client.service.validation.model.OutputType.INTEGRITY)
-                            .subType("sync_file")
-                            .fieldName("Bank_Number")
-                            .expectedNode("ERP_Record[].ERP_Bank_List[].Bank_Number")
-                            .receivedValue(bankNumberNode.asText())
-                            .issueType(com.rassini.graphite_client.service.validation.model.IssueType.BANK_INFO_INCOMPLETE)
-                            .severity(com.rassini.graphite_client.service.validation.model.IssueSeverity.WARNING)
-                            .result(com.rassini.graphite_client.service.validation.model.OutputResult.GENERATED_MANUAL)
-                            .technicalMessage("Bank_Number llegó como string vacío desde Graphite")
-                            .build());
                 }
             }
         }

@@ -44,10 +44,10 @@ spring:
 
 mail:
   notification:
-    to: ${EMAIL_TO:amoralesg@rassini.com,eguzman@rassini.com}
+    to: ${EMAIL_TO:developerrss@rassini.com}
   
   nuevos-proveedores:
-    destinatarios: ${EMAIL_NUEVOS_PROVEEDORES:agustin.morales@rassini.com,eguzman@rassini.com,developerrss@rassini.com}
+    destinatarios: ${EMAIL_NUEVOS_PROVEEDORES:developerrss@rassini.com}
 
 
 logging:

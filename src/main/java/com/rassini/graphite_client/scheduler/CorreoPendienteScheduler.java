@@ -9,7 +9,11 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Component
@@ -18,6 +22,12 @@ public class CorreoPendienteScheduler {
 
     private final CorreoPendienteRepository repository;
     private final EmailService emailService;
+
+    /**
+     * Registro en memoria de destinatarios con formato inválido irrecuperable por id de correo_pendiente,
+     * para evitar reintentos infinitos silenciosos mientras el valor en BD no sea corregido.
+     */
+    private final Map<Long, String> destinatariosInvalidosReportados = new ConcurrentHashMap<>();
 
     @Scheduled(cron = "#{@environment.getProperty('spring.mail.cron')}")
     public void enviarCorreosPendientes() {
@@ -29,25 +39,71 @@ public class CorreoPendienteScheduler {
             return;
         }
 
-        pendientes.forEach(correo -> {
-            try {
-                // Soporta múltiples destinatarios separados por coma
-                String[] destinatarios = correo.getTo().split(",");
+        List<CorreoPendienteEntity> enviadosEnLote = new ArrayList<>();
+        int enviadosExitosos = 0;
+        int fallidos = 0;
+        int omitidosPorDestinatarioInvalidoPrevio = 0;
 
-                emailService.enviarCorreo(destinatarios,
+        for (CorreoPendienteEntity correo : pendientes) {
+            Long correoId = correo.getId();
+            String rawTo = correo.getTo();
+
+            if (correoId != null && destinatariosInvalidosReportados.containsKey(correoId)) {
+                String previousInvalidTo = destinatariosInvalidosReportados.get(correoId);
+                if (Objects.equals(previousInvalidTo, rawTo)) {
+                    omitidosPorDestinatarioInvalidoPrevio++;
+                    log.warn("[EMAIL-SKIP-INVALID] correoPendienteId={} destinatario='{}' se mantiene pendiente (enviado=false) por dirección inválida previamente detectada; corríjase en BD para reintentar",
+                            correoId, rawTo);
+                    continue;
+                } else {
+                    destinatariosInvalidosReportados.remove(correoId);
+                }
+            }
+
+            try {
+                emailService.enviarCorreo(
+                        correoId,
+                        rawTo,
                         correo.getSubject(),
                         correo.getBody());
 
                 correo.setEnviado(true);
                 correo.setFechaEnvio(LocalDateTime.now());
+                enviadosEnLote.add(correo);
+                enviadosExitosos++;
 
+                if (correoId != null) {
+                    destinatariosInvalidosReportados.remove(correoId);
+                }
+
+            } catch (IllegalArgumentException e) {
+                fallidos++;
+                correo.setEnviado(false);
+                correo.setFechaEnvio(null);
+                if (correoId != null) {
+                    destinatariosInvalidosReportados.put(correoId, rawTo == null ? "<NULL>" : rawTo);
+                }
+                log.error("Error de destinatario inválido al enviar correo id {}: {}", correoId, e.getMessage());
             } catch (Exception e) {
-                log.error("Error al enviar correo id {}: {}", correo.getId(), e.getMessage());
+                fallidos++;
+                correo.setEnviado(false);
+                correo.setFechaEnvio(null);
+                log.error("Error al enviar correo id {}: {}", correoId, e.getMessage());
             }
-        });
+        }
 
-        repository.saveAll(pendientes);
+        if (!enviadosEnLote.isEmpty()) {
+            repository.saveAll(enviadosEnLote);
+            log.info("Se enviaron {} correos pendientes", enviadosExitosos);
+        }
 
-        log.info("Se enviaron {} correos pendientes", pendientes.size());
+        if (fallidos > 0 || omitidosPorDestinatarioInvalidoPrevio > 0) {
+            log.warn("[EMAIL-BATCH-SUMMARY] totalPendientes={} enviadosExitosos={} fallidos={} omitidosInvalidoPrevio={}",
+                    pendientes.size(), enviadosExitosos, fallidos, omitidosPorDestinatarioInvalidoPrevio);
+        }
+    }
+
+    public void limpiarCacheDestinatariosInvalidos() {
+        destinatariosInvalidosReportados.clear();
     }
 }
