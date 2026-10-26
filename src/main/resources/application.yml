@@ -44,7 +44,7 @@ spring:
 
 mail:
   notification:
-    to: ${EMAIL_TO:developerrss@rassini.com}
+    to: ${EMAIL_NUEVOS_PROVEEDORES:developerrss@rassini.com}
   
   nuevos-proveedores:
     destinatarios: ${EMAIL_NUEVOS_PROVEEDORES:developerrss@rassini.com}
