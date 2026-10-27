@@ -172,8 +172,29 @@ public class GraphiteSupplierDto {
         @JsonProperty("swift")
         private String swift;
 
+        @JsonProperty("routing")
+        private String routing;
+
+        @JsonProperty("type")
+        private String type;
+
+        @JsonProperty("valid")
+        private Boolean valid;
+
+        @JsonProperty("fromDatabase")
+        private Boolean fromDatabase;
+
         @JsonProperty("country")
         private String country;
+
+        @JsonProperty("account_number")
+        @com.fasterxml.jackson.annotation.JsonAlias({
+                "account",
+                "intermediary_account",
+                "correspondent_account",
+                "Bank_Account_Number"
+        })
+        private String accountNumber;
     }
 
     @Data
@@ -356,6 +377,16 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("Bank_Account_Currency_Correspondent_Bank")
         private CorrespondentBank bankAccountCurrencyCorrespondentBank;
+
+        @JsonProperty("Bank_Account_Currency_Correspondent_Account")
+        @com.fasterxml.jackson.annotation.JsonAlias({
+                "Bank_Account_Currency_Correspondent_Account_Number",
+                "Bank_Account_Currency_Correspondent_Bank_Account",
+                "Bank_Account_Currency_Correspondent_Bank_Account_Number",
+                "Bank_Correspondent_Account_Number",
+                "Intermediary_Account"
+        })
+        private String bankAccountCurrencyCorrespondentAccount;
         
         @JsonProperty("Bank_Name_Translations")
         private Map<String, String> bankNameTranslations;

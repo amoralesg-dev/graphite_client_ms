@@ -78,6 +78,8 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
             for (GraphiteSupplierDto.Bank bank : erp.getErpBankList()) {
 
+                if (bank == null) continue;
+
                 String accountRaw = bank.getBankAccountNumber();
                 String maskedAccount = maskAccountNumber(accountRaw);
                 String legacyMappedErpId = dto.getLegacyMappedErpId();
