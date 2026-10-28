@@ -328,9 +328,7 @@ public class SupplierRowMapper {
                 || prevSwift != null;
 
         // Validar correlación estricta de la cuenta bancaria antes de modificar o limpiar campos intermediarios
-        boolean accountMismatch = !isBlank(previousRowAccount)
-                && !isBlank(bankAccount)
-                && !previousRowAccount.trim().equals(bankAccount.trim());
+        boolean accountMismatch = !isSameCorrelatedAccount(previousRowAccount, bankAccount, bank);
 
         String correspondentFlag = bank.getBankAccountCurrencyCorrespondent();
         boolean correspondentDisabled = correspondentFlag != null && "n".equalsIgnoreCase(correspondentFlag.trim());
@@ -449,17 +447,47 @@ public class SupplierRowMapper {
         );
     }
 
+    private static boolean isSameCorrelatedAccount(
+            String previousRowAccount,
+            String bankAccount,
+            GraphiteSupplierDto.Bank bank
+    ) {
+        if (isBlank(previousRowAccount) || isBlank(bankAccount)) {
+            return true;
+        }
+        String prevTrim = previousRowAccount.trim();
+        String currTrim = bankAccount.trim();
+        if (prevTrim.equals(currTrim)) {
+            return true;
+        }
+        String prevCompact = prevTrim.replaceAll("\\s+", "").toUpperCase(java.util.Locale.ROOT);
+        String currCompact = currTrim.replaceAll("\\s+", "").toUpperCase(java.util.Locale.ROOT);
+        if (prevCompact.equals(currCompact)) {
+            return true;
+        }
+        if (bank != null && !isBlank(bank.getBankAccountNumberIban())) {
+            String domesticIbanPart = bank.getBankAccountNumberIban().trim();
+            if (prevTrim.equalsIgnoreCase(domesticIbanPart) || prevCompact.equalsIgnoreCase(domesticIbanPart.replaceAll("\\s+", ""))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static String normalizeNullable(String value) {
         return isBlank(value) ? null : value.trim();
     }
 
-    private static String maskAccount(String account) {
+    public static String maskAccount(String account) {
         if (isBlank(account)) {
             return "N/A";
         }
         String trimmed = account.trim();
         if (trimmed.length() <= 4) {
             return "****";
+        }
+        if (trimmed.length() >= 8 && Character.isLetter(trimmed.charAt(0)) && Character.isLetter(trimmed.charAt(1))) {
+            return trimmed.substring(0, 2) + "*".repeat(trimmed.length() - 6) + trimmed.substring(trimmed.length() - 4);
         }
         return "****" + trimmed.substring(trimmed.length() - 4);
     }

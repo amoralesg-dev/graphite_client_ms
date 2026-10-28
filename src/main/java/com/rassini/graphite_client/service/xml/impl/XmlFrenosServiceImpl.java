@@ -75,7 +75,7 @@ public class XmlFrenosServiceImpl implements XmlFrenosService {
 
                 SuppliersRowEntity supplier = supplierOpt.get();
                 log.info("[XML-PROCESS-SELECTED-ROW] supplierCode={} businessUnit={} id={} accountNumber={} xmlStatus={}",
-                        supplier.getSupplierCode(), erpId, supplier.getId(), supplier.getAccountNumber(), supplier.getXmlStatus());
+                        supplier.getSupplierCode(), erpId, supplier.getId(), com.rassini.graphite_client.service.mapper.SupplierRowMapper.maskAccount(supplier.getAccountNumber()), supplier.getXmlStatus());
 
                 // Validación centralizada de datos
                 boolean busrelValid = outputValidationService.validateBusrel(supplier, erpId);
