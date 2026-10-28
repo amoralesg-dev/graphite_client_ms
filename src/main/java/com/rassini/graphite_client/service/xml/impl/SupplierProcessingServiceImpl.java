@@ -292,7 +292,7 @@ public class SupplierProcessingServiceImpl implements SupplierProcessingService 
                         && bankNumberNode.isTextual()
                         && bankNumberNode.asText().isBlank()) {
 
-                    String account = bank.path("Bank_Account_Number").asText();
+                    String account = com.rassini.graphite_client.service.mapper.SupplierRowMapper.maskAccount(bank.path("Bank_Account_Number").asText());
                     log.info(
                             "[GRAPHITE_CONTRACT] supplier={} bu={} account={} Bank_Number llegó como string vacío (la validación de faltantes se ejecutará tras la resolución completa de routing ABA/SWIFT)",
                             supplierCode,
