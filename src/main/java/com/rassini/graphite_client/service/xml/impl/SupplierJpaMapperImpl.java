@@ -78,32 +78,29 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
             for (GraphiteSupplierDto.Bank bank : erp.getErpBankList()) {
 
+                if (bank == null) continue;
+
                 String accountRaw = bank.getBankAccountNumber();
                 String maskedAccount = maskAccountNumber(accountRaw);
                 String legacyMappedErpId = dto.getLegacyMappedErpId();
+                String accountSource = bank.resolveBankAccountSource();
+                boolean accountActualPresent = bank.hasActualBankAccountNumber();
+                boolean ibanPresent = bank.hasValidIbanCandidate();
 
                 log.info("[LEGACY-LOOKUP] graphiteSupplierId={} legacySupplierCode={} businessUnit={} accountNumber={}",
                         creditor, legacyMappedErpId, bu, maskedAccount);
 
-                Optional<SuppliersRowEntity> existingRowOpt = suppliersRowRepository
-                        .findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
-                                creditor,
-                                bu,
-                                accountRaw
-                        );
-
-                // Fallback exacto para proveedores legacy: buscar por erp_id_qad histórico exacto (con BU y cuenta bancaria)
-                if (existingRowOpt.isEmpty()
-                        && dto.isLegacy()
-                        && legacyMappedErpId != null
-                        && !legacyMappedErpId.isBlank()) {
-                    existingRowOpt = suppliersRowRepository
-                            .findByErpIdQadAndBusinessUnitCodeAndAccountNumber(
-                                    legacyMappedErpId,
-                                    bu,
-                                    accountRaw
-                            );
-                }
+                RowMatchResult matchResult = resolveCorrelatedRow(
+                        dto,
+                        creditor,
+                        legacyMappedErpId,
+                        bu,
+                        bank,
+                        accountRaw,
+                        accountSource
+                );
+                Optional<SuppliersRowEntity> existingRowOpt = matchResult.rowOpt();
+                String matchStrategy = matchResult.matchStrategy();
 
                 log.info("[LEGACY-LOOKUP-RESULT] found={} rowId={} supplierCode={} erpIdQad={} businessUnit={} accountNumber={}",
                         existingRowOpt.isPresent(),
@@ -199,15 +196,154 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                 }
 
                 // guardar: si row ya tenía id -> UPDATE; si no -> INSERT
-                String operation = (row.getId() != null) ? "UPDATE" : "INSERT";
+                boolean insertPerformed = (row.getId() == null);
+                String operation = insertPerformed ? "INSERT" : "UPDATE";
                 log.info("[JPA-SAVE] rowId={} supplierCode={} businessUnit={} accountNumber={} operation={}",
                         row.getId(), row.getSupplierCode(), bu, maskedAccount, operation);
 
                 SuppliersRowEntity savedRow = suppliersRowRepository.save(row);
+                Long selectedRowId = (savedRow != null && savedRow.getId() != null) ? savedRow.getId() : row.getId();
+
+                log.info(
+                        "[ACCOUNT-NUMBER-RESOLUTION] supplier={} bu={} bankCountry={} bankCurrency={} " +
+                        "accountActualPresent={} ibanPresent={} accountFinal={} source={} " +
+                        "matchStrategy={} selectedRowId={} insertPerformed={}",
+                        creditor,
+                        bu,
+                        bank.getBankCountry(),
+                        bank.getBankAccountCurrency(),
+                        accountActualPresent,
+                        ibanPresent,
+                        maskedAccount,
+                        accountSource,
+                        matchStrategy,
+                        selectedRowId,
+                        insertPerformed
+                );
+
                 log.info("[FLOW-PHASE-2][PERSIST-ROW] supplier={} businessUnit={} account={} id={} xmlStatus={}",
-                        creditor, bu, maskedAccount, savedRow.getId(), savedRow.getXmlStatus());
+                        creditor, bu, maskedAccount, selectedRowId, savedRow != null ? savedRow.getXmlStatus() : row.getXmlStatus());
             }
         }
+    }
+
+    private record RowMatchResult(Optional<SuppliersRowEntity> rowOpt, String matchStrategy) {}
+
+    private RowMatchResult resolveCorrelatedRow(
+            GraphiteSupplierDto dto,
+            String creditor,
+            String legacyMappedErpId,
+            String bu,
+            GraphiteSupplierDto.Bank bank,
+            String accountRaw,
+            String accountSource
+    ) {
+        boolean isIbanSource = "Bank_Account_IBAN_No_Formatting".equals(accountSource)
+                || "Bank_Account_IBAN".equals(accountSource);
+
+        Optional<SuppliersRowEntity> exactOpt = findExactRowByAccount(dto, creditor, legacyMappedErpId, bu, accountRaw);
+
+        // Si no se encontró por igualdad literal y es un IBAN, buscar si existe en el mismo proveedor/BU el mismo IBAN con espacios o minúsculas
+        if (exactOpt.isEmpty() && isIbanSource && accountRaw != null && !accountRaw.isBlank()) {
+            exactOpt = findNormalizedIbanRow(dto, creditor, legacyMappedErpId, bu, accountRaw);
+        }
+
+        String domesticIbanPart = (bank != null && bank.getBankAccountNumberIban() != null && !bank.getBankAccountNumberIban().isBlank())
+                ? bank.getBankAccountNumberIban().trim()
+                : null;
+
+        Optional<SuppliersRowEntity> domesticOpt = Optional.empty();
+        if (isIbanSource && domesticIbanPart != null && !domesticIbanPart.equalsIgnoreCase(accountRaw)) {
+            domesticOpt = findExactRowByAccount(dto, creditor, legacyMappedErpId, bu, domesticIbanPart);
+        }
+
+        if (exactOpt.isPresent()) {
+            if (isIbanSource) {
+                boolean hasDistinctDomesticRow = domesticOpt.isPresent()
+                        && !java.util.Objects.equals(domesticOpt.get().getId(), exactOpt.get().getId());
+                String strategy = hasDistinctDomesticRow
+                        ? "EXISTING_IBAN_WITH_LEGACY_DOMESTIC_ROW"
+                        : "EXACT_IBAN";
+                return new RowMatchResult(exactOpt, strategy);
+            }
+            return new RowMatchResult(exactOpt, "EXACT_ACCOUNT");
+        }
+
+        if (isIbanSource && domesticOpt.isPresent()) {
+            return new RowMatchResult(domesticOpt, "LEGACY_DOMESTIC_MIGRATION");
+        }
+
+        if (accountRaw == null || accountRaw.isBlank()) {
+            return new RowMatchResult(Optional.empty(), "NONE");
+        }
+
+        return new RowMatchResult(Optional.empty(), "NEW_ROW");
+    }
+
+    private Optional<SuppliersRowEntity> findExactRowByAccount(
+            GraphiteSupplierDto dto,
+            String creditor,
+            String legacyMappedErpId,
+            String bu,
+            String accountToFind
+    ) {
+        Optional<SuppliersRowEntity> existingRowOpt = suppliersRowRepository
+                .findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
+                        creditor,
+                        bu,
+                        accountToFind
+                );
+
+        if (existingRowOpt.isEmpty()
+                && dto.isLegacy()
+                && legacyMappedErpId != null
+                && !legacyMappedErpId.isBlank()) {
+            existingRowOpt = suppliersRowRepository
+                    .findByErpIdQadAndBusinessUnitCodeAndAccountNumber(
+                            legacyMappedErpId,
+                            bu,
+                            accountToFind
+                    );
+        }
+        return existingRowOpt;
+    }
+
+    private Optional<SuppliersRowEntity> findNormalizedIbanRow(
+            GraphiteSupplierDto dto,
+            String creditor,
+            String legacyMappedErpId,
+            String bu,
+            String normalizedIban
+    ) {
+        java.util.List<SuppliersRowEntity> rowsBySupplier = suppliersRowRepository
+                .findAllBySupplierCodeAndBusinessUnitCode(creditor, bu);
+        if (rowsBySupplier != null) {
+            for (SuppliersRowEntity candidate : rowsBySupplier) {
+                if (candidate != null && candidate.getAccountNumber() != null) {
+                    String candidateNormalized = GraphiteSupplierDto.Bank.normalizeIban(candidate.getAccountNumber());
+                    if (normalizedIban.equals(candidateNormalized)) {
+                        return Optional.of(candidate);
+                    }
+                }
+            }
+        }
+
+        if (dto.isLegacy() && legacyMappedErpId != null && !legacyMappedErpId.isBlank()) {
+            java.util.List<SuppliersRowEntity> rowsByErp = suppliersRowRepository
+                    .findAllByErpIdQadAndBusinessUnitCode(legacyMappedErpId, bu);
+            if (rowsByErp != null) {
+                for (SuppliersRowEntity candidate : rowsByErp) {
+                    if (candidate != null && candidate.getAccountNumber() != null) {
+                        String candidateNormalized = GraphiteSupplierDto.Bank.normalizeIban(candidate.getAccountNumber());
+                        if (normalizedIban.equals(candidateNormalized)) {
+                            return Optional.of(candidate);
+                        }
+                    }
+                }
+            }
+        }
+
+        return Optional.empty();
     }
 
 
@@ -303,6 +439,6 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
     private String maskAccountNumber(String account) {
         if (account == null || account.isBlank()) return "N/A";
         if (account.length() <= 4) return "****";
-        return "****" + account.substring(account.length() - 4);
+        return SupplierRowMapper.maskAccount(account);
     }
 }

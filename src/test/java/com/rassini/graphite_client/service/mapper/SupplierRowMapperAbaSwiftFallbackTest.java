@@ -50,31 +50,33 @@ class SupplierRowMapperAbaSwiftFallbackTest {
     }
 
     @Test
-    @DisplayName("1. ABA actual informado: Debe conservarse y no reemplazarse con ACH.routing")
-    void testScenario1_CurrentAbaInformed_ConservedNotReplacedByAchRouting() throws Exception {
+    @DisplayName("1. SWIFT original informado (ej. US192521 CHASUS33): se conserva sin cambios (swiftSource=Actual)")
+    void testScenario1_OriginalSwiftInformed_ConservedWithoutChanges() throws Exception {
         String json = """
             {
-              "Entity_Public_Id": "US100001",
-              "RASSINI_ERP_ID": "00000100",
+              "Entity_Public_Id": "US192521",
+              "RASSINI_ERP_ID": "60003088",
               "ERP_Record": [
                 {
-                  "RASSINI_ERP_Entity_ID": "09",
-                  "Bank_Wire_ABA_Routing": {
-                    "routing": "021000021",
-                    "bank_name": "JPMORGAN CHASE"
-                  },
+                  "RASSINI_ERP_Entity_ID": "1000",
                   "ERP_Bank_List": [
                     {
-                      "Bank_Account_Number": "99990001",
-                      "Bank_Name": "JPMORGAN CHASE",
+                      "Bank_Account_Number": "687769292",
+                      "Bank_Name": "JPMorgan Chase Bank, NA",
                       "Bank_SWIFT": {
                         "routing": "CHASUS33",
                         "valid": true
                       },
                       "Bank_ACH_ABA_Routing": {
-                        "routing": "999999991",
+                        "routing": "071000013",
                         "valid": true,
-                        "bank_name": "FALLBACK ACH BANK",
+                        "bank_name": "JPMorgan Chase Bank, NA",
+                        "type": "ABA"
+                      },
+                      "Bank_Wire_ABA_Routing": {
+                        "routing": "021000021",
+                        "valid": true,
+                        "bank_name": "JPMorgan Chase Bank, NA",
                         "type": "ABA"
                       }
                     }
@@ -86,207 +88,23 @@ class SupplierRowMapperAbaSwiftFallbackTest {
 
         SuppliersRowEntity row = mapFirstBank(json);
 
-        assertEquals("021000021", row.getRoutingCodeAba(), "El ABA actual debe conservarse sin reemplazarse por ACH.routing");
-        assertEquals("CHASUS33", row.getRoutingCodeSwift(), "El SWIFT actual debe conservarse");
+        assertEquals("071000013", row.getRoutingCodeAba(), "El ABA debe resolverse desde Bank_ACH_ABA_Routing.routing");
+        assertEquals("CHASUS33", row.getRoutingCodeSwift(), "El SWIFT original (CHASUS33) debe conservarse sin cambios");
 
         String routingLog = findRoutingLog();
-        assertTrue(routingLog.contains("account=****0001"));
-        assertTrue(routingLog.contains("abaActual='021000021'"));
-        assertTrue(routingLog.contains("swiftActual='CHASUS33'"));
-        assertTrue(routingLog.contains("abaFinal='021000021'"));
-        assertTrue(routingLog.contains("abaSource=Actual"));
+        assertTrue(routingLog.contains("supplier=US192521"));
+        assertTrue(routingLog.contains("bu=1000"));
+        assertTrue(routingLog.contains("account=****9292"));
+        assertTrue(routingLog.contains("swiftFallbackEnabled=false"));
+        assertTrue(routingLog.contains("abaFinal='071000013'"));
+        assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
         assertTrue(routingLog.contains("swiftFinal='CHASUS33'"));
         assertTrue(routingLog.contains("swiftSource=Actual"));
     }
 
     @Test
-    @DisplayName("2. ABA actual vacío y ACH.routing informado: ABA final debe tomar ACH.routing")
-    void testScenario2_CurrentAbaEmpty_AchRoutingInformed_AbaTakesAchRouting() throws Exception {
-        String json = """
-            {
-              "Entity_Public_Id": "US197697",
-              "ERP_Record": [
-                {
-                  "RASSINI_ERP_Entity_ID": "09",
-                  "ERP_Bank_List": [
-                    {
-                      "Bank_Account_Number": "6066401",
-                      "Bank_Name": "Delta Bank",
-                      "Bank_SWIFT": "",
-                      "Bank_ACH_ABA_Routing": {
-                        "routing": "111101144",
-                        "valid": true,
-                        "fromDatabase": false,
-                        "bank_name": "Delta Bank",
-                        "swift": "",
-                        "type": "ABA"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-            """;
-
-        SuppliersRowEntity row = mapFirstBank(json);
-
-        assertEquals("111101144", row.getRoutingCodeAba(), "El ABA debe resolverse desde Bank_ACH_ABA_Routing.routing");
-        assertNull(row.getRoutingCodeSwift(), "El SWIFT debe permanecer null porque Wire no está informado");
-
-        String routingLog = findRoutingLog();
-        assertTrue(routingLog.contains("account=****6401"));
-        assertTrue(routingLog.contains("existsBankAchAbaRouting=true"));
-        assertTrue(routingLog.contains("existsBankWireAbaRouting=false"));
-        assertTrue(routingLog.contains("abaFinal='111101144'"));
-        assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
-        assertTrue(routingLog.contains("swiftFinal='null'"));
-        assertTrue(routingLog.contains("swiftSource=None"));
-    }
-
-    @Test
-    @DisplayName("3. ABA actual vacío, ACH.routing vacío y Wire.routing informado: ABA permanece null y SWIFT toma Wire.routing (no se cruzan fuentes)")
-    void testScenario3_CurrentAbaEmpty_AchRoutingEmpty_WireRoutingInformed_AbaRemainsNullAndSwiftTakesWireRouting() throws Exception {
-        String json = """
-            {
-              "Entity_Public_Id": "US197697",
-              "ERP_Record": [
-                {
-                  "RASSINI_ERP_Entity_ID": "09",
-                  "ERP_Bank_List": [
-                    {
-                      "Bank_Account_Number": "6066401",
-                      "Bank_Name": "Delta Bank",
-                      "Bank_SWIFT": "",
-                      "Bank_Wire_ABA_Routing": {
-                        "routing": "111101144",
-                        "valid": true,
-                        "fromDatabase": false,
-                        "bank_name": "Delta Bank",
-                        "swift": "",
-                        "type": "ABA"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-            """;
-
-        SuppliersRowEntity row = mapFirstBank(json);
-
-        assertNull(row.getRoutingCodeAba(), "No se debe usar Wire como fallback del ABA");
-        assertEquals("111101144", row.getRoutingCodeSwift(), "El SWIFT debe tomar Bank_Wire_ABA_Routing.routing");
-
-        String routingLog = findRoutingLog();
-        assertTrue(routingLog.contains("account=****6401"));
-        assertTrue(routingLog.contains("existsBankAchAbaRouting=false"));
-        assertTrue(routingLog.contains("existsBankWireAbaRouting=true"));
-        assertTrue(routingLog.contains("abaFinal='null'"));
-        assertTrue(routingLog.contains("abaSource=None"));
-        assertTrue(routingLog.contains("swiftFinal='111101144'"));
-        assertTrue(routingLog.contains("swiftSource=Bank_Wire_ABA_Routing.routing"));
-    }
-
-    @Test
-    @DisplayName("4. SWIFT actual informado: Debe conservarse y no reemplazarse con Wire.routing")
-    void testScenario4_CurrentSwiftInformed_ConservedNotReplacedByWireRouting() throws Exception {
-        String json = """
-            {
-              "Entity_Public_Id": "US197697",
-              "ERP_Record": [
-                {
-                  "RASSINI_ERP_Entity_ID": "09",
-                  "ERP_Bank_List": [
-                    {
-                      "Bank_Account_Number": "6066401",
-                      "Bank_Name": "PRIMARY WIRE BANK",
-                      "Bank_SWIFT": {
-                        "routing": "CHASUS33XXX",
-                        "valid": true
-                      },
-                      "Bank_ACH_ABA_Routing": {
-                        "routing": "111101144",
-                        "valid": true,
-                        "bank_name": "Delta Bank",
-                        "type": "ABA"
-                      },
-                      "Bank_Wire_ABA_Routing": {
-                        "routing": "888888882",
-                        "valid": true,
-                        "bank_name": "FALLBACK WIRE BANK",
-                        "type": "ABA"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-            """;
-
-        SuppliersRowEntity row = mapFirstBank(json);
-
-        assertEquals("111101144", row.getRoutingCodeAba(), "El ABA se obtiene de Bank_ACH_ABA_Routing.routing");
-        assertEquals("CHASUS33XXX", row.getRoutingCodeSwift(), "El SWIFT de la lógica actual debe prevalecer sobre Wire.routing");
-
-        String routingLog = findRoutingLog();
-        assertTrue(routingLog.contains("abaFinal='111101144'"));
-        assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
-        assertTrue(routingLog.contains("swiftFinal='CHASUS33XXX'"));
-        assertTrue(routingLog.contains("swiftSource=Actual"));
-    }
-
-    @Test
-    @DisplayName("5. SWIFT actual vacío, Wire.routing vacío y ACH.routing informado: SWIFT permanece null (no usar ACH como fallback de SWIFT)")
-    void testScenario5_CurrentSwiftEmpty_WireRoutingEmpty_AchRoutingInformed_SwiftRemainsNull() throws Exception {
-        String json = """
-            {
-              "Entity_Public_Id": "US197697",
-              "ERP_Record": [
-                {
-                  "RASSINI_ERP_Entity_ID": "09",
-                  "ERP_Bank_List": [
-                    {
-                      "Bank_Account_Number": "6066401",
-                      "Bank_Name": "Delta Bank",
-                      "Bank_SWIFT": "",
-                      "Bank_ACH_ABA_Routing": {
-                        "routing": "111000111",
-                        "valid": true,
-                        "fromDatabase": false,
-                        "bank_name": "Delta Bank ACH",
-                        "swift": "DLTBACH1",
-                        "type": "ABA"
-                      },
-                      "Bank_Wire_ABA_Routing": {
-                        "routing": "",
-                        "valid": true,
-                        "fromDatabase": false,
-                        "bank_name": "Delta Bank Wire",
-                        "swift": "",
-                        "type": "ABA"
-                      }
-                    }
-                  ]
-                }
-              ]
-            }
-            """;
-
-        SuppliersRowEntity row = mapFirstBank(json);
-
-        assertEquals("111000111", row.getRoutingCodeAba(), "El ABA toma Bank_ACH_ABA_Routing.routing");
-        assertNull(row.getRoutingCodeSwift(), "No se debe usar ACH como fallback del SWIFT");
-
-        String routingLog = findRoutingLog();
-        assertTrue(routingLog.contains("abaFinal='111000111'"));
-        assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
-        assertTrue(routingLog.contains("swiftFinal='null'"));
-        assertTrue(routingLog.contains("swiftSource=None"));
-    }
-
-    @Test
-    @DisplayName("6. ABA y SWIFT actuales vacíos con ACH.routing y Wire.routing informados (Caso US197697, BU 09, cuenta 6066401): ABA toma ACH.routing y SWIFT toma Wire.routing")
-    void testScenario6_CaseUS197697_AbaFromAchRoutingAndSwiftFromWireRouting() throws Exception {
+    @DisplayName("2. SWIFT original vacío y Wire.routing informado (Caso US197697): SWIFT permanece null (swiftSource=None)")
+    void testScenario2_OriginalSwiftEmpty_WireRoutingInformed_SwiftRemainsNull() throws Exception {
         String json = """
             {
               "Entity_Public_Id": "US197697",
@@ -327,27 +145,143 @@ class SupplierRowMapperAbaSwiftFallbackTest {
 
         SuppliersRowEntity row = mapFirstBank(json);
 
-        assertEquals("6066401", row.getAccountNumber());
-        assertEquals("111101144", row.getRoutingCodeAba(), "El ABA debe resolverse desde Bank_ACH_ABA_Routing.routing");
-        assertEquals("111101144", row.getRoutingCodeSwift(), "El SWIFT debe resolverse desde Bank_Wire_ABA_Routing.routing");
+        assertEquals("111101144", row.getRoutingCodeAba(), "ABA debe tomar Bank_ACH_ABA_Routing.routing");
+        assertNull(row.getRoutingCodeSwift(), "SWIFT debe permanecer null sin fallback a Bank_Wire_ABA_Routing.routing");
 
         String routingLog = findRoutingLog();
         assertTrue(routingLog.contains("supplier=US197697"));
         assertTrue(routingLog.contains("bu=09"));
         assertTrue(routingLog.contains("account=****6401"));
-        assertTrue(routingLog.contains("abaActual='null'"));
-        assertTrue(routingLog.contains("swiftActual='null'"));
-        assertTrue(routingLog.contains("existsBankAchAbaRouting=true"));
-        assertTrue(routingLog.contains("existsBankWireAbaRouting=true"));
+        assertTrue(routingLog.contains("swiftFallbackEnabled=false"));
         assertTrue(routingLog.contains("abaFinal='111101144'"));
         assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
-        assertTrue(routingLog.contains("swiftFinal='111101144'"));
-        assertTrue(routingLog.contains("swiftSource=Bank_Wire_ABA_Routing.routing"));
+        assertTrue(routingLog.contains("swiftFinal='null'"));
+        assertTrue(routingLog.contains("swiftSource=None"));
     }
 
     @Test
-    @DisplayName("7. Ambos segmentos (ACH y Wire) con valores distintos: ACH alimenta exclusivamente ABA y Wire alimenta exclusivamente SWIFT")
-    void testScenario7_DistinctAchAndWireValues_EachFeedsItsDedicatedField() throws Exception {
+    @DisplayName("3. SWIFT original vacío y Wire.swift informado: SWIFT permanece null (Wire.swift nunca fue parte de la lógica original en Git)")
+    void testScenario3_OriginalSwiftEmpty_WireSwiftInformed_SwiftRemainsNull() throws Exception {
+        String json = """
+            {
+              "Entity_Public_Id": "US197697",
+              "ERP_Record": [
+                {
+                  "RASSINI_ERP_Entity_ID": "09",
+                  "ERP_Bank_List": [
+                    {
+                      "Bank_Account_Number": "6066401",
+                      "Bank_Name": "Delta Bank",
+                      "Bank_SWIFT": "",
+                      "Bank_Wire_ABA_Routing": {
+                        "routing": "111101144",
+                        "valid": true,
+                        "fromDatabase": false,
+                        "bank_name": "Delta Bank",
+                        "swift": "DLTBUS33XXX",
+                        "type": "ABA"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        SuppliersRowEntity row = mapFirstBank(json);
+
+        assertNull(row.getRoutingCodeSwift(), "SWIFT debe permanecer null aunque Bank_Wire_ABA_Routing.swift venga informado");
+
+        String routingLog = findRoutingLog();
+        assertTrue(routingLog.contains("swiftFinal='null'"));
+        assertTrue(routingLog.contains("swiftSource=None"));
+    }
+
+    @Test
+    @DisplayName("4. ABA original vacío y ACH.routing informado: ABA toma ACH.routing")
+    void testScenario4_OriginalAbaEmpty_AchRoutingInformed_AbaTakesAchRouting() throws Exception {
+        String json = """
+            {
+              "Entity_Public_Id": "US197697",
+              "ERP_Record": [
+                {
+                  "RASSINI_ERP_Entity_ID": "09",
+                  "ERP_Bank_List": [
+                    {
+                      "Bank_Account_Number": "6066401",
+                      "Bank_Name": "Delta Bank",
+                      "Bank_SWIFT": "",
+                      "Bank_ACH_ABA_Routing": {
+                        "routing": "111101144",
+                        "valid": true,
+                        "fromDatabase": false,
+                        "bank_name": "Delta Bank",
+                        "swift": "",
+                        "type": "ABA"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        SuppliersRowEntity row = mapFirstBank(json);
+
+        assertEquals("111101144", row.getRoutingCodeAba(), "El ABA debe resolverse desde Bank_ACH_ABA_Routing.routing");
+        assertNull(row.getRoutingCodeSwift());
+
+        String routingLog = findRoutingLog();
+        assertTrue(routingLog.contains("abaFinal='111101144'"));
+        assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
+        assertTrue(routingLog.contains("swiftFinal='null'"));
+        assertTrue(routingLog.contains("swiftSource=None"));
+    }
+
+    @Test
+    @DisplayName("5. ABA original vacío, ACH vacío y Wire.routing informado en ERP_Bank_List: ABA permanece null")
+    void testScenario5_OriginalAbaEmpty_AchEmpty_BankWireRoutingInformed_AbaRemainsNull() throws Exception {
+        String json = """
+            {
+              "Entity_Public_Id": "US197697",
+              "ERP_Record": [
+                {
+                  "RASSINI_ERP_Entity_ID": "09",
+                  "ERP_Bank_List": [
+                    {
+                      "Bank_Account_Number": "6066401",
+                      "Bank_Name": "Delta Bank",
+                      "Bank_SWIFT": "",
+                      "Bank_Wire_ABA_Routing": {
+                        "routing": "111101144",
+                        "valid": true,
+                        "fromDatabase": false,
+                        "bank_name": "Delta Bank",
+                        "swift": "",
+                        "type": "ABA"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+            """;
+
+        SuppliersRowEntity row = mapFirstBank(json);
+
+        assertNull(row.getRoutingCodeAba(), "ABA permanece null cuando el original (ERP_Record.Bank_Wire_ABA_Routing) y ACH están vacíos");
+        assertNull(row.getRoutingCodeSwift(), "SWIFT permanece null sin fallback");
+
+        String routingLog = findRoutingLog();
+        assertTrue(routingLog.contains("abaFinal='null'"));
+        assertTrue(routingLog.contains("abaSource=None"));
+        assertTrue(routingLog.contains("swiftFinal='null'"));
+        assertTrue(routingLog.contains("swiftSource=None"));
+    }
+
+    @Test
+    @DisplayName("6. ACH.routing y Wire.routing con valores distintos: Solo ACH.routing completa ABA y Wire.routing NO completa SWIFT")
+    void testScenario6_DistinctAchAndWireRouting_OnlyAchCompletesAbaAndWireDoesNotCompleteSwift() throws Exception {
         String json = """
             {
               "Entity_Public_Id": "US197697",
@@ -364,7 +298,7 @@ class SupplierRowMapperAbaSwiftFallbackTest {
                         "valid": true,
                         "fromDatabase": false,
                         "bank_name": "Delta Bank ACH",
-                        "swift": "",
+                        "swift": "DLTBACH1",
                         "type": "ABA"
                       },
                       "Bank_Wire_ABA_Routing": {
@@ -372,7 +306,7 @@ class SupplierRowMapperAbaSwiftFallbackTest {
                         "valid": true,
                         "fromDatabase": false,
                         "bank_name": "Delta Bank Wire",
-                        "swift": "",
+                        "swift": "DLTBWIR2",
                         "type": "ABA"
                       }
                     }
@@ -384,30 +318,44 @@ class SupplierRowMapperAbaSwiftFallbackTest {
 
         SuppliersRowEntity row = mapFirstBank(json);
 
-        assertEquals("111000111", row.getRoutingCodeAba(), "ACH corresponde exclusivamente al ABA");
-        assertEquals("222000222", row.getRoutingCodeSwift(), "Wire corresponde exclusivamente al SWIFT");
+        assertEquals("111000111", row.getRoutingCodeAba(), "Solo ACH.routing puede completar el ABA");
+        assertNull(row.getRoutingCodeSwift(), "Wire.routing no puede completar el SWIFT");
 
         String routingLog = findRoutingLog();
         assertTrue(routingLog.contains("abaFinal='111000111'"));
         assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
-        assertTrue(routingLog.contains("swiftFinal='222000222'"));
-        assertTrue(routingLog.contains("swiftSource=Bank_Wire_ABA_Routing.routing"));
+        assertTrue(routingLog.contains("swiftFinal='null'"));
+        assertTrue(routingLog.contains("swiftSource=None"));
     }
 
     @Test
-    @DisplayName("8. Ninguna fuente aporta ABA ni SWIFT -> conservar null, abaSource=None y swiftSource=None")
-    void testScenario8_NoSourceProvidesAbaOrSwift_SourceIsNone() throws Exception {
+    @DisplayName("7. ABA original informado (ERP_Record.Bank_Wire_ABA_Routing.routing): se conserva y no es reemplazado por ACH.routing")
+    void testScenario7_OriginalAbaInformed_ConservedNotReplacedByAchRouting() throws Exception {
         String json = """
             {
-              "Entity_Public_Id": "MX999000",
+              "Entity_Public_Id": "US100001",
+              "RASSINI_ERP_ID": "00000100",
               "ERP_Record": [
                 {
                   "RASSINI_ERP_Entity_ID": "09",
+                  "Bank_Wire_ABA_Routing": {
+                    "routing": "021000021",
+                    "bank_name": "JPMORGAN CHASE"
+                  },
                   "ERP_Bank_List": [
                     {
-                      "Bank_Account_Number": "012180001234567890",
-                      "Bank_Name": "BBVA MEXICO",
-                      "Bank_SWIFT": ""
+                      "Bank_Account_Number": "99990001",
+                      "Bank_Name": "JPMORGAN CHASE",
+                      "Bank_SWIFT": {
+                        "routing": "CHASUS33",
+                        "valid": true
+                      },
+                      "Bank_ACH_ABA_Routing": {
+                        "routing": "999999991",
+                        "valid": true,
+                        "bank_name": "FALLBACK ACH BANK",
+                        "type": "ABA"
+                      }
                     }
                   ]
                 }
@@ -417,22 +365,18 @@ class SupplierRowMapperAbaSwiftFallbackTest {
 
         SuppliersRowEntity row = mapFirstBank(json);
 
-        assertNull(row.getRoutingCodeAba());
-        assertNull(row.getRoutingCodeSwift());
+        assertEquals("021000021", row.getRoutingCodeAba());
+        assertEquals("CHASUS33", row.getRoutingCodeSwift());
 
         String routingLog = findRoutingLog();
-        assertTrue(routingLog.contains("abaActual='null'"));
-        assertTrue(routingLog.contains("swiftActual='null'"));
-        assertTrue(routingLog.contains("existsBankAchAbaRouting=false"));
-        assertTrue(routingLog.contains("existsBankWireAbaRouting=false"));
-        assertTrue(routingLog.contains("abaFinal='null'"));
-        assertTrue(routingLog.contains("abaSource=None"));
-        assertTrue(routingLog.contains("swiftFinal='null'"));
-        assertTrue(routingLog.contains("swiftSource=None"));
+        assertTrue(routingLog.contains("abaFinal='021000021'"));
+        assertTrue(routingLog.contains("abaSource=Actual"));
+        assertTrue(routingLog.contains("swiftFinal='CHASUS33'"));
+        assertTrue(routingLog.contains("swiftSource=Actual"));
     }
 
     @Test
-    @DisplayName("9. Validación con payload real capturado desde GraphiteClient Local para US197697 (SAP 00000642, Sociedad 09)")
+    @DisplayName("8. Validación con payload real capturado de US197697 (SAP 00000642, BU 09): ABA=111101144 y SWIFT=null")
     void testLiveCapturedPayloadUS197697() throws Exception {
         Path liveFile = Path.of(System.getProperty("java.io.tmpdir"), "US197697_profile.json");
         if (!Files.exists(liveFile)) {
@@ -445,7 +389,7 @@ class SupplierRowMapperAbaSwiftFallbackTest {
         assertEquals("09", row.getBusinessUnitCode());
         assertEquals("6066401", row.getAccountNumber());
         assertEquals("111101144", row.getRoutingCodeAba());
-        assertEquals("111101144", row.getRoutingCodeSwift());
+        assertNull(row.getRoutingCodeSwift());
 
         String routingLog = findRoutingLog();
         assertTrue(routingLog.contains("supplier=US197697"));
@@ -453,8 +397,8 @@ class SupplierRowMapperAbaSwiftFallbackTest {
         assertTrue(routingLog.contains("account=****6401"));
         assertTrue(routingLog.contains("abaFinal='111101144'"));
         assertTrue(routingLog.contains("abaSource=Bank_ACH_ABA_Routing.routing"));
-        assertTrue(routingLog.contains("swiftFinal='111101144'"));
-        assertTrue(routingLog.contains("swiftSource=Bank_Wire_ABA_Routing.routing"));
+        assertTrue(routingLog.contains("swiftFinal='null'"));
+        assertTrue(routingLog.contains("swiftSource=None"));
     }
 
     private SuppliersRowEntity mapFirstBank(String json) throws Exception {

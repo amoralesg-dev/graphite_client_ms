@@ -172,8 +172,29 @@ public class GraphiteSupplierDto {
         @JsonProperty("swift")
         private String swift;
 
+        @JsonProperty("routing")
+        private String routing;
+
+        @JsonProperty("type")
+        private String type;
+
+        @JsonProperty("valid")
+        private Boolean valid;
+
+        @JsonProperty("fromDatabase")
+        private Boolean fromDatabase;
+
         @JsonProperty("country")
         private String country;
+
+        @JsonProperty("account_number")
+        @com.fasterxml.jackson.annotation.JsonAlias({
+                "account",
+                "intermediary_account",
+                "correspondent_account",
+                "Bank_Account_Number"
+        })
+        private String accountNumber;
     }
 
     @Data
@@ -322,9 +343,14 @@ public class GraphiteSupplierDto {
         @JsonProperty("Bank_Account_Number")
         private String bankAccountNumber;
 
-        
         @JsonProperty("Bank_Account_Number_IBAN")
         private String bankAccountNumberIban;
+
+        @JsonProperty("Bank_Account_IBAN_No_Formatting")
+        private String bankAccountIbanNoFormatting;
+
+        @JsonProperty("Bank_Account_IBAN")
+        private BankAccountIban bankAccountIban;
 
 
         @JsonProperty("Bank_Country")
@@ -356,6 +382,16 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("Bank_Account_Currency_Correspondent_Bank")
         private CorrespondentBank bankAccountCurrencyCorrespondentBank;
+
+        @JsonProperty("Bank_Account_Currency_Correspondent_Account")
+        @com.fasterxml.jackson.annotation.JsonAlias({
+                "Bank_Account_Currency_Correspondent_Account_Number",
+                "Bank_Account_Currency_Correspondent_Bank_Account",
+                "Bank_Account_Currency_Correspondent_Bank_Account_Number",
+                "Bank_Correspondent_Account_Number",
+                "Intermediary_Account"
+        })
+        private String bankAccountCurrencyCorrespondentAccount;
         
         @JsonProperty("Bank_Name_Translations")
         private Map<String, String> bankNameTranslations;
@@ -371,15 +407,110 @@ public class GraphiteSupplierDto {
             return bankAccountHolderNameTranslations;
         }
         
-        public String getBankAccountNumber() {
-            if (bankAccountNumber != null && !bankAccountNumber.trim().isEmpty()) {
-                return bankAccountNumber;
-            }
-            return bankAccountNumberIban;
+        public String getRawBankAccountNumber() {
+            return bankAccountNumber;
         }
-        
 
-    
+        public boolean hasActualBankAccountNumber() {
+            return bankAccountNumber != null && !bankAccountNumber.trim().isEmpty();
+        }
+
+        public boolean hasValidIbanCandidate() {
+            if (!isIbanObjectAllowed()) {
+                return false;
+            }
+            boolean hasNoFormatting = bankAccountIbanNoFormatting != null && !bankAccountIbanNoFormatting.trim().isEmpty();
+            boolean hasRouting = bankAccountIban != null
+                    && "IBAN".equalsIgnoreCase(bankAccountIban.getType() != null ? bankAccountIban.getType().trim() : "")
+                    && !Boolean.FALSE.equals(bankAccountIban.getValid())
+                    && bankAccountIban.getRouting() != null
+                    && !bankAccountIban.getRouting().trim().isEmpty();
+            return hasNoFormatting || hasRouting;
+        }
+
+        public String resolveBankAccountSource() {
+            if (hasActualBankAccountNumber()) {
+                return "Bank_Account_Number";
+            }
+            if (isIbanObjectAllowed()) {
+                if (bankAccountIbanNoFormatting != null && !bankAccountIbanNoFormatting.trim().isEmpty()) {
+                    return "Bank_Account_IBAN_No_Formatting";
+                }
+                if (bankAccountIban != null
+                        && "IBAN".equalsIgnoreCase(bankAccountIban.getType() != null ? bankAccountIban.getType().trim() : "")
+                        && !Boolean.FALSE.equals(bankAccountIban.getValid())
+                        && bankAccountIban.getRouting() != null
+                        && !bankAccountIban.getRouting().trim().isEmpty()) {
+                    return "Bank_Account_IBAN";
+                }
+            }
+            if (bankAccountNumberIban != null && !bankAccountNumberIban.trim().isEmpty()) {
+                return "Bank_Account_Number_IBAN";
+            }
+            return "None";
+        }
+
+        public String getBankAccountNumber() {
+            String source = resolveBankAccountSource();
+            switch (source) {
+                case "Bank_Account_Number":
+                    return bankAccountNumber.trim();
+                case "Bank_Account_IBAN_No_Formatting":
+                    return normalizeIban(bankAccountIbanNoFormatting);
+                case "Bank_Account_IBAN":
+                    return normalizeIban(bankAccountIban.getRouting());
+                case "Bank_Account_Number_IBAN":
+                    return bankAccountNumberIban.trim();
+                default:
+                    return null;
+            }
+        }
+
+        private boolean isIbanObjectAllowed() {
+            if (bankAccountIban == null) {
+                return true;
+            }
+            if (Boolean.FALSE.equals(bankAccountIban.getValid())) {
+                return false;
+            }
+            String type = bankAccountIban.getType();
+            return type == null || type.trim().isEmpty() || "IBAN".equalsIgnoreCase(type.trim());
+        }
+
+        public static String normalizeIban(String rawIban) {
+            if (rawIban == null) {
+                return null;
+            }
+            String normalized = rawIban.trim().replaceAll("\\s+", "").toUpperCase(java.util.Locale.ROOT);
+            return normalized.isEmpty() ? null : normalized;
+        }
+    }
+
+    // =========================
+    // BANK_ACCOUNT_IBAN (Bank_Account_IBAN en JSON)
+    // =========================
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    @com.fasterxml.jackson.databind.annotation.JsonDeserialize(using = com.rassini.graphite_client.service.mapper.BankAccountIbanDeserializer.class)
+    public static class BankAccountIban {
+
+        @JsonProperty("bank_name")
+        private String bankName;
+
+        @JsonProperty("routing")
+        private String routing;
+
+        @JsonProperty("swift")
+        private String swift;
+
+        @JsonProperty("valid")
+        private Boolean valid;
+
+        @JsonProperty("fromDatabase")
+        private Boolean fromDatabase;
+
+        @JsonProperty("type")
+        private String type;
     }
 
     // =========================
