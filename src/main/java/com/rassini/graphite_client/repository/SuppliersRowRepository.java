@@ -72,6 +72,11 @@ public interface SuppliersRowRepository
                 String businessUnitCode
         );
 
+        List<SuppliersRowEntity> findAllByErpIdQadAndBusinessUnitCode(
+                String erpIdQad,
+                String businessUnitCode
+        );
+
         Optional<SuppliersRowEntity> findBySupplierCodeAndBusinessUnitCodeAndAccountNumber(
                String supplierCode,
                String businessUnitCode,

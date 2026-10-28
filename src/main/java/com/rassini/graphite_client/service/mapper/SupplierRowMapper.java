@@ -149,6 +149,7 @@ public class SupplierRowMapper {
         // BANCO
         // ===============================
         if (bank != null) {
+            String previousRowAccount = row.getAccountNumber();
 
             // currency
             String currency =
@@ -213,35 +214,28 @@ public class SupplierRowMapper {
             resolveRoutingCodes(row, dto, erp, bank);
 
             // intermediario
-            if (bank.getBankAccountCurrencyCorrespondentBank() != null) {
-                row.setIntermediaryRoutingCodeSwift(
-                        bank.getBankAccountCurrencyCorrespondentBank().getSwift());
-                row.setIntermediaryBankName(
-                        bank.getBankAccountCurrencyCorrespondentBank().getBankName());
-            }
+            resolveIntermediaryBank(row, dto, erp, bank, previousRowAccount);
         }
     }
 
     /**
-     * Resuelve los códigos ABA y SWIFT manteniendo intacta la lógica actual como primera fuente
-     * y aplicando como FALLBACK exclusivo de cada canal:
+     * Resuelve los códigos ABA y SWIFT conforme a la regla definitiva:
      * <ul>
      *   <li><b>ABA:</b>
      *     <ol>
-     *       <li>Lógica actual ({@code erp.getBankWireAbaRouting().getRouting()}).</li>
-     *       <li>{@code Bank_ACH_ABA_Routing.routing} (correlacionado con la cuenta procesada).</li>
-     *       <li>Si ambas fuentes están vacías, conserva {@code null} ({@code abaSource=None}).</li>
+     *       <li>Intentar obtenerlo mediante la lógica original ({@code erp.getBankWireAbaRouting().getRouting()}).</li>
+     *       <li>Si el ABA original queda nulo o vacío, usar {@code Bank_ACH_ABA_Routing.routing} (correlacionado con la cuenta procesada).</li>
+     *       <li>Si tampoco existe, conservar {@code null} ({@code abaSource=None}).</li>
      *     </ol>
      *   </li>
      *   <li><b>SWIFT:</b>
      *     <ol>
-     *       <li>Lógica actual ({@code bank.getBankSwift().getRouting()}).</li>
-     *       <li>{@code Bank_Wire_ABA_Routing.routing} (correlacionado con la cuenta procesada).</li>
-     *       <li>Si ambas fuentes están vacías, conserva {@code null} ({@code swiftSource=None}).</li>
+     *       <li>Obtenerlo exclusivamente mediante la lógica original ({@code bank.getBankSwift().getRouting()}).</li>
+     *       <li>Si la lógica original no encuentra SWIFT, conservar {@code null} ({@code swiftSource=None}).</li>
+     *       <li>No usar ningún fallback para SWIFT ({@code swiftFallbackEnabled=false}).</li>
      *     </ol>
      *   </li>
      * </ul>
-     * No se cruzan las fuentes (Wire no alimenta ABA en fallback; ACH no alimenta SWIFT).
      */
     private static void resolveRoutingCodes(
             SuppliersRowEntity row,
@@ -249,11 +243,11 @@ public class SupplierRowMapper {
             GraphiteSupplierDto.ErpRecord erp,
             GraphiteSupplierDto.Bank bank
     ) {
-        // 1. Lógica actual (primera fuente intacta)
+        // 1. Lógica original (primera fuente intacta)
         String currentSwift = bank.getBankSwift() != null ? bank.getBankSwift().getRouting() : null;
         String currentAba = erp.getBankWireAbaRouting() != null ? erp.getBankWireAbaRouting().getRouting() : null;
 
-        // 2. Inspección de segmentos de fallback correlacionados con la misma cuenta bancaria procesada
+        // 2. Inspección de segmentos de routing correlacionados con la misma cuenta bancaria procesada
         boolean isSingleErpAccount = erp.getErpBankList() == null || erp.getErpBankList().size() <= 1;
 
         GraphiteSupplierDto.BankWireAbaRouting achSegment = bank.getBankAchAbaRouting() != null
@@ -267,7 +261,7 @@ public class SupplierRowMapper {
         boolean existsAch = achSegment != null;
         boolean existsWire = wireSegment != null;
 
-        // 3. Resolución de ABA (Prioridad definitiva: 1. Lógica actual -> 2. Bank_ACH_ABA_Routing.routing -> 3. null)
+        // 3. Resolución de ABA (1. Lógica original -> 2. Bank_ACH_ABA_Routing.routing -> 3. null)
         String finalAba = !isBlank(currentAba) ? currentAba.trim() : null;
         String abaSource = !isBlank(finalAba) ? "Actual" : "None";
 
@@ -278,16 +272,9 @@ public class SupplierRowMapper {
             }
         }
 
-        // 4. Resolución de SWIFT (Prioridad definitiva: 1. Lógica actual -> 2. Bank_Wire_ABA_Routing.routing -> 3. null)
+        // 4. Resolución de SWIFT (Exclusivamente lógica original; sin fallback)
         String finalSwift = !isBlank(currentSwift) ? currentSwift.trim() : null;
         String swiftSource = !isBlank(finalSwift) ? "Actual" : "None";
-
-        if (isBlank(finalSwift)) {
-            if (isValidSegmentValue(wireSegment, wireSegment != null ? wireSegment.getRouting() : null)) {
-                finalSwift = wireSegment.getRouting().trim();
-                swiftSource = "Bank_Wire_ABA_Routing.routing";
-            }
-        }
 
         row.setRoutingCodeAba(finalAba);
         row.setRoutingCodeSwift(finalSwift);
@@ -296,7 +283,7 @@ public class SupplierRowMapper {
 
         log.info(
                 "[ROUTING-RESOLUTION] supplier={} bu={} account={} abaActual='{}' swiftActual='{}' " +
-                "existsBankAchAbaRouting={} existsBankWireAbaRouting={} " +
+                "existsBankAchAbaRouting={} existsBankWireAbaRouting={} swiftFallbackEnabled=false " +
                 "abaFinal='{}' abaSource={} swiftFinal='{}' swiftSource={}",
                 dto.getEntityPublicId(),
                 erp.getRassiniErpEntityId(),
@@ -312,13 +299,195 @@ public class SupplierRowMapper {
         );
     }
 
-    private static String maskAccount(String account) {
+    /**
+     * Resuelve y actualiza o limpia explícitamente los 5 campos derivados del banco intermediario
+     * ({@code intermediary_bank_name}, {@code intermediary_account}, {@code intermediary_account_country},
+     * {@code intermediary_routing_code_aba}, {@code intermediary_routing_code_swift}) para una cuenta bancaria correlacionada.
+     */
+    private static void resolveIntermediaryBank(
+            SuppliersRowEntity row,
+            GraphiteSupplierDto dto,
+            GraphiteSupplierDto.ErpRecord erp,
+            GraphiteSupplierDto.Bank bank,
+            String previousRowAccount
+    ) {
+        String supplierCode = dto.getEntityPublicId();
+        String bu = erp.getRassiniErpEntityId();
+        String bankAccount = bank != null ? bank.getBankAccountNumber() : null;
+
+        String prevBankName = normalizeNullable(row.getIntermediaryBankName());
+        String prevAccount = normalizeNullable(row.getIntermediaryAccount());
+        String prevCountry = normalizeNullable(row.getIntermediaryAccountCountry());
+        String prevAba = normalizeNullable(row.getIntermediaryRoutingCodeAba());
+        String prevSwift = normalizeNullable(row.getIntermediaryRoutingCodeSwift());
+
+        boolean previousIntermediaryDataPresent = prevBankName != null
+                || prevAccount != null
+                || prevCountry != null
+                || prevAba != null
+                || prevSwift != null;
+
+        // Validar correlación estricta de la cuenta bancaria antes de modificar o limpiar campos intermediarios
+        boolean accountMismatch = !isSameCorrelatedAccount(previousRowAccount, bankAccount, bank);
+
+        String correspondentFlag = bank.getBankAccountCurrencyCorrespondent();
+        boolean correspondentDisabled = correspondentFlag != null && "n".equalsIgnoreCase(correspondentFlag.trim());
+
+        GraphiteSupplierDto.CorrespondentBank corrBank = bank.getBankAccountCurrencyCorrespondentBank();
+        boolean validCorrObject = corrBank != null && !Boolean.FALSE.equals(corrBank.getValid());
+
+        String newBankName = null;
+        String newSwift = null;
+        String newAba = null;
+        String newAccount = null;
+        String newCountry = null;
+
+        if (!correspondentDisabled && validCorrObject) {
+            newBankName = normalizeNullable(corrBank.getBankName());
+            String rawSwift = !isBlank(corrBank.getSwift()) ? corrBank.getSwift() : corrBank.getRouting();
+            if (!isBlank(rawSwift)) {
+                if ("ABA".equalsIgnoreCase(corrBank.getType())) {
+                    newAba = normalizeNullable(rawSwift);
+                } else {
+                    newSwift = normalizeNullable(rawSwift);
+                }
+            }
+        }
+
+        if (!correspondentDisabled) {
+            String rawAccount = !isBlank(bank.getBankAccountCurrencyCorrespondentAccount())
+                    ? bank.getBankAccountCurrencyCorrespondentAccount()
+                    : (validCorrObject ? corrBank.getAccountNumber() : null);
+            newAccount = normalizeNullable(rawAccount);
+
+            String rawCountry = !isBlank(bank.getBankAccountCurrencyCorrespondentBankCountry())
+                    ? bank.getBankAccountCurrencyCorrespondentBankCountry()
+                    : (validCorrObject ? corrBank.getCountry() : null);
+            newCountry = normalizeNullable(rawCountry);
+        }
+
+        boolean payloadIntermediaryPresent = newBankName != null
+                || newAccount != null
+                || newCountry != null
+                || newAba != null
+                || newSwift != null;
+
+        if (isBlank(bankAccount) || accountMismatch) {
+            log.warn(
+                    "[INTERMEDIARY-BANK-RESOLUTION] supplier={} bu={} account={} payloadIntermediaryPresent={} " +
+                    "previousIntermediaryDataPresent={} action=CORRELATION_ERROR clearedFields=[] " +
+                    "reason='Cuenta bancaria no encontrada o no correlacionada con la fila destino'",
+                    supplierCode,
+                    bu,
+                    maskAccount(bankAccount),
+                    payloadIntermediaryPresent,
+                    previousIntermediaryDataPresent
+            );
+            return;
+        }
+
+        if (!payloadIntermediaryPresent) {
+            newBankName = null;
+            newAccount = null;
+            newCountry = null;
+            newAba = null;
+            newSwift = null;
+        }
+
+        java.util.List<String> clearedFields = new java.util.ArrayList<>();
+        if (prevBankName != null && newBankName == null) {
+            clearedFields.add("intermediary_bank_name");
+        }
+        if (prevAccount != null && newAccount == null) {
+            clearedFields.add("intermediary_account");
+        }
+        if (prevCountry != null && newCountry == null) {
+            clearedFields.add("intermediary_account_country");
+        }
+        if (prevAba != null && newAba == null) {
+            clearedFields.add("intermediary_routing_code_aba");
+        }
+        if (prevSwift != null && newSwift == null) {
+            clearedFields.add("intermediary_routing_code_swift");
+        }
+
+        // También limpiar strings vacíos residuales aunque fuesen blancos en BD
+        row.setIntermediaryBankName(newBankName);
+        row.setIntermediaryAccount(newAccount);
+        row.setIntermediaryAccountCountry(newCountry);
+        row.setIntermediaryRoutingCodeAba(newAba);
+        row.setIntermediaryRoutingCodeSwift(newSwift);
+
+        boolean anyChanged = !java.util.Objects.equals(prevBankName, newBankName)
+                || !java.util.Objects.equals(prevAccount, newAccount)
+                || !java.util.Objects.equals(prevCountry, newCountry)
+                || !java.util.Objects.equals(prevAba, newAba)
+                || !java.util.Objects.equals(prevSwift, newSwift);
+
+        String action;
+        if (!payloadIntermediaryPresent && previousIntermediaryDataPresent) {
+            action = "CLEARED";
+        } else if (payloadIntermediaryPresent && (anyChanged || !clearedFields.isEmpty())) {
+            action = "UPDATED";
+        } else {
+            action = "UNCHANGED";
+        }
+
+        log.info(
+                "[INTERMEDIARY-BANK-RESOLUTION] supplier={} bu={} account={} " +
+                "payloadIntermediaryPresent={} previousIntermediaryDataPresent={} " +
+                "action={} clearedFields={}",
+                supplierCode,
+                bu,
+                maskAccount(bankAccount),
+                payloadIntermediaryPresent,
+                previousIntermediaryDataPresent,
+                action,
+                clearedFields
+        );
+    }
+
+    private static boolean isSameCorrelatedAccount(
+            String previousRowAccount,
+            String bankAccount,
+            GraphiteSupplierDto.Bank bank
+    ) {
+        if (isBlank(previousRowAccount) || isBlank(bankAccount)) {
+            return true;
+        }
+        String prevTrim = previousRowAccount.trim();
+        String currTrim = bankAccount.trim();
+        if (prevTrim.equals(currTrim)) {
+            return true;
+        }
+        String prevCompact = prevTrim.replaceAll("\\s+", "").toUpperCase(java.util.Locale.ROOT);
+        String currCompact = currTrim.replaceAll("\\s+", "").toUpperCase(java.util.Locale.ROOT);
+        if (prevCompact.equals(currCompact)) {
+            return true;
+        }
+        if (bank != null && !isBlank(bank.getBankAccountNumberIban())) {
+            String domesticIbanPart = bank.getBankAccountNumberIban().trim();
+            if (prevTrim.equalsIgnoreCase(domesticIbanPart) || prevCompact.equalsIgnoreCase(domesticIbanPart.replaceAll("\\s+", ""))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String normalizeNullable(String value) {
+        return isBlank(value) ? null : value.trim();
+    }
+
+    public static String maskAccount(String account) {
         if (isBlank(account)) {
             return "N/A";
         }
         String trimmed = account.trim();
         if (trimmed.length() <= 4) {
             return "****";
+        }
+        if (trimmed.length() >= 8 && Character.isLetter(trimmed.charAt(0)) && Character.isLetter(trimmed.charAt(1))) {
+            return trimmed.substring(0, 2) + "*".repeat(trimmed.length() - 6) + trimmed.substring(trimmed.length() - 4);
         }
         return "****" + trimmed.substring(trimmed.length() - 4);
     }
