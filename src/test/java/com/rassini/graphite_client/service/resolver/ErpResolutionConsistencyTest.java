@@ -60,6 +60,9 @@ public class ErpResolutionConsistencyTest {
     @Spy
     private com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver manualOutputPathResolver = new com.rassini.graphite_client.service.validation.service.ManualOutputPathResolver();
 
+    @org.mockito.Mock
+    private com.rassini.graphite_client.service.version.SupplierBankVersionService supplierBankVersionService;
+
     @InjectMocks
     private SupplierJpaMapperImpl supplierJpaMapper;
 

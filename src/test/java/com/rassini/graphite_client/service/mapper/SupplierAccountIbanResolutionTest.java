@@ -64,7 +64,7 @@ class SupplierAccountIbanResolutionTest {
         listAppender.start();
         mapperLogger.addAppender(listAppender);
         jpaMapperLogger.addAppender(listAppender);
-        jpaMapper = new SupplierJpaMapperImpl(suppliersRowRepository, catalogService, supplierErpResolver);
+        jpaMapper = new SupplierJpaMapperImpl(suppliersRowRepository, catalogService, supplierErpResolver, org.mockito.Mockito.mock(com.rassini.graphite_client.service.version.SupplierBankVersionService.class));
     }
 
     @AfterEach
