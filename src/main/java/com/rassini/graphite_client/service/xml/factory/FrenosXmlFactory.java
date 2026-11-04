@@ -284,7 +284,7 @@ public class FrenosXmlFactory {
                 .tcCurrencyCode(currency)
 
                 .tcCreditorTypeCode(supplier.getSupplierTypeCode())
-                .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
+                .tcPurchaseTypeCode(XMLConstants.NULL)
 
                 .lastModifiedDate(DateUtil.todayDdMMyyyy())
                 .lastModifiedTime(DateUtil.nowHhMmSs())

@@ -277,7 +277,7 @@ public class BreakesXmlFactory {
                 .tcCurrencyCode(currency)
 
                 .tcCreditorTypeCode(supplier.getSupplierTypeCode())
-                .tcPurchaseTypeCode(supplier.getPurchaseTypeCode())
+                .tcPurchaseTypeCode(XMLConstants.NULL)
 
                 .lastModifiedDate(DateUtil.todayDdMMyyyy())
                 .lastModifiedTime(DateUtil.nowHhMmSs())
