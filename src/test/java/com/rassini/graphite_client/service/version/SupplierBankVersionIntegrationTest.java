@@ -110,6 +110,45 @@ class SupplierBankVersionIntegrationTest {
     }
 
     @Test
+    void endToEndScenario_citibankToJPMorgan_createsVersionOne() {
+        // 1. Estado inicial simulado: Citibank / 9988776655 / 021000089 sin historial previo
+        SuppliersRowEntity row = rowRepo.findById(supplierId).orElseThrow();
+        row.setBeneficiaryBankName("Citibank, N.A.");
+        row.setAccountNumber("9988776655");
+        row.setRoutingCodeAba("021000089");
+        rowRepo.saveAndFlush(row);
+        assertEquals(0, verRepo.count());
+
+        // 2. Llegada de payload Graphite: JPMorgan / 10382910 / 021000021
+        upsert(r -> {
+            r.setBeneficiaryBankName("JPMorgan Chase Bank, NA");
+            r.setAccountNumber("10382910");
+            r.setRoutingCodeAba("021000021");
+        });
+
+        // 3. Resultado esperado:
+        // - suppliers_ver contiene VERSION 1 con Citibank / 9988776655 / 021000089
+        // - suppliers contiene JPMorgan / 10382910 / 021000021
+        // - changed_fields contiene los tres campos modificados
+        List<SuppliersVerEntity> versions = verRepo.findBySupplierIdOrderByVersionNumberAsc(supplierId);
+        assertEquals(1, versions.size());
+        SuppliersVerEntity v1 = versions.get(0);
+        assertEquals(1, v1.getVersionNumber());
+        assertEquals("Citibank, N.A.", v1.getBeneficiaryBankName());
+        assertEquals("9988776655", v1.getAccountNumber());
+        assertEquals("021000089", v1.getRoutingCodeAba());
+        assertEquals("GRAPHITE", v1.getVersionSource());
+        assertTrue(v1.getChangedFields().contains("beneficiary_bank_name"));
+        assertTrue(v1.getChangedFields().contains("account_number"));
+        assertTrue(v1.getChangedFields().contains("routing_code_aba"));
+
+        SuppliersRowEntity updatedRow = rowRepo.findById(supplierId).orElseThrow();
+        assertEquals("JPMorgan Chase Bank, NA", updatedRow.getBeneficiaryBankName());
+        assertEquals("10382910", updatedRow.getAccountNumber());
+        assertEquals("021000021", updatedRow.getRoutingCodeAba());
+    }
+
+    @Test
     void supplierUpdateFailure_rollsBack_noOrphanVersion() {
         assertThrows(Exception.class, () -> upsert(r -> {
             r.setRoutingCodeSwift("BNMXMXMM");

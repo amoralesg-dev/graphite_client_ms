@@ -48,7 +48,7 @@ public class SupplierBankVersionServiceImpl implements SupplierBankVersionServic
 
         List<String> changed = SupplierBankDataComparator.changedFields(previous, updated);
         if (changed.isEmpty()) {
-            log.info("[BANK-VERSION] supplierId={} supplier={} businessUnit={} sin cambios bancarios; no se genera versión",
+            log.info("[BANK-VERSION] supplierId={} supplier={} businessUnit={} sin cambios bancarios; no se genera version",
                     previous.getSupplierId(), previous.getSupplierCode(), previous.getBusinessUnitCode());
             return Optional.empty();
         }
