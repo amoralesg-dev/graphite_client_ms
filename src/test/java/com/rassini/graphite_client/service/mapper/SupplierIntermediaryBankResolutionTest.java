@@ -335,7 +335,7 @@ class SupplierIntermediaryBankResolutionTest {
                 .thenReturn(new ErpResolutionResult("60000809", ErpResolutionStrategy.LEGACY_QAD_ID));
         when(suppliersRowRepository.save(any(SuppliersRowEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        SupplierJpaMapperImpl jpaMapper = new SupplierJpaMapperImpl(suppliersRowRepository, catalogService, supplierErpResolver);
+        SupplierJpaMapperImpl jpaMapper = new SupplierJpaMapperImpl(suppliersRowRepository, catalogService, supplierErpResolver, org.mockito.Mockito.mock(com.rassini.graphite_client.service.version.SupplierBankVersionService.class));
         jpaMapper.upsertSuppliersRows(dto);
 
         // Cuenta 1 correlacionada -> intermediario limpiado
@@ -584,7 +584,7 @@ class SupplierIntermediaryBankResolutionTest {
                 .thenReturn(new ErpResolutionResult("60003152", ErpResolutionStrategy.DTO_ERP_ID_QAD));
         when(suppliersRowRepository.save(any(SuppliersRowEntity.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        SupplierJpaMapperImpl jpaMapper = new SupplierJpaMapperImpl(suppliersRowRepository, catalogService, supplierErpResolver);
+        SupplierJpaMapperImpl jpaMapper = new SupplierJpaMapperImpl(suppliersRowRepository, catalogService, supplierErpResolver, org.mockito.Mockito.mock(com.rassini.graphite_client.service.version.SupplierBankVersionService.class));
         GraphiteSupplierDto dtoWithInterm = objectMapper.readValue(jsonBlankWithIntermediary, GraphiteSupplierDto.class);
         jpaMapper.upsertSuppliersRows(dtoWithInterm);
 

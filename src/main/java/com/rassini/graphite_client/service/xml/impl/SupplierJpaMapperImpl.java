@@ -6,12 +6,14 @@ import org.springframework.stereotype.Service;
 
 import com.rassini.graphite_client.dto.GraphiteSupplierDto;
 import com.rassini.graphite_client.entity.SuppliersRowEntity;
+import com.rassini.graphite_client.entity.SuppliersVerEntity;
 import com.rassini.graphite_client.entity.XmlStatus;
 import com.rassini.graphite_client.repository.SuppliersRowRepository;
 import com.rassini.graphite_client.service.address.ResolvedAddress;
 import com.rassini.graphite_client.service.address.SupplierAddressResolver;
 import com.rassini.graphite_client.service.mapper.SupplierRowMapper;
 import com.rassini.graphite_client.service.resolver.SupplierErpResolver;
+import com.rassini.graphite_client.service.version.SupplierBankVersionService;
 import com.rassini.graphite_client.service.resolver.ErpResolutionResult;
 import com.rassini.graphite_client.service.xml.CatalogService;
 import com.rassini.graphite_client.service.xml.SupplierJpaMapper;
@@ -28,6 +30,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
     private final SuppliersRowRepository suppliersRowRepository;
     private final CatalogService catalogService;
     private final SupplierErpResolver supplierErpResolver;
+    private final SupplierBankVersionService supplierBankVersionService;
 
   
 
@@ -111,6 +114,10 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                         maskedAccount);
 
                 SuppliersRowEntity row = existingRowOpt.orElseGet(SuppliersRowEntity::new);
+
+                // [BANK-VERSION] Bloquear el registro existente y tomar la fotografia completa ANTES de modificarlo.
+                // Proveedor/cuenta nueva -> sin snapshot (no se versiona).
+                Optional<SuppliersVerEntity> bankSnapshot = supplierBankVersionService.lockAndSnapshot(row);
 
                 log.info(
                     "[FLOW-PHASE-2][UPSERT-ROW] supplier={} businessUnit={} account={} id={} currentCode={}",
@@ -201,7 +208,16 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                 log.info("[JPA-SAVE] rowId={} supplierCode={} businessUnit={} accountNumber={} operation={}",
                         row.getId(), row.getSupplierCode(), bu, maskedAccount, operation);
 
-                SuppliersRowEntity savedRow = suppliersRowRepository.save(row);
+                // [BANK-VERSION] Inmediatamente antes del update: si cambio la informacion bancaria,
+                // guardar la version anterior en suppliers_ver (misma transaccion) y forzar flush del update
+                // para que cualquier fallo provoque rollback ANTES de generar XML/TXT.
+                boolean bankVersioned = bankSnapshot
+                        .flatMap(prev -> supplierBankVersionService.versionIfBankDataChanged(prev, row))
+                        .isPresent();
+
+                SuppliersRowEntity savedRow = bankVersioned
+                        ? suppliersRowRepository.saveAndFlush(row)
+                        : suppliersRowRepository.save(row);
                 Long selectedRowId = (savedRow != null && savedRow.getId() != null) ? savedRow.getId() : row.getId();
 
                 log.info(
