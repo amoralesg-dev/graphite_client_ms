@@ -496,4 +496,29 @@ public class SupplierProcessingServiceTest {
 
         verify(correoPendienteRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("BANK-VERSION: fallo al guardar suppliers_ver/actualizar suppliers -> no se generan XML ni TXT")
+    void bankVersionPersistenceFailure_noXmlNoTxt() throws Exception {
+        setupBaseMocks();
+        doThrow(new org.springframework.dao.DataIntegrityViolationException("suppliers_ver insert failed"))
+                .when(supplierJpaMapper).upsertSuppliersRows(any());
+
+        assertThrows(IllegalStateException.class,
+                () -> supplierProcessingService.processSupplier(publicId, "MANUAL"));
+
+        verifyNoInteractions(xmlOcService, xmlPnService, xmlPn99Service, xmlFrenosService, xmlBreakesService, integrityService);
+    }
+
+    @Test
+    @DisplayName("BANK-VERSION: persistencia (versión + update) ocurre antes de generar XML y TXT")
+    void bankVersionPersistence_happensBeforeXmlAndTxt() throws Exception {
+        setupBaseMocks();
+        supplierProcessingService.processSupplier(publicId, "MANUAL");
+
+        org.mockito.InOrder order = inOrder(supplierJpaMapper, xmlOcService, integrityService);
+        order.verify(supplierJpaMapper).upsertSuppliersRows(graphiteSupplierDto);
+        order.verify(xmlOcService).generate(eq(graphiteSupplierDto), eq(supplierEntity));
+        order.verify(integrityService).createFileSupplierSync(any(GraphiteSupplierDto.class));
+    }
 }
