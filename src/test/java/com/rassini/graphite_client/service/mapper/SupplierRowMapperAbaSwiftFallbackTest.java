@@ -405,10 +405,11 @@ class SupplierRowMapperAbaSwiftFallbackTest {
         GraphiteSupplierDto dto = objectMapper.readValue(json, GraphiteSupplierDto.class);
         GraphiteSupplierDto.Location hq = SupplierRowMapper.findHeadquarters(dto);
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
 
         SuppliersRowEntity row = new SuppliersRowEntity();
-        SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
+        SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
         return row;
     }
 

@@ -122,10 +122,13 @@ public class SuppliersRowEntity {
     private String intermediaryRoutingCodeSwift;
 
     @Column(name = "status_integrity")
-    private String statusIntegrity;    
+    private String statusIntegrity;       
 
     @Enumerated(EnumType.STRING)
     @Column(name = "xml_status", nullable = false)
     private XmlStatus xmlStatus = XmlStatus.PENDING;
+
+    @Column(name = "payment_group")
+    private String paymentgroup;
 
 }

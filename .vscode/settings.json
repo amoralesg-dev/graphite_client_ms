@@ -1,6 +1,6 @@
 {
   "java.server.launchMode": "Standard",
-  "java.jdt.ls.java.home": "C:\\Program Files\\Amazon Corretto\\jdk21.0.10_7",
+  "java.jdt.ls.java.home": "C:\\Program Files\\Amazon Corretto\\jdk21.0.12_9",
   "java.configuration.runtimes": [
     {
       "name": "JavaSE-21",
@@ -11,7 +11,7 @@
   "java.import.maven.enabled": true,
   "java.configuration.updateBuildConfiguration": "automatic",
   "java.autobuild.enabled": true,
-  "java.import.maven.java.home": "C:\\Program Files\\Amazon Corretto\\jdk21.0.10_7",
+  "java.import.maven.java.home": "C:\\Program Files\\Amazon Corretto\\jdk21.0.12_9",
   "java.jdt.ls.lombokSupport.enabled": true,
   "java.jdt.ls.vmargs": "-XX:+UseParallelGC -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -Dsun.zip.disableMemoryMapping=true -Xmx4G -Xms100m -Xlog:disable"
 }
