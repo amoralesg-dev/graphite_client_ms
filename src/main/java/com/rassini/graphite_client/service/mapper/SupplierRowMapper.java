@@ -26,10 +26,11 @@ public class SupplierRowMapper {
             GraphiteSupplierDto dto,
             GraphiteSupplierDto.Location headquarters,
             GraphiteSupplierDto.ErpRecord erp,
+            GraphiteSupplierDto.RassiniEngagement eng,
             CatalogService catalogService
     ) {
         SuppliersRowEntity row = new SuppliersRowEntity();
-        fill(row, dto, headquarters, erp,null, catalogService);
+        fill(row, dto, headquarters, erp, eng, null, catalogService);
         return row;
     }
 
@@ -38,6 +39,7 @@ public class SupplierRowMapper {
             GraphiteSupplierDto dto,
             GraphiteSupplierDto.Location headquarters,
             GraphiteSupplierDto.ErpRecord erp,
+            GraphiteSupplierDto.RassiniEngagement eng,
             GraphiteSupplierDto.Bank bank,
             CatalogService catalogService
     ) {
@@ -55,7 +57,7 @@ public class SupplierRowMapper {
         row.setErpIdQad(dto.getErpIdQad());
 
         // ✅ SUPPLIER NAME (translations)
-        String supplierName = null;
+        String supplierName = null; 
 
         if (dto.getEntityNameTranslations() != null) {
             supplierName = dto.getEntityNameTranslations().get(LOCALE);
@@ -72,6 +74,9 @@ public class SupplierRowMapper {
         row.setSupplierName(left(supplierName, 36));
         row.setSupplierSearchName(left(supplierName, 20));
         row.setRfc(dto.getIntegrationTaxId());
+        if(eng != null){
+            row.setPaymentgroup(eng.getRassiniSupplierPaymentGroup());
+        }
 
         // ===============================
         // CONTACTO

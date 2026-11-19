@@ -153,8 +153,9 @@ public class FrenosCurrencyMappingTest {
     void testSupplierRowMapper_Frenos_Currency_MX() {
         SuppliersRowEntity row = new SuppliersRowEntity();
         GraphiteSupplierDto.Bank bank = createBankWithCurrency("MX");
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
 
-        SupplierRowMapper.fill(row, dto, hq, frenosErp, bank, catalogService);
+        SupplierRowMapper.fill(row, dto, hq, frenosErp, eng, bank, catalogService);
 
         assertEquals("MX", row.getSupplierCurrency(), "La base de datos debe conservar MX, no MN");
         assertNotEquals("MN", row.getSupplierCurrency(), "SupplierRowMapper no debe convertir a MN");
@@ -168,8 +169,9 @@ public class FrenosCurrencyMappingTest {
     void testSupplierRowMapper_Frenos_Currency_MEX() {
         SuppliersRowEntity row = new SuppliersRowEntity();
         GraphiteSupplierDto.Bank bank = createBankWithCurrency("MEX");
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
 
-        SupplierRowMapper.fill(row, dto, hq, frenosErp, bank, catalogService);
+        SupplierRowMapper.fill(row, dto, hq, frenosErp, eng, bank, catalogService);
 
         assertEquals("MEX", row.getSupplierCurrency(), "La base de datos debe conservar MEX, no MN");
         assertNotEquals("MN", row.getSupplierCurrency(), "SupplierRowMapper no debe convertir a MN");
@@ -183,8 +185,9 @@ public class FrenosCurrencyMappingTest {
     void testSupplierRowMapper_Frenos_Currency_MXN() {
         SuppliersRowEntity row = new SuppliersRowEntity();
         GraphiteSupplierDto.Bank bank = createBankWithCurrency("MXN");
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
 
-        SupplierRowMapper.fill(row, dto, hq, frenosErp, bank, catalogService);
+        SupplierRowMapper.fill(row, dto, hq, frenosErp, eng, bank, catalogService);
 
         assertEquals("MXN", row.getSupplierCurrency(), "La base de datos debe conservar MXN, no MN");
         assertNotEquals("MN", row.getSupplierCurrency(), "SupplierRowMapper no debe convertir a MN");
@@ -198,8 +201,9 @@ public class FrenosCurrencyMappingTest {
     void testSupplierRowMapper_Frenos_Currency_USD() {
         SuppliersRowEntity row = new SuppliersRowEntity();
         GraphiteSupplierDto.Bank bank = createBankWithCurrency("USD");
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
 
-        SupplierRowMapper.fill(row, dto, hq, frenosErp, bank, catalogService);
+        SupplierRowMapper.fill(row, dto, hq, frenosErp, eng, bank, catalogService);
 
         assertEquals("USD", row.getSupplierCurrency(), "La base de datos debe conservar USD, no US");
         assertNotEquals("US", row.getSupplierCurrency(), "SupplierRowMapper no debe convertir a US");
@@ -380,18 +384,19 @@ public class FrenosCurrencyMappingTest {
         // 8.1 SupplierRowMapper con bank sin lista de moneda o vacía
         SuppliersRowEntity row1 = new SuppliersRowEntity();
         GraphiteSupplierDto.Bank bankNoList = new GraphiteSupplierDto.Bank();
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
         bankNoList.setBankCurrencyList(null);
-        SupplierRowMapper.fill(row1, dto, hq, frenosErp, bankNoList, catalogService);
+        SupplierRowMapper.fill(row1, dto, hq, frenosErp, eng, bankNoList, catalogService);
         assertNull(row1.getSupplierCurrency(), "supplierCurrency debe ser null si no hay moneda en bank");
 
         SuppliersRowEntity row2 = new SuppliersRowEntity();
         GraphiteSupplierDto.Bank bankEmptyList = new GraphiteSupplierDto.Bank();
         bankEmptyList.setBankCurrencyList(Collections.emptyList());
-        SupplierRowMapper.fill(row2, dto, hq, frenosErp, bankEmptyList, catalogService);
+        SupplierRowMapper.fill(row2, dto, hq, frenosErp, eng, bankEmptyList, catalogService);
         assertNull(row2.getSupplierCurrency(), "supplierCurrency debe ser null si la lista de monedas está vacía");
 
         SuppliersRowEntity row3 = new SuppliersRowEntity();
-        SupplierRowMapper.fill(row3, dto, hq, frenosErp, null, catalogService);
+        SupplierRowMapper.fill(row3, dto, hq, frenosErp, eng, null, catalogService);
         assertNull(row3.getSupplierCurrency(), "supplierCurrency debe ser null si bank es null");
 
         // 8.2 FrenosXmlFactory con null, empty y espacios

@@ -815,7 +815,9 @@ class SupplierAccountIbanResolutionTest {
         GraphiteSupplierDto dto = objectMapper.readValue(json, GraphiteSupplierDto.class);
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
-        SupplierRowMapper.fill(domesticRow, dto, SupplierRowMapper.findHeadquarters(dto), erp, bank, catalogService);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+
+        SupplierRowMapper.fill(domesticRow, dto, SupplierRowMapper.findHeadquarters(dto), erp, eng, bank, catalogService);
 
         assertEquals("DE94660501010108365131", domesticRow.getAccountNumber());
         assertEquals("DEUTSCHE BANK AG", domesticRow.getIntermediaryBankName());
