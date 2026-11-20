@@ -664,7 +664,7 @@ class SupplierIntermediaryBankResolutionTest {
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(bankIndex);
         GraphiteSupplierDto.Location hq = SupplierRowMapper.findHeadquarters(dto);
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
         SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
     }
 

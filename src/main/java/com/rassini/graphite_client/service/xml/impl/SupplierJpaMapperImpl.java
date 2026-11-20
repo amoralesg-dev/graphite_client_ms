@@ -60,9 +60,11 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
         GraphiteSupplierDto.RassiniEngagement eng = null;
 
-        for (GraphiteSupplierDto.RassiniEngagement eng2 : dto.getRassiniEngagement()){
-            if (eng2 == null || eng2.getRassiniSupplierPaymentGroup() == null) continue;
-                eng = eng2;
+        if(dto.getRassiniEngagement() != null){
+            for (GraphiteSupplierDto.RassiniEngagement eng2 : dto.getRassiniEngagement()){
+                if (eng2 == null || eng2.getRassiniSupplierPaymentGroup() == null) continue;
+                    eng = eng2;
+            }
         }
 
         for (GraphiteSupplierDto.ErpRecord erp : dto.getErpRecords()) {

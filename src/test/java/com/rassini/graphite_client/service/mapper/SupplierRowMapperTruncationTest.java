@@ -71,7 +71,7 @@ class SupplierRowMapperTruncationTest {
     @DisplayName("Debe truncar contactName a 24 caracteres cuando exceda el límite")
     void testContactNameTruncation() {
         SuppliersRowEntity row = new SuppliersRowEntity();
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
         SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
 
         assertNotNull(row.getContactName());
@@ -87,7 +87,7 @@ class SupplierRowMapperTruncationTest {
         hq.setLocSalesContactAlternateContactCalc(Collections.singletonList(contact));
 
         SuppliersRowEntity row = new SuppliersRowEntity();
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
         SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
 
         assertEquals("JUAN PEREZ", row.getContactName());
@@ -97,7 +97,7 @@ class SupplierRowMapperTruncationTest {
     @DisplayName("Debe truncar streetName3 a 36 caracteres cuando exceda el límite")
     void testStreetName3Truncation() {
         SuppliersRowEntity row = new SuppliersRowEntity();
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
         SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
 
         assertNotNull(row.getStreetName3());
@@ -109,7 +109,7 @@ class SupplierRowMapperTruncationTest {
     @DisplayName("Debe truncar cityCode a 20 caracteres cuando exceda el límite")
     void testCityCodeTruncation() {
         SuppliersRowEntity row = new SuppliersRowEntity();
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
         SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
 
         assertNotNull(row.getCityCode());
