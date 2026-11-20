@@ -286,6 +286,7 @@ class SupplierAddressResolverTest {
         GraphiteSupplierDto.Location hq = SupplierRowMapper.findHeadquarters(dto);
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
 
         // 1. Verificar ResolvedAddress
         ResolvedAddress resolved = SupplierAddressResolver.resolve(dto, hq, erp);
@@ -307,7 +308,7 @@ class SupplierAddressResolverTest {
 
         // 3. Verificar entidad SuppliersRowEntity tras SupplierRowMapper.fill (left 36 chars en streetName)
         SuppliersRowEntity row = new SuppliersRowEntity();
-        SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
+        SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
         assertEquals("CALLE CENTRAL DE ABASTOS NAVE F LOCA", row.getStreetName());
         assertEquals(36, row.getStreetName().length());
         assertEquals("8", row.getStreetNumber());
@@ -324,10 +325,11 @@ class SupplierAddressResolverTest {
         GraphiteSupplierDto dto = objectMapper.readValue(rawJson, GraphiteSupplierDto.class);
         GraphiteSupplierDto.Location hq = SupplierRowMapper.findHeadquarters(dto);
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
 
         SuppliersRowEntity row = new SuppliersRowEntity();
-        SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
+        SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
 
         assertEquals("CALLE CENTRAL DE ABASTOS NAVE F LOCA", row.getStreetName());
         assertEquals("8", row.getStreetNumber());

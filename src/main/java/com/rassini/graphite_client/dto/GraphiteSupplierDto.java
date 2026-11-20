@@ -9,6 +9,13 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
+import com.rassini.graphite_client.dto.GraphiteSupplierDto.Bank;
+import com.rassini.graphite_client.dto.GraphiteSupplierDto.BankAccountIban;
+import com.rassini.graphite_client.dto.GraphiteSupplierDto.BankNumber;
+import com.rassini.graphite_client.dto.GraphiteSupplierDto.BankSwift;
+import com.rassini.graphite_client.dto.GraphiteSupplierDto.ErpAddressContainer;
+import com.rassini.graphite_client.dto.GraphiteSupplierDto.ErpRecord;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -79,6 +86,9 @@ public class GraphiteSupplierDto {
     // =========================
     @JsonProperty("ERP_Record")
     private List<ErpRecord> erpRecords;
+
+    @JsonProperty("RASSINI_Enagagement")
+    private List<RassiniEngagement> rassiniEngagement;
 
     // =========================
     // Inner classes
@@ -314,7 +324,18 @@ public class GraphiteSupplierDto {
 
         @JsonProperty("RASSINI_ERP_Address")
         private ErpAddressContainer rassiniErpAddress;
+
     }
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class RassiniEngagement {
+
+        @JsonProperty("RASSINI_Supplier_Payment_Group")
+        private String rassiniSupplierPaymentGroup;
+
+    }
+
 
     // =========================
     // ERP ADDRESS CONTAINER

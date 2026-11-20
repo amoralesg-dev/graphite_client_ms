@@ -158,6 +158,9 @@ public class SuppliersVerEntity {
     @Column(name = "xml_status", nullable = false)
     private XmlStatus xmlStatus;
 
+    @Column(name = "payment_group")
+    private String paymentgroup;
+
     /** Copia todos los campos de suppliers (excepto la PK) al snapshot. */
     public static SuppliersVerEntity snapshotOf(SuppliersRowEntity s) {
         SuppliersVerEntity v = new SuppliersVerEntity();
@@ -197,6 +200,7 @@ public class SuppliersVerEntity {
         v.setIntermediaryRoutingCodeSwift(s.getIntermediaryRoutingCodeSwift());
         v.setStatusIntegrity(s.getStatusIntegrity());
         v.setXmlStatus(s.getXmlStatus());
+        v.setPaymentgroup(s.getPaymentgroup());
         return v;
     }
 }
