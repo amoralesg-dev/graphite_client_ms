@@ -58,6 +58,15 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
 
         GraphiteSupplierDto.Location hq = SupplierRowMapper.findHeadquarters(dto);
 
+        GraphiteSupplierDto.RassiniEngagement eng = null;
+
+        if(dto.getRassiniEngagement() != null){
+            for (GraphiteSupplierDto.RassiniEngagement eng2 : dto.getRassiniEngagement()){
+                if (eng2 == null || eng2.getRassiniSupplierPaymentGroup() == null) continue;
+                    eng = eng2;
+            }
+        }
+
         for (GraphiteSupplierDto.ErpRecord erp : dto.getErpRecords()) {
 
             if (erp == null || erp.getRassiniErpEntityId() == null) continue;
@@ -144,7 +153,7 @@ public class SupplierJpaMapperImpl implements SupplierJpaMapper {
                 Long rowId = row.getId();
 
                 // llenar el MISMO objeto (no crear otro)
-                SupplierRowMapper.fill(row, dto, hq, erp, bank, catalogService);
+                SupplierRowMapper.fill(row, dto, hq, erp, eng, bank, catalogService);
 
                 log.info("[ERP-PERSISTED-SOURCE] supplier={} businessUnit={} accountMasked={} rowId={} persistedErpIdQad={}",
                         creditor, bu, maskedAccount, rowId != null ? rowId : "NEW", persistedErpIdQad != null ? persistedErpIdQad : "null");

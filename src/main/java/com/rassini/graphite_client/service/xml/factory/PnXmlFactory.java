@@ -271,6 +271,7 @@ public class PnXmlFactory {
                 .tcPurchaseGLProfileCode(gl.purchaseGlProfile())
 
                 .tcReasonCode("INICIAL")
+                .tcPaymentGroupCode(supplier.getPaymentgroup())
                 .tlBusinessRelationIsInterco((XMLConstants.FALSE))
                 .tcBusinessRelationCode("PR"+supplier.getErpIdQad())
                 .tcBusinessRelationName1(supplier.getSupplierName())
