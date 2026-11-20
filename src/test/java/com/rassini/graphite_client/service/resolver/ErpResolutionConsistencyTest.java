@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import org.aspectj.internal.lang.annotation.ajcDeclareAnnotation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -587,6 +588,10 @@ public class ErpResolutionConsistencyTest {
         dto.setLegacyMappedErpId(legacyErpId);
         dto.setErpIdQad(dtoErp);
         dto.setSupplierIsLegacy("y");
+        List<GraphiteSupplierDto.RassiniEngagement> rassengagement = new ArrayList<>();
+
+        rassengagement.add(null);
+        dto.setRassiniEngagement(rassengagement);
 
         List<GraphiteSupplierDto.ErpRecord> erpRecords = new ArrayList<>();
         GraphiteSupplierDto.ErpRecord erp = new GraphiteSupplierDto.ErpRecord();

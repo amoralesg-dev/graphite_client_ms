@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -815,7 +815,7 @@ class SupplierAccountIbanResolutionTest {
         GraphiteSupplierDto dto = objectMapper.readValue(json, GraphiteSupplierDto.class);
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
 
         SupplierRowMapper.fill(domesticRow, dto, SupplierRowMapper.findHeadquarters(dto), erp, eng, bank, catalogService);
 

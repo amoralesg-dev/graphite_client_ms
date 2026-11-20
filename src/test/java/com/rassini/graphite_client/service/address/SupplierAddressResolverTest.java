@@ -286,7 +286,7 @@ class SupplierAddressResolverTest {
         GraphiteSupplierDto.Location hq = SupplierRowMapper.findHeadquarters(dto);
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
 
         // 1. Verificar ResolvedAddress
         ResolvedAddress resolved = SupplierAddressResolver.resolve(dto, hq, erp);
@@ -325,7 +325,7 @@ class SupplierAddressResolverTest {
         GraphiteSupplierDto dto = objectMapper.readValue(rawJson, GraphiteSupplierDto.class);
         GraphiteSupplierDto.Location hq = SupplierRowMapper.findHeadquarters(dto);
         GraphiteSupplierDto.ErpRecord erp = dto.getErpRecords().get(0);
-        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement().get(0);
+        GraphiteSupplierDto.RassiniEngagement eng = dto.getRassiniEngagement()== null ? null : dto.getRassiniEngagement().get(0);
         GraphiteSupplierDto.Bank bank = erp.getErpBankList().get(0);
 
         SuppliersRowEntity row = new SuppliersRowEntity();
